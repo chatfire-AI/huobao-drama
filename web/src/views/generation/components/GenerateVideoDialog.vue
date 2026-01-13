@@ -181,9 +181,6 @@ const rules: FormRules = {
   drama_id: [
     { required: true, message: '请选择剧本', trigger: 'change' }
   ],
-  image_url: [
-    { required: true, message: '请选择图片或输入图片 URL', trigger: 'blur' }
-  ],
   prompt: [
     { required: true, message: '请输入视频提示词', trigger: 'blur' },
     { min: 5, message: '提示词至少5个字符', trigger: 'blur' }
@@ -264,21 +261,44 @@ const truncateText = (text: string, length: number) => {
 }
 
 const handleGenerate = async () => {
-  if (!formRef.value) return
+  console.log('handleGenerate called')
+  
+  if (!formRef.value) {
+    console.error('formRef is null')
+    ElMessage.error('表单初始化失败，请刷新页面重试')
+    return
+  }
 
-  await formRef.value.validate(async (valid) => {
-    if (!valid) return
+  try {
+    const valid = await formRef.value.validate()
+    console.log('Form validation result:', valid)
+    
+    if (!valid) {
+      console.log('Form validation failed')
+      return
+    }
 
     generating.value = true
+    console.log('Starting video generation...', form)
+    
     try {
       if (form.image_gen_id) {
+        console.log('Generating from image:', form.image_gen_id)
         await videoAPI.generateFromImage(form.image_gen_id)
       } else {
         const params: GenerateVideoRequest = {
           drama_id: form.drama_id,
-          image_url: form.image_url,
           prompt: form.prompt,
           provider: form.provider
+        }
+
+        // 判断参考图模式
+        if (form.image_url && form.image_url.trim()) {
+          params.image_url = form.image_url
+          params.reference_mode = 'single'
+        } else {
+          // 纯文本生成，无参考图
+          params.reference_mode = 'none'
         }
 
         if (form.duration) params.duration = form.duration
@@ -288,6 +308,7 @@ const handleGenerate = async () => {
         if (form.style) params.style = form.style
         if (form.seed && form.seed > 0) params.seed = form.seed
 
+        console.log('Generating video with params:', params)
         await videoAPI.generateVideo(params)
       }
       
@@ -295,11 +316,15 @@ const handleGenerate = async () => {
       emit('success')
       handleClose()
     } catch (error: any) {
-      ElMessage.error(error.message || '生成失败')
+      console.error('Video generation failed:', error)
+      ElMessage.error(error.response?.data?.message || error.message || '生成失败')
     } finally {
       generating.value = false
     }
-  })
+  } catch (error: any) {
+    console.error('Form validation error:', error)
+    ElMessage.warning('请检查表单填写是否完整')
+  }
 }
 
 const handleClose = () => {

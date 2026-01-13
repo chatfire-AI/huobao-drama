@@ -623,7 +623,7 @@
                     type="primary" 
                     :icon="VideoCamera" 
                     :loading="generatingVideo"
-                    :disabled="!selectedVideoModel || selectedImagesForVideo.length === 0"
+                    :disabled="!selectedVideoModel || (selectedReferenceMode !== 'none' && selectedImagesForVideo.length === 0)"
                     @click="generateVideo"
                   >
                     {{ generatingVideo ? '生成中...' : '生成视频' }}
@@ -1854,16 +1854,25 @@ const generateVideo = async () => {
     return
   }
   
-  if (!currentStoryboard.value || selectedImagesForVideo.value.length === 0) {
+  if (!currentStoryboard.value) {
+    ElMessage.warning('请先选择分镜')
+    return
+  }
+  
+  // 检查参考图模式
+  if (selectedReferenceMode.value !== 'none' && selectedImagesForVideo.value.length === 0) {
     ElMessage.warning('请选择参考图片')
     return
   }
   
-  // 获取第一张选中的图片
-  const selectedImage = videoReferenceImages.value.find(img => img.id === selectedImagesForVideo.value[0])
-  if (!selectedImage || !selectedImage.image_url) {
-    ElMessage.error('请选择有效的参考图片')
-    return
+  // 获取第一张选中的图片（仅在需要图片的模式下）
+  let selectedImage = null
+  if (selectedReferenceMode.value !== 'none' && selectedImagesForVideo.value.length > 0) {
+    selectedImage = videoReferenceImages.value.find(img => img.id === selectedImagesForVideo.value[0])
+    if (!selectedImage || !selectedImage.image_url) {
+      ElMessage.error('请选择有效的参考图片')
+      return
+    }
   }
   
   generatingVideo.value = true
@@ -2397,8 +2406,538 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
-@use './ProfessionalEditor-styles.scss';
-@use './ProfessionalEditor-storyboard-item.scss';
+// 镜头列表项样式 - 白色主题
+.storyboard-item {
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+    border: 1px solid #e0e0e0;
+    margin-bottom: 8px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background: #fff;
+
+    &:hover {
+        background: #f5f5f5;
+        border-color: #d0d0d0;
+    }
+
+    &.active {
+        background: #409eff;
+        border-color: #409eff;
+
+        .shot-number,
+        .shot-title {
+            color: #fff !important;
+        }
+
+        .shot-duration {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+    }
+
+    .shot-thumbnail {
+        width: 80px;
+        height: 50px;
+        border-radius: 4px;
+        overflow: hidden;
+        background: #f0f0f0;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+
+    .shot-content {
+        flex: 1;
+        min-width: 0;
+
+        .shot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+
+            .shot-number {
+                font-size: 11px;
+                color: #666;
+                font-weight: 500;
+            }
+
+            .shot-duration {
+                font-size: 11px;
+                color: #666;
+                background: #f0f0f0;
+                padding: 2px 6px;
+                border-radius: 3px;
+            }
+        }
+
+        .shot-title {
+            font-size: 13px;
+            color: #333;
+            font-weight: 500;
+            line-height: 1.3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+}
+
+// 视频合成列表样式
+.merges-list {
+  padding: 16px;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%);
+
+  .merge-items {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .merge-item {
+    position: relative;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.02);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(64, 158, 255, 0.3);
+      border-color: rgba(64, 158, 255, 0.2);
+    }
+
+    .status-indicator {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      transition: all 0.3s;
+    }
+
+    &.merge-status-completed .status-indicator {
+      background: linear-gradient(to bottom, #67c23a, #85ce61);
+    }
+
+    &.merge-status-processing .status-indicator {
+      background: linear-gradient(to bottom, #e6a23c, #f0c78a);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    &.merge-status-failed .status-indicator {
+      background: linear-gradient(to bottom, #f56c6c, #f89898);
+    }
+
+    &.merge-status-pending .status-indicator {
+      background: linear-gradient(to bottom, #909399, #b1b3b8);
+    }
+
+    .merge-content {
+      padding: 20px 24px;
+      padding-left: 28px;
+    }
+
+    .merge-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #f0f2f5;
+
+      .title-section {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+
+        .title-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 38px;
+          height: 38px;
+          border-radius: 10px;
+          background: linear-gradient(135deg, #f5f7fa 0%, #e8eaf0 100%);
+          color: #606266;
+          transition: all 0.3s;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+        }
+
+        .merge-title {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 600;
+          color: #303133;
+          line-height: 1.4;
+        }
+      }
+
+      :deep(.el-tag) {
+        font-weight: 500;
+        padding: 4px 12px;
+        font-size: 12px;
+      }
+    }
+
+    &.merge-status-completed .title-icon {
+      background: linear-gradient(135deg, #67c23a 0%, #85ce61 100%);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(103, 194, 58, 0.25);
+    }
+
+    &.merge-status-processing .title-icon {
+      background: linear-gradient(135deg, #e6a23c 0%, #f0c78a 100%);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(230, 162, 60, 0.25);
+    }
+
+    &.merge-status-failed .title-icon {
+      background: linear-gradient(135deg, #f56c6c 0%, #f89898 100%);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(245, 108, 108, 0.25);
+    }
+
+    .merge-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+
+      .detail-item {
+        display: flex;
+        gap: 10px;
+        padding: 12px 14px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f5 100%);
+        border-radius: 8px;
+        border: 1px solid transparent;
+        transition: all 0.3s;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+        &:hover {
+          background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+          border-color: rgba(64, 158, 255, 0.15);
+        }
+
+        .detail-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
+          border-radius: 6px;
+          background: #fff;
+          color: #409eff;
+          flex-shrink: 0;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+
+        .detail-content {
+          flex: 1;
+          min-width: 0;
+
+          .detail-label {
+            font-size: 11px;
+            color: #909399;
+            margin-bottom: 3px;
+            font-weight: 500;
+          }
+
+          .detail-value {
+            font-size: 13px;
+            color: #303133;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+        }
+      }
+    }
+
+    .merge-error {
+      margin-bottom: 12px;
+      
+      :deep(.el-alert) {
+        border-radius: 8px;
+        border: none;
+        box-shadow: 0 1px 4px rgba(245, 108, 108, 0.12);
+        padding: 8px 12px;
+        font-size: 12px;
+      }
+    }
+
+    .merge-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+
+      :deep(.el-button) {
+        flex: 1;
+        max-width: 160px;
+        font-weight: 500;
+        padding: 8px 15px;
+        font-size: 13px;
+      }
+    }
+  }
+}
+
+// 旋转动画
+@keyframes rotating {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rotating {
+  animation: rotating 2s linear infinite;
+}
+
+// 脉冲动画
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+// 白色主题样式
+.shot-editor-new {
+  padding: 16px;
+  height: 100%;
+  overflow-y: auto;
+  background: #fff;
+
+  .section-label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 8px;
+  }
+
+  // 场景预览
+  .scene-section {
+    margin-bottom: 20px;
+  }
+
+  .scene-preview {
+    width: 100%;
+    height: 80px;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .scene-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 6px 8px;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+      font-size: 11px;
+      color: #fff;
+
+      .scene-id {
+        font-size: 10px;
+        color: #e0e0e0;
+        margin-top: 2px;
+      }
+    }
+  }
+
+  .scene-preview-empty {
+    width: 100%;
+    height: 80px;
+    border-radius: 6px;
+    border: 1px dashed #d0d0d0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: #fafafa;
+
+    .el-icon {
+      font-size: 32px !important;
+      color: #c0c0c0;
+    }
+
+    div {
+      font-size: 11px;
+      color: #999;
+    }
+  }
+
+  // 角色列表
+  .cast-section {
+    margin-bottom: 20px;
+  }
+
+  .cast-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+
+    .cast-item {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        .cast-avatar {
+          border-color: #409eff;
+        }
+
+        .cast-remove {
+          opacity: 1;
+          visibility: visible;
+        }
+      }
+
+      &.active {
+        .cast-avatar {
+          border-color: #409eff;
+          background: #409eff;
+        }
+      }
+
+      .cast-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 2px solid #e0e0e0;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f5f5f5;
+        font-size: 14px;
+        font-weight: 500;
+        color: #666;
+        transition: all 0.2s;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+
+      .cast-name {
+        font-size: 10px;
+        color: #666;
+        max-width: 36px;
+        text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .cast-remove {
+        position: absolute;
+        top: -3px;
+        right: -3px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #f56c6c;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        z-index: 10;
+        opacity: 0;
+        visibility: hidden;
+        font-size: 12px;
+
+        &:hover {
+          background: #f23030;
+          transform: scale(1.1);
+        }
+      }
+    }
+
+    .cast-empty {
+      width: 100%;
+      text-align: center;
+      padding: 15px;
+      color: #999;
+      font-size: 11px;
+    }
+  }
+
+  // 视效设置
+  .settings-section {
+    margin-bottom: 16px;
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+
+      .setting-item {
+        label {
+          display: block;
+          font-size: 11px;
+          color: #666;
+          margin-bottom: 6px;
+        }
+      }
+    }
+
+    .audio-controls {
+      margin-top: 8px;
+    }
+  }
+
+  // 叙事内容
+  .narrative-section {
+    margin-bottom: 14px;
+  }
+
+  .dialogue-section {
+    margin-bottom: 14px;
+  }
+}
 
 // 场景选择对话框样式
 .scene-selector-grid {

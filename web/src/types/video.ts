@@ -38,7 +38,7 @@ export interface GenerateVideoRequest {
   scene_id?: string  // 已废弃，保留用于兼容
   drama_id: string
   image_gen_id?: number
-  image_url: string
+  image_url?: string
   prompt: string
   provider?: string
   model?: string
@@ -49,8 +49,10 @@ export interface GenerateVideoRequest {
   motion_level?: number
   camera_motion?: string
   seed?: number
+  reference_mode?: string   // 参考图模式：single, first_last, multiple, none
   first_frame_url?: string  // 首帧图片URL
   last_frame_url?: string   // 尾帧图片URL
+  reference_image_urls?: string[]  // 多图参考模式
 }
 
 export interface VideoGenerationListParams {

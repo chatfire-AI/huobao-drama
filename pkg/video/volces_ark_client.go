@@ -230,10 +230,12 @@ func (c *VolcesArkClient) GenerateVideo(imageURL, prompt string, opts ...VideoOp
 }
 
 func (c *VolcesArkClient) GetTaskStatus(taskID string) (*VideoResult, error) {
-	// 替换占位符{taskId}或直接拼接
+	// 替换占位符{taskId}、{task_id}或直接拼接
 	queryPath := c.QueryEndpoint
-	if contains := bytes.Contains([]byte(queryPath), []byte("{taskId}")); contains {
-		queryPath = string(bytes.ReplaceAll([]byte(queryPath), []byte("{taskId}"), []byte(taskID)))
+	if strings.Contains(queryPath, "{taskId}") {
+		queryPath = strings.ReplaceAll(queryPath, "{taskId}", taskID)
+	} else if strings.Contains(queryPath, "{task_id}") {
+		queryPath = strings.ReplaceAll(queryPath, "{task_id}", taskID)
 	} else {
 		queryPath = queryPath + "/" + taskID
 	}

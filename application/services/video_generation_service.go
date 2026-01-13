@@ -316,6 +316,37 @@ func (s *VideoGenerationService) pollTaskStatus(videoGenID uint, taskID string, 
 }
 
 func (s *VideoGenerationService) completeVideoGeneration(videoGenID uint, videoURL string, duration *int, width *int, height *int, firstFrameURL *string) {
+	// 下载视频到本地存储（仅用于缓存，不更新数据库）
+	if s.localStorage != nil && videoURL != "" {
+		_, err := s.localStorage.DownloadFromURL(videoURL, "videos")
+		if err != nil {
+			s.log.Warnw("Failed to download video to local storage",
+				"error", err,
+				"id", videoGenID,
+				"original_url", videoURL)
+		} else {
+			s.log.Infow("Video downloaded to local storage for caching",
+				"id", videoGenID,
+				"original_url", videoURL)
+		}
+	}
+
+	// 下载首帧图片到本地存储（仅用于缓存，不更新数据库）
+	if firstFrameURL != nil && *firstFrameURL != "" && s.localStorage != nil {
+		_, err := s.localStorage.DownloadFromURL(*firstFrameURL, "video_frames")
+		if err != nil {
+			s.log.Warnw("Failed to download first frame to local storage",
+				"error", err,
+				"id", videoGenID,
+				"original_url", *firstFrameURL)
+		} else {
+			s.log.Infow("First frame downloaded to local storage for caching",
+				"id", videoGenID,
+				"original_url", *firstFrameURL)
+		}
+	}
+
+	// 数据库中保持使用原始URL
 	updates := map[string]interface{}{
 		"status":    models.VideoStatusCompleted,
 		"video_url": videoURL,

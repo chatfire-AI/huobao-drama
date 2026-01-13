@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	services2 "github.com/drama-generator/backend/application/services"
+	"github.com/drama-generator/backend/infrastructure/storage"
 	"github.com/drama-generator/backend/pkg/config"
 	"github.com/drama-generator/backend/pkg/logger"
 	"github.com/drama-generator/backend/pkg/response"
@@ -17,10 +18,10 @@ type CharacterLibraryHandler struct {
 	log            *logger.Logger
 }
 
-func NewCharacterLibraryHandler(db *gorm.DB, cfg *config.Config, log *logger.Logger, transferService *services2.ResourceTransferService) *CharacterLibraryHandler {
+func NewCharacterLibraryHandler(db *gorm.DB, cfg *config.Config, log *logger.Logger, transferService *services2.ResourceTransferService, localStorage *storage.LocalStorage) *CharacterLibraryHandler {
 	return &CharacterLibraryHandler{
 		libraryService: services2.NewCharacterLibraryService(db, log),
-		imageService:   services2.NewImageGenerationService(db, transferService, log),
+		imageService:   services2.NewImageGenerationService(db, transferService, localStorage, log),
 		log:            log,
 	}
 }

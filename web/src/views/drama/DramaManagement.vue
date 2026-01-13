@@ -126,13 +126,10 @@
               {{ formatDate(row.created_at) }}
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="280" fixed="right">
+          <el-table-column label="操作" width="220" fixed="right">
             <template #default="{ row }">
               <el-button size="small" type="primary" @click="enterEpisodeWorkflow(row)">
                 进入制作
-              </el-button>
-              <el-button size="small" @click="editEpisode(row)">
-                编辑
               </el-button>
               <el-button size="small" type="danger" @click="deleteEpisode(row)">
                 删除
@@ -223,7 +220,7 @@
             <el-option label="次要角色" value="minor" />
           </el-select>
         </el-form-item>
-        <el-form-item label="外貌特征">
+        <el-form-item label="外貌特征"> 
           <el-input v-model="newCharacter.appearance" type="textarea" :rows="3" placeholder="描述角色的外貌特征" />
         </el-form-item>
         <el-form-item label="性格特点">
@@ -378,27 +375,40 @@ const enterEpisodeWorkflow = (episode: any) => {
   })
 }
 
-const editEpisode = (episode: any) => {
-  ElMessage.info('编辑功能开发中')
-}
-
 const deleteEpisode = async (episode: any) => {
-  await ElMessageBox.confirm(
-    `确定要删除第${episode.episode_number}章吗？`,
-    '删除确认',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }
-  )
-
   try {
-    // TODO: 调用删除API
-    ElMessage.success('删除成功')
+    await ElMessageBox.confirm(
+      `确定要删除第${episode.episode_number}章吗？此操作将同时删除该章节的所有相关数据（角色、场景、分镜等）。`,
+      '删除确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    // 过滤掉要删除的章节
+    const existingEpisodes = drama.value?.episodes || []
+    const updatedEpisodes = existingEpisodes
+      .filter(ep => ep.episode_number !== episode.episode_number)
+      .map(ep => ({
+        episode_number: ep.episode_number,
+        title: ep.title,
+        script_content: ep.script_content,
+        description: ep.description,
+        duration: ep.duration,
+        status: ep.status
+      }))
+
+    // 保存更新后的章节列表
+    await dramaAPI.saveEpisodes(drama.value!.id, updatedEpisodes)
+    
+    ElMessage.success(`第${episode.episode_number}章删除成功`)
     await loadDramaData()
   } catch (error: any) {
-    ElMessage.error(error.message || '删除失败')
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
   }
 }
 

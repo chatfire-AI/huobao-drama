@@ -7,6 +7,7 @@ import (
 	"time"
 
 	models "github.com/drama-generator/backend/domain/models"
+	"github.com/drama-generator/backend/infrastructure/storage"
 	"github.com/drama-generator/backend/pkg/ai"
 	"github.com/drama-generator/backend/pkg/image"
 	"github.com/drama-generator/backend/pkg/logger"
@@ -18,14 +19,16 @@ type ImageGenerationService struct {
 	db              *gorm.DB
 	aiService       *AIService
 	transferService *ResourceTransferService
+	localStorage    *storage.LocalStorage
 	log             *logger.Logger
 }
 
-func NewImageGenerationService(db *gorm.DB, transferService *ResourceTransferService, log *logger.Logger) *ImageGenerationService {
+func NewImageGenerationService(db *gorm.DB, transferService *ResourceTransferService, localStorage *storage.LocalStorage, log *logger.Logger) *ImageGenerationService {
 	return &ImageGenerationService{
 		db:              db,
 		aiService:       NewAIService(db, log),
 		transferService: transferService,
+		localStorage:    localStorage,
 		log:             log,
 	}
 }
@@ -241,6 +244,23 @@ func (s *ImageGenerationService) pollTaskStatus(imageGenID uint, client image.Im
 
 func (s *ImageGenerationService) completeImageGeneration(imageGenID uint, result *image.ImageResult) {
 	now := time.Now()
+
+	// 下载图片到本地存储（仅用于缓存，不更新数据库）
+	if s.localStorage != nil && result.ImageURL != "" {
+		_, err := s.localStorage.DownloadFromURL(result.ImageURL, "images")
+		if err != nil {
+			s.log.Warnw("Failed to download image to local storage",
+				"error", err,
+				"id", imageGenID,
+				"original_url", result.ImageURL)
+		} else {
+			s.log.Infow("Image downloaded to local storage for caching",
+				"id", imageGenID,
+				"original_url", result.ImageURL)
+		}
+	}
+
+	// 数据库中保持使用原始URL
 	updates := map[string]interface{}{
 		"status":       models.ImageStatusCompleted,
 		"image_url":    result.ImageURL,
