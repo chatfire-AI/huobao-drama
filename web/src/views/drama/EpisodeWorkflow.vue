@@ -1012,6 +1012,8 @@ const loadDramaData = async () => {
     
     if (!hasScript.value) {
       scriptContent.value = ''
+      // 如果没有剧本内容，重置到第一步
+      currentStep.value = 0
     }
 
     // 检查是否有生成中的角色或场景，自动启动轮询
