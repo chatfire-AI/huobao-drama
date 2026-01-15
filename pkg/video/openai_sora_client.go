@@ -133,7 +133,7 @@ func (c *OpenAISoraClient) GenerateVideo(imageURL, prompt string, opts ...VideoO
 }
 
 func (c *OpenAISoraClient) GetTaskStatus(taskID string) (*VideoResult, error) {
-	endpoint := c.BaseURL + "/v1/videos/" + taskID
+	endpoint := c.BaseURL + "/videos/" + taskID
 	req, err := http.NewRequest("GET", endpoint, nil)
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
