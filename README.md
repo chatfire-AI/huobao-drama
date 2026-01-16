@@ -19,7 +19,7 @@
 
 Huobao Drama 是一个基于AI的短剧自动化生产平台，实现从剧本生成、角色设计、分镜制作到视频合成的全流程自动化。
 
-Huobao Drama is an AI-powered short drama production platform that automates the entire workflow from script generation, character design, storyboarding to video composition.
+Huobao Drama is an AI-powered short drama production platform that automates the entire workflow—from script generation and character design to storyboarding and video composition.
 
 ### 🎯 核心价值 / Core Features
 
@@ -28,7 +28,7 @@ Huobao Drama is an AI-powered short drama production platform that automates the
 - **📹 视频生成 / Video Generation**：基于文生视频和图生视频模型自动生成分镜视频 | Automatic storyboard video generation using text-to-video and image-to-video models
 - **🔄 工作流 / Workflow**：完整的短剧制作工作流，从创意到成片一站式完成 | Complete production workflow from idea to final video
 
-### 🛠️ 技术架构
+### 🛠️ 技术架构 / Architecture
 
 采用**DDD领域驱动设计**，清晰分层：
 
@@ -59,25 +59,25 @@ Huobao Drama is an AI-powered short drama production platform that automates the
 
 ---
 
-## ✨ 功能特性
+## ✨ 功能特性 / Characteristics
 
-### 🎭 角色管理
+### 🎭 角色管理 / Role-Management
 - ✅ AI生成角色形象
 - ✅ 批量角色生成
 - ✅ 角色图片上传和管理
 
-### 🎬 分镜制作
+### 🎬 分镜制作 / StoryBoard-Production
 - ✅ 自动生成分镜脚本
 - ✅ 场景描述和镜头设计
 - ✅ 分镜图片生成（文生图）
 - ✅ 帧类型选择（首帧/关键帧/尾帧/分镜板）
 
-### 🎥 视频生成
+### 🎥 视频生成 / Video-Generation
 - ✅ 图生视频自动生成
 - ✅ 视频合成和剪辑
 - ✅ 转场效果
 
-### 📦 资源管理
+### 📦 资源管理 / Resource-Management
 - ✅ 素材库统一管理
 - ✅ 本地存储支持
 - ✅ 资源导入导出
@@ -85,9 +85,9 @@ Huobao Drama is an AI-powered short drama production platform that automates the
 
 ---
 
-## 🚀 快速开始
+## 🚀 快速开始 / QuickStart
 
-### 📋 环境要求
+### 📋 环境要求 / Requirements
 
 | 软件 | 版本要求 | 说明 |
 |------|---------|------|
@@ -118,7 +118,7 @@ sudo apt install ffmpeg
 ffmpeg -version
 ```
 
-### ⚙️ 配置文件
+### ⚙️ 配置文件 / Configuration File
 
 复制并编辑配置文件：
 
@@ -169,7 +169,7 @@ ai:
 - `storage.base_url`: 静态资源访问URL
 - `ai.default_*_provider`: AI服务提供商配置（在Web界面中配置具体的API Key）
 
-### 📥 安装依赖
+### 📥 安装依赖 / Dependency Installation
 
 ```bash
 # 克隆项目
@@ -185,9 +185,9 @@ npm install
 cd ..
 ```
 
-### 🎯 启动项目
+### 🎯 启动项目 / Start Project
 
-#### 方式一：开发模式（推荐）
+#### 方式一：开发模式（推荐）/ Method 1 (Recommended)
 
 **前后端分离，支持热重载**
 
@@ -204,7 +204,7 @@ npm run dev
 - 后端API: `http://localhost:5678/api/v1`
 - 前端自动代理API请求到后端
 
-#### 方式二：单服务模式
+#### 方式二：单服务模式 / Method 2
 
 **后端同时提供API和前端静态文件**
 
@@ -220,13 +220,13 @@ go run main.go
 
 访问: `http://localhost:5678`
 
-### 🗄️ 数据库初始化
+### 🗄️ 数据库初始化 / Database Initialiation
 
 数据库表会在首次启动时自动创建（使用GORM AutoMigrate），无需手动迁移。
 
 ---
 
-## 📦 部署指南
+## 📦 部署指南 / Deployment Guide
 
 ### 🐳 Docker 部署（推荐）
 
@@ -292,9 +292,9 @@ docker run -d --name huobao-drama -p 5678:5678 -v $(pwd)/data:/app/data huobao-d
 
 ---
 
-### 🏭 传统部署方式
+### 🏭 传统部署方式 / Traditional Deployment Method
 
-#### 1. 编译构建
+#### 1. 编译构建 / Compile Build
 
 ```bash
 # 1. 构建前端
@@ -307,10 +307,10 @@ go build -o huobao-drama .
 ```
 
 生成文件：
-- `huobao-drama` - 后端可执行文件
-- `web/dist/` - 前端静态文件（已嵌入后端）
+- `huobao-drama` - 后端可执行文件 / Backend Executable File
+- `web/dist/` -  前端静态文件（已嵌入后端）/ Frontend static files (embedded within the Backend)
 
-#### 2. 准备部署文件
+#### 2. 准备部署文件 / Deployment File Preparation
 
 需要上传到服务器的文件：
 ```
@@ -319,7 +319,7 @@ configs/config.yaml     # 配置文件
 data/                   # 数据目录（可选，首次运行自动创建）
 ```
 
-#### 3. 服务器配置
+#### 3. 服务器配置 / Server Configuration
 
 ```bash
 # 上传文件到服务器
@@ -348,7 +348,7 @@ chmod +x huobao-drama
 ./huobao-drama
 ```
 
-#### 4. 使用 systemd 管理服务
+#### 4. 使用 systemd 管理服务 / Managing services using systemd
 
 创建服务文件 `/etc/systemd/system/huobao-drama.service`:
 
@@ -411,7 +411,7 @@ sudo systemctl restart huobao-drama
 - CentOS/RHEL: `nginx`、`apache`
 - 自定义部署: `deploy`、`app`、当前登录用户
 
-#### 5. Nginx 反向代理
+#### 5. Nginx 反向代理 / Reverse Proxy
 
 ```nginx
 server {
@@ -434,9 +434,9 @@ server {
 
 ---
 
-## 🎨 技术栈
+## 🎨 技术栈 / Technology Stack
 
-### 后端技术
+### 后端技术 / Backend
 - **语言**: Go 1.23+
 - **Web框架**: Gin 1.9+
 - **ORM**: GORM
@@ -445,7 +445,7 @@ server {
 - **视频处理**: FFmpeg
 - **AI服务**: OpenAI、Gemini、火山等
 
-### 前端技术
+### 前端技术 / Frontend
 - **框架**: Vue 3.4+
 - **语言**: TypeScript 5+
 - **构建工具**: Vite 5
@@ -454,14 +454,14 @@ server {
 - **状态管理**: Pinia
 - **路由**: Vue Router 4
 
-### 开发工具
+### 开发工具 / Development Tools
 - **包管理**: Go Modules, npm
 - **代码规范**: ESLint, Prettier
 - **版本控制**: Git
 
 ---
 
-## 📝 常见问题
+## 📝 常见问题 / FAQ
 
 ### Q: Docker 容器如何访问宿主机的 Ollama？
 A: 使用 `http://host.docker.internal:11434/v1` 作为 Base URL。注意两点：
@@ -481,11 +481,11 @@ A: GORM会在首次启动时自动创建表，检查日志确认迁移是否成�
 
 ---
 
-## � 更新日志 / Changelog
+## 📝 更新日志 / Changelog
 
 ### v1.0.2 (2026-01-16)
 
-#### 🚀 重大更新
+#### 🚀 重大更新 / Major Updates
 - SQLite 纯 Go 驱动（`modernc.org/sqlite`），支持 `CGO_ENABLED=0` 跨平台编译
 - 优化并发性能（WAL 模式），解决 "database is locked" 错误
 - Docker 跨平台支持 `host.docker.internal` 访问宿主机服务
@@ -500,7 +500,7 @@ A: GORM会在首次启动时自动创建表，检查日志确认迁移是否成�
 
 ---
 
-## 🤝 贡献指南
+## 🤝 贡献指南 / Contribution Guide
 
 欢迎提交 Issue 和 Pull Request！
 
@@ -515,7 +515,7 @@ A: GORM会在首次启动时自动创建表，检查日志确认迁移是否成�
 ## API配置站点
 2分钟完成配置：[API聚合站点](https://api.chatfire.site/models)
 
-## 📧 联系方式
+## 📧 联系方式 / Contact
 商务联系V：dangbao1117
 ## 项目交流群
 ![项目交流群](drama.png)
