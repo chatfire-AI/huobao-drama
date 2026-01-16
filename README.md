@@ -9,7 +9,7 @@
 [![Vue Version](https://img.shields.io/badge/Vue-3.x-4FC08D?style=flat&logo=vue.js)](https://vuejs.org)
 [![License](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 
-[功能特性](#功能特性) • [快速开始](#快速开始) • [部署指南](#部署指南)
+[功能特性](#功能特性) • [快速开始](#快速开始) • [部署指南](#部署指南)\n\n[简体中文](README.md) | [English](README-EN.md)
 
 </div>
 
