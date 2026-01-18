@@ -10,7 +10,7 @@
 
 [功能特性](#功能特性) • [快速开始](#快速开始) • [部署指南](#部署指南)
 
-[简体中文](README.md) | [English](README-EN.md)
+[简体中文](README.md) | [English](README-EN.md) | [日本語](README-JA.md)
 
 </div>
 

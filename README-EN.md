@@ -10,7 +10,7 @@
 
 [Features](#features) • [Quick Start](#quick-start) • [Deployment](#deployment)
 
-[简体中文](README.md) | [English](README-EN.md)
+[简体中文](README.md) | [English](README-EN.md) | [日本語](README-JA.md)
 
 </div>
 
