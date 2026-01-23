@@ -6,14 +6,23 @@ import (
 )
 
 // GenerateCharacterImage AI生成角色形象
+// @Summary AI生成角色形象
+// @Tags Characters
+// @Accept json
+// @Produce json
+// @Param id path string true "角色ID"
+// @Param request body GenerateCharacterImageRequest false "生成参数（可选）"
+// @Success 200 {object} response.Response{data=ImageGenerationResponse}
+// @Failure 403 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/characters/{id}/generate-image [post]
 func (h *CharacterLibraryHandler) GenerateCharacterImage(c *gin.Context) {
 
 	characterID := c.Param("id")
 
 	// 获取请求体中的model参数
-	var req struct {
-		Model string `json:"model"`
-	}
+	var req GenerateCharacterImageRequest
 	c.ShouldBindJSON(&req)
 
 	imageGen, err := h.libraryService.GenerateCharacterImage(characterID, h.imageService, req.Model)

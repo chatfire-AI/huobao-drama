@@ -10,6 +10,13 @@ import (
 
 // GetStoryboardFramePrompts 查询镜头的所有帧提示词
 // GET /api/v1/storyboards/:id/frame-prompts
+// @Summary 查询帧提示词列表
+// @Tags Storyboards
+// @Produce json
+// @Param id path string true "分镜ID"
+// @Success 200 {object} response.Response{data=FramePromptListData}
+// @Failure 500 {object} response.Response
+// @Router /api/v1/storyboards/{id}/frame-prompts [get]
 func GetStoryboardFramePrompts(db *gorm.DB, log *logger.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		storyboardID := c.Param("id")

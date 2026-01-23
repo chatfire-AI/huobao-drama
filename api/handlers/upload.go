@@ -28,6 +28,15 @@ func NewUploadHandler(cfg *config.Config, log *logger.Logger, characterLibrarySe
 }
 
 // UploadImage 上传图片
+// @Summary 上传图片
+// @Tags Upload
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "图片文件"
+// @Success 200 {object} response.Response{data=UploadImageResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/upload/image [post]
 func (h *UploadHandler) UploadImage(c *gin.Context) {
 	// 获取上传的文件
 	file, header, err := c.Request.FormFile("file")
@@ -79,6 +88,16 @@ func (h *UploadHandler) UploadImage(c *gin.Context) {
 }
 
 // UploadCharacterImage 上传角色图片（带角色ID）
+// @Summary 上传角色图片（带角色ID）
+// @Tags Characters
+// @Accept multipart/form-data
+// @Produce json
+// @Param id path string true "角色ID"
+// @Param file formData file true "图片文件"
+// @Success 200 {object} response.Response{data=UploadImageResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/characters/{id}/upload-image [post]
 func (h *UploadHandler) UploadCharacterImage(c *gin.Context) {
 	characterID := c.Param("id")
 

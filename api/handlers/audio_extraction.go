@@ -30,7 +30,9 @@ func NewAudioExtractionHandler(log *logger.Logger, dataDir string) *AudioExtract
 // @Produce json
 // @Param request body services.ExtractAudioRequest true "提取请求"
 // @Success 200 {object} services.ExtractAudioResponse
-// @Router /api/audio/extract [post]
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/v1/audio/extract [post]
 func (h *AudioExtractionHandler) ExtractAudio(c *gin.Context) {
 	var req services.ExtractAudioRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -62,8 +64,10 @@ type BatchExtractAudioRequest struct {
 // @Accept json
 // @Produce json
 // @Param request body BatchExtractAudioRequest true "批量提取请求"
-// @Success 200 {array} services.ExtractAudioResponse
-// @Router /api/audio/extract/batch [post]
+// @Success 200 {object} BatchExtractAudioResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/v1/audio/extract/batch [post]
 func (h *AudioExtractionHandler) BatchExtractAudio(c *gin.Context) {
 	var req BatchExtractAudioRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

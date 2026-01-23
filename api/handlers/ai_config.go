@@ -23,6 +23,16 @@ func NewAIConfigHandler(db *gorm.DB, cfg *config.Config, log *logger.Logger) *AI
 	}
 }
 
+// CreateConfig 创建AI配置
+// @Summary 创建AI配置
+// @Tags AIConfig
+// @Accept json
+// @Produce json
+// @Param request body services.CreateAIConfigRequest true "创建配置请求"
+// @Success 201 {object} response.Response{data=AIServiceConfig}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/ai-configs [post]
 func (h *AIConfigHandler) CreateConfig(c *gin.Context) {
 	var req services.CreateAIConfigRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -39,6 +49,16 @@ func (h *AIConfigHandler) CreateConfig(c *gin.Context) {
 	response.Created(c, config)
 }
 
+// GetConfig 获取AI配置详情
+// @Summary 获取AI配置详情
+// @Tags AIConfig
+// @Produce json
+// @Param id path int true "配置ID"
+// @Success 200 {object} response.Response{data=AIServiceConfig}
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/ai-configs/{id} [get]
 func (h *AIConfigHandler) GetConfig(c *gin.Context) {
 
 	configID, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -60,6 +80,14 @@ func (h *AIConfigHandler) GetConfig(c *gin.Context) {
 	response.Success(c, config)
 }
 
+// ListConfigs 获取AI配置列表
+// @Summary 获取AI配置列表
+// @Tags AIConfig
+// @Produce json
+// @Param service_type query string false "服务类型(text/image/video)"
+// @Success 200 {object} response.Response{data=[]AIServiceConfig}
+// @Failure 500 {object} response.Response
+// @Router /api/v1/ai-configs [get]
 func (h *AIConfigHandler) ListConfigs(c *gin.Context) {
 
 	serviceType := c.Query("service_type")
@@ -73,6 +101,18 @@ func (h *AIConfigHandler) ListConfigs(c *gin.Context) {
 	response.Success(c, configs)
 }
 
+// UpdateConfig 更新AI配置
+// @Summary 更新AI配置
+// @Tags AIConfig
+// @Accept json
+// @Produce json
+// @Param id path int true "配置ID"
+// @Param request body services.UpdateAIConfigRequest true "更新配置请求"
+// @Success 200 {object} response.Response{data=AIServiceConfig}
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/ai-configs/{id} [put]
 func (h *AIConfigHandler) UpdateConfig(c *gin.Context) {
 
 	configID, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -100,6 +140,16 @@ func (h *AIConfigHandler) UpdateConfig(c *gin.Context) {
 	response.Success(c, config)
 }
 
+// DeleteConfig 删除AI配置
+// @Summary 删除AI配置
+// @Tags AIConfig
+// @Produce json
+// @Param id path int true "配置ID"
+// @Success 200 {object} response.Response{data=MessageResponse}
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/ai-configs/{id} [delete]
 func (h *AIConfigHandler) DeleteConfig(c *gin.Context) {
 
 	configID, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -120,6 +170,15 @@ func (h *AIConfigHandler) DeleteConfig(c *gin.Context) {
 	response.Success(c, gin.H{"message": "删除成功"})
 }
 
+// TestConnection 测试AI配置连通性
+// @Summary 测试AI配置连通性
+// @Tags AIConfig
+// @Accept json
+// @Produce json
+// @Param request body services.TestConnectionRequest true "测试连接请求"
+// @Success 200 {object} response.Response{data=MessageResponse}
+// @Failure 400 {object} response.Response
+// @Router /api/v1/ai-configs/test [post]
 func (h *AIConfigHandler) TestConnection(c *gin.Context) {
 	var req services.TestConnectionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

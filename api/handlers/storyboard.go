@@ -24,13 +24,20 @@ func NewStoryboardHandler(db *gorm.DB, cfg *config.Config, log *logger.Logger) *
 }
 
 // GenerateStoryboard 生成分镜头（异步）
+// @Summary 生成分镜头
+// @Tags Storyboards
+// @Accept json
+// @Produce json
+// @Param episode_id path string true "章节ID"
+// @Param request body GenerateStoryboardRequest false "生成分镜参数（可选）"
+// @Success 200 {object} response.Response{data=TaskCreatedResponse}
+// @Failure 500 {object} response.Response
+// @Router /api/v1/episodes/{episode_id}/storyboards [post]
 func (h *StoryboardHandler) GenerateStoryboard(c *gin.Context) {
 	episodeID := c.Param("episode_id")
 
 	// 接收可选的 model 参数
-	var req struct {
-		Model string `json:"model"`
-	}
+	var req GenerateStoryboardRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		// 如果没有提供body或者解析失败，使用空字符串（使用默认模型）
 		req.Model = ""
@@ -84,10 +91,20 @@ func (h *StoryboardHandler) processStoryboardGeneration(taskID, episodeID, model
 }
 
 // UpdateStoryboard 更新分镜
+// @Summary 更新分镜
+// @Tags Storyboards
+// @Accept json
+// @Produce json
+// @Param id path string true "分镜ID"
+// @Param request body UpdateStoryboardRequest true "更新分镜请求"
+// @Success 200 {object} response.Response{data=MessageResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/storyboards/{id} [put]
 func (h *StoryboardHandler) UpdateStoryboard(c *gin.Context) {
 	storyboardID := c.Param("id")
 
-	var req map[string]interface{}
+	var req UpdateStoryboardRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "Invalid request body")

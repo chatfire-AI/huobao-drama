@@ -22,6 +22,16 @@ func NewVideoMergeHandler(db *gorm.DB, transferService *services2.ResourceTransf
 	}
 }
 
+// MergeVideos 创建视频合成任务
+// @Summary 创建视频合成任务
+// @Tags VideoMerges
+// @Accept json
+// @Produce json
+// @Param request body services2.MergeVideoRequest true "合成请求"
+// @Success 200 {object} response.Response{data=VideoMergeCreatedResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/video-merges [post]
 func (h *VideoMergeHandler) MergeVideos(c *gin.Context) {
 	var req services2.MergeVideoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -42,6 +52,15 @@ func (h *VideoMergeHandler) MergeVideos(c *gin.Context) {
 	})
 }
 
+// GetMerge 获取视频合成详情
+// @Summary 获取视频合成详情
+// @Tags VideoMerges
+// @Produce json
+// @Param merge_id path int true "合成ID"
+// @Success 200 {object} response.Response{data=VideoMergeDetailResponse}
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Router /api/v1/video-merges/{merge_id} [get]
 func (h *VideoMergeHandler) GetMerge(c *gin.Context) {
 	mergeIDStr := c.Param("merge_id")
 	mergeID, err := strconv.ParseUint(mergeIDStr, 10, 32)
@@ -60,6 +79,17 @@ func (h *VideoMergeHandler) GetMerge(c *gin.Context) {
 	response.Success(c, gin.H{"merge": merge})
 }
 
+// ListMerges 获取视频合成列表
+// @Summary 获取视频合成列表
+// @Tags VideoMerges
+// @Produce json
+// @Param episode_id query string false "章节ID"
+// @Param status query string false "状态"
+// @Param page query int false "页码"
+// @Param page_size query int false "每页数量"
+// @Success 200 {object} response.Response{data=VideoMergeListResponse}
+// @Failure 500 {object} response.Response
+// @Router /api/v1/video-merges [get]
 func (h *VideoMergeHandler) ListMerges(c *gin.Context) {
 	episodeID := c.Query("episode_id")
 	status := c.Query("status")
@@ -86,6 +116,15 @@ func (h *VideoMergeHandler) ListMerges(c *gin.Context) {
 	})
 }
 
+// DeleteMerge 删除视频合成记录
+// @Summary 删除视频合成记录
+// @Tags VideoMerges
+// @Produce json
+// @Param merge_id path int true "合成ID"
+// @Success 200 {object} response.Response{data=MessageResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/video-merges/{merge_id} [delete]
 func (h *VideoMergeHandler) DeleteMerge(c *gin.Context) {
 	mergeIDStr := c.Param("merge_id")
 	mergeID, err := strconv.ParseUint(mergeIDStr, 10, 32)

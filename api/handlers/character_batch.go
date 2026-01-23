@@ -6,12 +6,17 @@ import (
 )
 
 // BatchGenerateCharacterImages 批量生成角色图片
+// @Summary 批量生成角色图片
+// @Tags Characters
+// @Accept json
+// @Produce json
+// @Param request body BatchGenerateCharacterImagesRequest true "批量生成请求"
+// @Success 200 {object} response.Response{data=BatchGenerateResponse}
+// @Failure 400 {object} response.Response
+// @Router /api/v1/characters/batch-generate-images [post]
 func (h *CharacterLibraryHandler) BatchGenerateCharacterImages(c *gin.Context) {
 
-	var req struct {
-		CharacterIDs []string `json:"character_ids" binding:"required,min=1"`
-		Model        string   `json:"model"`
-	}
+	var req BatchGenerateCharacterImagesRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, err.Error())
