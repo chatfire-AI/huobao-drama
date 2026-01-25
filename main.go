@@ -91,6 +91,16 @@ func main() {
 	logr.Info("Shutting down server...")
 
 	// 清理资源
+	// CRITICAL FIX: Properly close database connection to prevent resource leaks
+	// SQLite connections should be closed gracefully to avoid database lock issues
+	sqlDB, err := db.DB()
+	if err == nil {
+		if err := sqlDB.Close(); err != nil {
+			logr.Warnw("Failed to close database connection", "error", err)
+		} else {
+			logr.Info("Database connection closed")
+		}
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

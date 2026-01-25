@@ -166,6 +166,9 @@ func (s *VideoGenerationService) GenerateVideo(request *GenerateVideoRequest) (*
 		return nil, fmt.Errorf("failed to create record: %w", err)
 	}
 
+	// Start background goroutine to process video generation asynchronously
+	// This allows the API to return immediately while video generation happens in background
+	// CRITICAL: The goroutine will handle all video generation logic including API calls and polling
 	go s.ProcessVideoGeneration(videoGen.ID)
 
 	return videoGen, nil
@@ -250,11 +253,16 @@ func (s *VideoGenerationService) ProcessVideoGeneration(videoGenID uint) {
 		return
 	}
 
+	// CRITICAL FIX: Validate TaskID before starting polling goroutine
+	// Empty TaskID would cause polling to fail silently or cause issues
 	if result.TaskID != "" {
 		s.db.Model(&videoGen).Updates(map[string]interface{}{
 			"task_id": result.TaskID,
 			"status":  models.VideoStatusProcessing,
 		})
+		// Start background goroutine to poll task status
+		// This allows the API to return immediately while video generation continues asynchronously
+		// The goroutine will poll until completion, failure, or timeout (max 300 attempts * 10s = 50 minutes)
 		go s.pollTaskStatus(videoGenID, result.TaskID, videoGen.Provider, videoGen.Model)
 		return
 	}
@@ -268,6 +276,14 @@ func (s *VideoGenerationService) ProcessVideoGeneration(videoGenID uint) {
 }
 
 func (s *VideoGenerationService) pollTaskStatus(videoGenID uint, taskID string, provider string, model string) {
+	// CRITICAL FIX: Validate taskID parameter to prevent invalid API calls
+	// Empty taskID would cause unnecessary API calls and potential errors
+	if taskID == "" {
+		s.log.Errorw("Invalid empty taskID for polling", "video_gen_id", videoGenID)
+		s.updateVideoGenError(videoGenID, "invalid task ID for polling")
+		return
+	}
+
 	client, err := s.getVideoClient(provider, model)
 	if err != nil {
 		s.log.Errorw("Failed to get video client for polling", "error", err)
@@ -275,10 +291,15 @@ func (s *VideoGenerationService) pollTaskStatus(videoGenID uint, taskID string, 
 		return
 	}
 
+	// Polling configuration: max 300 attempts with 10 second intervals
+	// Total maximum polling time: 300 * 10s = 50 minutes
+	// This prevents infinite polling if the task never completes
 	maxAttempts := 300
 	interval := 10 * time.Second
 
 	for attempt := 0; attempt < maxAttempts; attempt++ {
+		// Sleep before each poll attempt to avoid overwhelming the API
+		// First iteration sleeps before the first check (after 0 attempts)
 		time.Sleep(interval)
 
 		var videoGen models.VideoGeneration
@@ -287,35 +308,53 @@ func (s *VideoGenerationService) pollTaskStatus(videoGenID uint, taskID string, 
 			return
 		}
 
+		// CRITICAL FIX: Check if status was manually changed (e.g., cancelled by user)
+		// If status is no longer "processing", stop polling to avoid unnecessary API calls
+		// This prevents polling when the task has been cancelled or failed externally
 		if videoGen.Status != models.VideoStatusProcessing {
 			s.log.Infow("Video generation status changed, stopping poll", "id", videoGenID, "status", videoGen.Status)
 			return
 		}
 
+		// Poll the video generation API for task status
+		// Continue polling on transient errors (network issues, temporary API failures)
+		// Only stop on permanent errors or task completion
 		result, err := client.GetTaskStatus(taskID)
 		if err != nil {
-			s.log.Errorw("Failed to get task status", "error", err, "task_id", taskID)
+			s.log.Errorw("Failed to get task status", "error", err, "task_id", taskID, "attempt", attempt+1)
+			// Continue polling on error - might be transient network issue
+			// Will eventually timeout after maxAttempts if error persists
 			continue
 		}
 
+		// Check if task completed successfully
+		// CRITICAL FIX: Validate that video URL exists when task is marked as completed
+		// Some APIs may mark task as completed but fail to provide the video URL
 		if result.Completed {
 			if result.VideoURL != "" {
+				// Successfully completed with video URL - download and update database
 				s.completeVideoGeneration(videoGenID, result.VideoURL, &result.Duration, &result.Width, &result.Height, nil)
 				return
 			}
+			// Task marked as completed but no video URL - this is an error condition
 			s.updateVideoGenError(videoGenID, "task completed but no video URL")
 			return
 		}
 
+		// Check if task failed with an error message
 		if result.Error != "" {
 			s.updateVideoGenError(videoGenID, result.Error)
 			return
 		}
 
-		s.log.Infow("Video generation in progress", "id", videoGenID, "attempt", attempt+1)
+		// Task still in progress - log and continue polling
+		s.log.Infow("Video generation in progress", "id", videoGenID, "attempt", attempt+1, "max_attempts", maxAttempts)
 	}
 
-	s.updateVideoGenError(videoGenID, "polling timeout")
+	// CRITICAL FIX: Handle polling timeout gracefully
+	// After maxAttempts (50 minutes), mark task as failed if still not completed
+	// This prevents indefinite polling and resource waste
+	s.updateVideoGenError(videoGenID, fmt.Sprintf("polling timeout after %d attempts (%.1f minutes)", maxAttempts, float64(maxAttempts*int(interval))/60.0))
 }
 
 func (s *VideoGenerationService) completeVideoGeneration(videoGenID uint, videoURL string, duration *int, width *int, height *int, firstFrameURL *string) {
@@ -371,10 +410,18 @@ func (s *VideoGenerationService) completeVideoGeneration(videoGenID uint, videoU
 		}
 	}
 
-	// 数据库中使用本地URL
+	// CRITICAL FIX: Use local path if download succeeded, otherwise fallback to original URL
+	// This ensures we always have a valid video URL in the database
+	// If local download fails, we still store the original remote URL so the video is accessible
+	videoURLToStore := videoURL
+	if localVideoPath != "" {
+		videoURLToStore = localVideoPath
+	}
+
+	// 数据库中使用本地URL（如果下载成功）或原始URL（如果下载失败）
 	updates := map[string]interface{}{
 		"status":    models.VideoStatusCompleted,
-		"video_url": localVideoPath,
+		"video_url": videoURLToStore,
 	}
 	if duration != nil {
 		updates["duration"] = *duration
@@ -482,7 +529,9 @@ func (s *VideoGenerationService) getVideoClient(provider string, modelName strin
 
 func (s *VideoGenerationService) RecoverPendingTasks() {
 	var pendingVideos []models.VideoGeneration
-	if err := s.db.Where("status = ? AND task_id != ''", models.VideoStatusProcessing).Find(&pendingVideos).Error; err != nil {
+	// Query for pending tasks with non-empty task_id
+	// Note: Using IS NOT NULL and != '' to ensure we only get valid task IDs
+	if err := s.db.Where("status = ? AND task_id IS NOT NULL AND task_id != ''", models.VideoStatusProcessing).Find(&pendingVideos).Error; err != nil {
 		s.log.Errorw("Failed to load pending video tasks", "error", err)
 		return
 	}
@@ -490,6 +539,16 @@ func (s *VideoGenerationService) RecoverPendingTasks() {
 	s.log.Infow("Recovering pending video generation tasks", "count", len(pendingVideos))
 
 	for _, videoGen := range pendingVideos {
+		// CRITICAL FIX: Check for nil TaskID before dereferencing to prevent panic
+		// Even though we filter for non-empty task_id, GORM might still return nil pointers
+		// This nil check prevents a potential runtime panic
+		if videoGen.TaskID == nil || *videoGen.TaskID == "" {
+			s.log.Warnw("Skipping video generation with nil or empty TaskID", "id", videoGen.ID)
+			continue
+		}
+
+		// Start goroutine to poll task status for each pending video
+		// Each goroutine will poll independently until completion or timeout
 		go s.pollTaskStatus(videoGen.ID, *videoGen.TaskID, videoGen.Provider, videoGen.Model)
 	}
 }
