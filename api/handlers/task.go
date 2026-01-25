@@ -21,6 +21,14 @@ func NewTaskHandler(db *gorm.DB, log *logger.Logger) *TaskHandler {
 }
 
 // GetTaskStatus 获取任务状态
+// @Summary 获取任务状态
+// @Tags Tasks
+// @Produce json
+// @Param task_id path string true "任务ID"
+// @Success 200 {object} response.Response{data=AsyncTask}
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/tasks/{task_id} [get]
 func (h *TaskHandler) GetTaskStatus(c *gin.Context) {
 	taskID := c.Param("task_id")
 
@@ -39,6 +47,14 @@ func (h *TaskHandler) GetTaskStatus(c *gin.Context) {
 }
 
 // GetResourceTasks 获取资源相关的所有任务
+// @Summary 获取资源相关任务
+// @Tags Tasks
+// @Produce json
+// @Param resource_id query string true "资源ID"
+// @Success 200 {object} response.Response{data=[]AsyncTask}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/tasks [get]
 func (h *TaskHandler) GetResourceTasks(c *gin.Context) {
 	resourceID := c.Query("resource_id")
 	if resourceID == "" {

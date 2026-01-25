@@ -66,3 +66,8 @@ build.sh
 /data/storage/
 /web/package-lock.json
 .DS_Store
+
+# Swagger docs (generated)
+docs/swagger.json
+docs/swagger.yaml
+docs/docs.go

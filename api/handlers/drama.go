@@ -26,6 +26,16 @@ func NewDramaHandler(db *gorm.DB, cfg *config.Config, log *logger.Logger, transf
 	}
 }
 
+// CreateDrama 创建剧本
+// @Summary 创建剧本
+// @Tags Drama
+// @Accept json
+// @Produce json
+// @Param request body services.CreateDramaRequest true "创建剧本请求"
+// @Success 201 {object} response.Response{data=models.Drama}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/dramas [post]
 func (h *DramaHandler) CreateDrama(c *gin.Context) {
 
 	var req services.CreateDramaRequest
@@ -43,6 +53,15 @@ func (h *DramaHandler) CreateDrama(c *gin.Context) {
 	response.Created(c, drama)
 }
 
+// GetDrama 获取剧本详情
+// @Summary 获取剧本详情
+// @Tags Drama
+// @Produce json
+// @Param id path string true "剧本ID"
+// @Success 200 {object} response.Response{data=models.Drama}
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/dramas/{id} [get]
 func (h *DramaHandler) GetDrama(c *gin.Context) {
 
 	dramaID := c.Param("id")
@@ -60,6 +79,19 @@ func (h *DramaHandler) GetDrama(c *gin.Context) {
 	response.Success(c, drama)
 }
 
+// ListDramas 获取剧本列表
+// @Summary 获取剧本列表
+// @Tags Drama
+// @Produce json
+// @Param page query int false "页码"
+// @Param page_size query int false "每页数量"
+// @Param status query string false "状态"
+// @Param genre query string false "类型"
+// @Param keyword query string false "关键词"
+// @Success 200 {object} response.Response{data=response.PaginationData{items=[]models.Drama}}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/dramas [get]
 func (h *DramaHandler) ListDramas(c *gin.Context) {
 
 	var query services.DramaListQuery
@@ -84,6 +116,18 @@ func (h *DramaHandler) ListDramas(c *gin.Context) {
 	response.SuccessWithPagination(c, dramas, total, query.Page, query.PageSize)
 }
 
+// UpdateDrama 更新剧本
+// @Summary 更新剧本
+// @Tags Drama
+// @Accept json
+// @Produce json
+// @Param id path string true "剧本ID"
+// @Param request body services.UpdateDramaRequest true "更新剧本请求"
+// @Success 200 {object} response.Response{data=models.Drama}
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/dramas/{id} [put]
 func (h *DramaHandler) UpdateDrama(c *gin.Context) {
 
 	dramaID := c.Param("id")
@@ -107,6 +151,15 @@ func (h *DramaHandler) UpdateDrama(c *gin.Context) {
 	response.Success(c, drama)
 }
 
+// DeleteDrama 删除剧本
+// @Summary 删除剧本
+// @Tags Drama
+// @Produce json
+// @Param id path string true "剧本ID"
+// @Success 200 {object} response.Response{data=MessageResponse}
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/dramas/{id} [delete]
 func (h *DramaHandler) DeleteDrama(c *gin.Context) {
 
 	dramaID := c.Param("id")
@@ -123,6 +176,13 @@ func (h *DramaHandler) DeleteDrama(c *gin.Context) {
 	response.Success(c, gin.H{"message": "删除成功"})
 }
 
+// GetDramaStats 获取剧本统计
+// @Summary 获取剧本统计
+// @Tags Drama
+// @Produce json
+// @Success 200 {object} response.Response{data=DramaStatsResponse}
+// @Failure 500 {object} response.Response
+// @Router /api/v1/dramas/stats [get]
 func (h *DramaHandler) GetDramaStats(c *gin.Context) {
 
 	stats, err := h.dramaService.GetDramaStats()
@@ -134,6 +194,18 @@ func (h *DramaHandler) GetDramaStats(c *gin.Context) {
 	response.Success(c, stats)
 }
 
+// SaveOutline 保存剧情大纲
+// @Summary 保存剧情大纲
+// @Tags Drama
+// @Accept json
+// @Produce json
+// @Param id path string true "剧本ID"
+// @Param request body services.SaveOutlineRequest true "保存大纲请求"
+// @Success 200 {object} response.Response{data=MessageResponse}
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/dramas/{id}/outline [put]
 func (h *DramaHandler) SaveOutline(c *gin.Context) {
 
 	dramaID := c.Param("id")
@@ -156,6 +228,16 @@ func (h *DramaHandler) SaveOutline(c *gin.Context) {
 	response.Success(c, gin.H{"message": "保存成功"})
 }
 
+// GetCharacters 获取剧本角色
+// @Summary 获取剧本角色
+// @Tags Drama
+// @Produce json
+// @Param id path string true "剧本ID"
+// @Param episode_id query string false "章节ID（可选）"
+// @Success 200 {object} response.Response{data=[]models.Character}
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/dramas/{id}/characters [get]
 func (h *DramaHandler) GetCharacters(c *gin.Context) {
 
 	dramaID := c.Param("id")
@@ -183,6 +265,18 @@ func (h *DramaHandler) GetCharacters(c *gin.Context) {
 	response.Success(c, characters)
 }
 
+// SaveCharacters 保存剧本角色
+// @Summary 保存剧本角色
+// @Tags Drama
+// @Accept json
+// @Produce json
+// @Param id path string true "剧本ID"
+// @Param request body services.SaveCharactersRequest true "保存角色请求"
+// @Success 200 {object} response.Response{data=MessageResponse}
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/dramas/{id}/characters [put]
 func (h *DramaHandler) SaveCharacters(c *gin.Context) {
 
 	dramaID := c.Param("id")
@@ -205,6 +299,18 @@ func (h *DramaHandler) SaveCharacters(c *gin.Context) {
 	response.Success(c, gin.H{"message": "保存成功"})
 }
 
+// SaveEpisodes 保存剧本章节
+// @Summary 保存剧本章节
+// @Tags Drama
+// @Accept json
+// @Produce json
+// @Param id path string true "剧本ID"
+// @Param request body services.SaveEpisodesRequest true "保存章节请求"
+// @Success 200 {object} response.Response{data=MessageResponse}
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/dramas/{id}/episodes [put]
 func (h *DramaHandler) SaveEpisodes(c *gin.Context) {
 
 	dramaID := c.Param("id")
@@ -227,6 +333,18 @@ func (h *DramaHandler) SaveEpisodes(c *gin.Context) {
 	response.Success(c, gin.H{"message": "保存成功"})
 }
 
+// SaveProgress 保存剧本进度
+// @Summary 保存剧本进度
+// @Tags Drama
+// @Accept json
+// @Produce json
+// @Param id path string true "剧本ID"
+// @Param request body services.SaveProgressRequest true "保存进度请求"
+// @Success 200 {object} response.Response{data=MessageResponse}
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/dramas/{id}/progress [put]
 func (h *DramaHandler) SaveProgress(c *gin.Context) {
 
 	dramaID := c.Param("id")
@@ -250,6 +368,16 @@ func (h *DramaHandler) SaveProgress(c *gin.Context) {
 }
 
 // FinalizeEpisode 完成集数制作（触发视频合成）
+// @Summary 完成集数制作
+// @Tags Episodes
+// @Accept json
+// @Produce json
+// @Param episode_id path string true "章节ID"
+// @Param request body services.FinalizeEpisodeRequest false "时间线剪辑数据（可选）"
+// @Success 200 {object} response.Response{data=FinalizeEpisodeResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/episodes/{episode_id}/finalize [post]
 func (h *DramaHandler) FinalizeEpisode(c *gin.Context) {
 
 	episodeID := c.Param("episode_id")
@@ -280,6 +408,14 @@ func (h *DramaHandler) FinalizeEpisode(c *gin.Context) {
 }
 
 // DownloadEpisodeVideo 下载剧集视频
+// @Summary 下载剧集视频
+// @Tags Episodes
+// @Produce json
+// @Param episode_id path string true "章节ID"
+// @Success 200 {object} EpisodeDownloadResponse
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Router /api/v1/episodes/{episode_id}/download [get]
 func (h *DramaHandler) DownloadEpisodeVideo(c *gin.Context) {
 
 	episodeID := c.Param("episode_id")

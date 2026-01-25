@@ -21,6 +21,11 @@ func NewSettingsHandler(cfg *config.Config, log *logger.Logger) *SettingsHandler
 }
 
 // GetLanguage 获取当前系统语言
+// @Summary 获取当前系统语言
+// @Tags Settings
+// @Produce json
+// @Success 200 {object} response.Response{data=LanguageResponse}
+// @Router /api/v1/settings/language [get]
 func (h *SettingsHandler) GetLanguage(c *gin.Context) {
 	language := h.config.App.Language
 	if language == "" {
@@ -33,10 +38,16 @@ func (h *SettingsHandler) GetLanguage(c *gin.Context) {
 }
 
 // UpdateLanguage 更新系统语言
+// @Summary 更新系统语言
+// @Tags Settings
+// @Accept json
+// @Produce json
+// @Param request body UpdateLanguageRequest true "更新语言请求"
+// @Success 200 {object} response.Response{data=LanguageUpdateResponse}
+// @Failure 400 {object} response.Response
+// @Router /api/v1/settings/language [put]
 func (h *SettingsHandler) UpdateLanguage(c *gin.Context) {
-	var req struct {
-		Language string `json:"language" binding:"required,oneof=zh en"`
-	}
+	var req UpdateLanguageRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "语言参数错误，只支持 zh 或 en")

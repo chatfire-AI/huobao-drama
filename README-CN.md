@@ -210,6 +210,7 @@ npm run dev
 - 前端地址: `http://localhost:3012`
 - 后端 API: `http://localhost:5678/api/v1`
 - 前端自动代理 API 请求到后端
+- Swagger 文档（debug 模式）：`http://localhost:5678/docs/index.html`（先运行 `scripts/generate_swagger.sh` 生成）
 
 #### 方式二：单服务模式
 

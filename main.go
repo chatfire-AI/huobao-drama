@@ -1,3 +1,8 @@
+// @title Huobao Drama API
+// @version 1.0.0
+// @description Huobao Drama 后端接口文档
+// @BasePath /api/v1
+// @schemes http https
 package main
 
 import (

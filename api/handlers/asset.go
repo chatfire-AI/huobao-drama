@@ -25,6 +25,16 @@ func NewAssetHandler(db *gorm.DB, cfg *config.Config, log *logger.Logger) *Asset
 	}
 }
 
+// CreateAsset 创建素材
+// @Summary 创建素材
+// @Tags Assets
+// @Accept json
+// @Produce json
+// @Param request body services.CreateAssetRequest true "创建素材请求"
+// @Success 200 {object} response.Response{data=Asset}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/assets [post]
 func (h *AssetHandler) CreateAsset(c *gin.Context) {
 
 	var req services.CreateAssetRequest
@@ -43,6 +53,17 @@ func (h *AssetHandler) CreateAsset(c *gin.Context) {
 	response.Success(c, asset)
 }
 
+// UpdateAsset 更新素材
+// @Summary 更新素材
+// @Tags Assets
+// @Accept json
+// @Produce json
+// @Param id path int true "素材ID"
+// @Param request body services.UpdateAssetRequest true "更新素材请求"
+// @Success 200 {object} response.Response{data=Asset}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/assets/{id} [put]
 func (h *AssetHandler) UpdateAsset(c *gin.Context) {
 
 	assetID, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -67,6 +88,15 @@ func (h *AssetHandler) UpdateAsset(c *gin.Context) {
 	response.Success(c, asset)
 }
 
+// GetAsset 获取素材详情
+// @Summary 获取素材详情
+// @Tags Assets
+// @Produce json
+// @Param id path int true "素材ID"
+// @Success 200 {object} response.Response{data=Asset}
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Router /api/v1/assets/{id} [get]
 func (h *AssetHandler) GetAsset(c *gin.Context) {
 
 	assetID, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -84,6 +114,23 @@ func (h *AssetHandler) GetAsset(c *gin.Context) {
 	response.Success(c, asset)
 }
 
+// ListAssets 获取素材列表
+// @Summary 获取素材列表
+// @Tags Assets
+// @Produce json
+// @Param drama_id query string false "剧本ID"
+// @Param episode_id query int false "章节ID"
+// @Param storyboard_id query int false "分镜ID"
+// @Param type query string false "素材类型(image/video/audio)"
+// @Param is_favorite query bool false "是否收藏"
+// @Param tag_ids query string false "标签ID，逗号分隔"
+// @Param category query string false "分类"
+// @Param search query string false "搜索关键字"
+// @Param page query int false "页码"
+// @Param page_size query int false "每页数量"
+// @Success 200 {object} response.Response{data=response.PaginationData{items=[]Asset}}
+// @Failure 500 {object} response.Response
+// @Router /api/v1/assets [get]
 func (h *AssetHandler) ListAssets(c *gin.Context) {
 
 	var dramaID *string
@@ -166,6 +213,15 @@ func (h *AssetHandler) ListAssets(c *gin.Context) {
 	response.SuccessWithPagination(c, assets, total, page, pageSize)
 }
 
+// DeleteAsset 删除素材
+// @Summary 删除素材
+// @Tags Assets
+// @Produce json
+// @Param id path int true "素材ID"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/assets/{id} [delete]
 func (h *AssetHandler) DeleteAsset(c *gin.Context) {
 
 	assetID, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -183,6 +239,15 @@ func (h *AssetHandler) DeleteAsset(c *gin.Context) {
 	response.Success(c, nil)
 }
 
+// ImportFromImageGen 从图片生成记录导入素材
+// @Summary 从图片生成记录导入素材
+// @Tags Assets
+// @Produce json
+// @Param image_gen_id path int true "图片生成ID"
+// @Success 200 {object} response.Response{data=Asset}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/assets/import/image/{image_gen_id} [post]
 func (h *AssetHandler) ImportFromImageGen(c *gin.Context) {
 
 	imageGenID, err := strconv.ParseUint(c.Param("image_gen_id"), 10, 32)
@@ -201,6 +266,15 @@ func (h *AssetHandler) ImportFromImageGen(c *gin.Context) {
 	response.Success(c, asset)
 }
 
+// ImportFromVideoGen 从视频生成记录导入素材
+// @Summary 从视频生成记录导入素材
+// @Tags Assets
+// @Produce json
+// @Param video_gen_id path int true "视频生成ID"
+// @Success 200 {object} response.Response{data=Asset}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/assets/import/video/{video_gen_id} [post]
 func (h *AssetHandler) ImportFromVideoGen(c *gin.Context) {
 
 	videoGenID, err := strconv.ParseUint(c.Param("video_gen_id"), 10, 32)

@@ -210,6 +210,7 @@ npm run dev
 - Frontend: `http://localhost:3012`
 - Backend API: `http://localhost:5678/api/v1`
 - Frontend automatically proxies API requests to backend
+- Swagger docs (debug mode): `http://localhost:5678/docs/index.html` (run `scripts/generate_swagger.sh` first)
 
 #### Method 2: Single Service Mode
 

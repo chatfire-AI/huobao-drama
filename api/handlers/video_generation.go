@@ -23,6 +23,16 @@ func NewVideoGenerationHandler(db *gorm.DB, transferService *services.ResourceTr
 	}
 }
 
+// GenerateVideo 创建视频生成任务
+// @Summary 创建视频生成任务
+// @Tags Videos
+// @Accept json
+// @Produce json
+// @Param request body services.GenerateVideoRequest true "视频生成请求"
+// @Success 200 {object} response.Response{data=VideoGeneration}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/videos [post]
 func (h *VideoGenerationHandler) GenerateVideo(c *gin.Context) {
 
 	var req services.GenerateVideoRequest
@@ -41,6 +51,15 @@ func (h *VideoGenerationHandler) GenerateVideo(c *gin.Context) {
 	response.Success(c, videoGen)
 }
 
+// GenerateVideoFromImage 根据图片生成视频
+// @Summary 根据图片生成视频
+// @Tags Videos
+// @Produce json
+// @Param image_gen_id path int true "图片生成ID"
+// @Success 200 {object} response.Response{data=VideoGeneration}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/videos/image/{image_gen_id} [post]
 func (h *VideoGenerationHandler) GenerateVideoFromImage(c *gin.Context) {
 
 	imageGenID, err := strconv.ParseUint(c.Param("image_gen_id"), 10, 32)
@@ -59,6 +78,14 @@ func (h *VideoGenerationHandler) GenerateVideoFromImage(c *gin.Context) {
 	response.Success(c, videoGen)
 }
 
+// BatchGenerateForEpisode 批量生成章节视频
+// @Summary 批量生成章节视频
+// @Tags Videos
+// @Produce json
+// @Param episode_id path string true "章节ID"
+// @Success 200 {object} response.Response{data=[]VideoGeneration}
+// @Failure 500 {object} response.Response
+// @Router /api/v1/videos/episode/{episode_id}/batch [post]
 func (h *VideoGenerationHandler) BatchGenerateForEpisode(c *gin.Context) {
 
 	episodeID := c.Param("episode_id")
@@ -73,6 +100,15 @@ func (h *VideoGenerationHandler) BatchGenerateForEpisode(c *gin.Context) {
 	response.Success(c, videos)
 }
 
+// GetVideoGeneration 获取视频生成记录
+// @Summary 获取视频生成记录
+// @Tags Videos
+// @Produce json
+// @Param id path int true "视频生成ID"
+// @Success 200 {object} response.Response{data=VideoGeneration}
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Router /api/v1/videos/{id} [get]
 func (h *VideoGenerationHandler) GetVideoGeneration(c *gin.Context) {
 
 	videoGenID, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -90,6 +126,18 @@ func (h *VideoGenerationHandler) GetVideoGeneration(c *gin.Context) {
 	response.Success(c, videoGen)
 }
 
+// ListVideoGenerations 获取视频生成记录列表
+// @Summary 获取视频生成记录列表
+// @Tags Videos
+// @Produce json
+// @Param drama_id query int false "剧本ID"
+// @Param storyboard_id query int false "分镜ID"
+// @Param status query string false "状态"
+// @Param page query int false "页码"
+// @Param page_size query int false "每页数量"
+// @Success 200 {object} response.Response{data=response.PaginationData{items=[]VideoGeneration}}
+// @Failure 500 {object} response.Response
+// @Router /api/v1/videos [get]
 func (h *VideoGenerationHandler) ListVideoGenerations(c *gin.Context) {
 	var storyboardID *uint
 	// 优先使用storyboard_id参数
@@ -131,6 +179,15 @@ func (h *VideoGenerationHandler) ListVideoGenerations(c *gin.Context) {
 	response.SuccessWithPagination(c, videos, total, page, pageSize)
 }
 
+// DeleteVideoGeneration 删除视频生成记录
+// @Summary 删除视频生成记录
+// @Tags Videos
+// @Produce json
+// @Param id path int true "视频生成ID"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/videos/{id} [delete]
 func (h *VideoGenerationHandler) DeleteVideoGeneration(c *gin.Context) {
 
 	videoGenID, err := strconv.ParseUint(c.Param("id"), 10, 32)

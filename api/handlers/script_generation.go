@@ -23,6 +23,16 @@ func NewScriptGenerationHandler(db *gorm.DB, cfg *config.Config, log *logger.Log
 	}
 }
 
+// GenerateCharacters 生成角色（异步）
+// @Summary 生成角色
+// @Tags Generation
+// @Accept json
+// @Produce json
+// @Param request body services.GenerateCharactersRequest true "角色生成请求"
+// @Success 200 {object} response.Response{data=TaskCreatedResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/generation/characters [post]
 func (h *ScriptGenerationHandler) GenerateCharacters(c *gin.Context) {
 	var req services.GenerateCharactersRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

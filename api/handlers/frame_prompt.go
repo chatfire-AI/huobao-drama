@@ -23,14 +23,20 @@ func NewFramePromptHandler(framePromptService *services.FramePromptService, log 
 
 // GenerateFramePrompt 生成指定类型的帧提示词
 // POST /api/v1/storyboards/:id/frame-prompt
+// @Summary 生成帧提示词
+// @Tags Storyboards
+// @Accept json
+// @Produce json
+// @Param id path string true "分镜ID"
+// @Param request body GenerateFramePromptRequestBody true "生成帧提示词请求"
+// @Success 200 {object} response.Response{data=services.FramePromptResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/storyboards/{id}/frame-prompt [post]
 func (h *FramePromptHandler) GenerateFramePrompt(c *gin.Context) {
 	storyboardID := c.Param("id")
 
-	var req struct {
-		FrameType  string `json:"frame_type"`
-		PanelCount int    `json:"panel_count"`
-		Model      string `json:"model"`
-	}
+	var req GenerateFramePromptRequestBody
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, err.Error())
 		return

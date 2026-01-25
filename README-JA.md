@@ -210,6 +210,7 @@ npm run dev
 - フロントエンド: `http://localhost:3012`
 - バックエンド API: `http://localhost:5678/api/v1`
 - フロントエンドは API リクエストを自動的にバックエンドにプロキシ
+- Swagger ドキュメント（debug モード）: `http://localhost:5678/docs/index.html`（事前に `scripts/generate_swagger.sh` を実行）
 
 #### 方法 2: シングルサービスモード
 

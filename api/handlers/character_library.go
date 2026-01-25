@@ -27,6 +27,18 @@ func NewCharacterLibraryHandler(db *gorm.DB, cfg *config.Config, log *logger.Log
 }
 
 // ListLibraryItems 获取角色库列表
+// @Summary 获取角色库列表
+// @Tags CharacterLibrary
+// @Produce json
+// @Param page query int false "页码"
+// @Param page_size query int false "每页数量"
+// @Param category query string false "分类"
+// @Param source_type query string false "来源类型(generated/uploaded)"
+// @Param keyword query string false "关键词"
+// @Success 200 {object} response.Response{data=response.PaginationData{items=[]CharacterLibrary}}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/character-library [get]
 func (h *CharacterLibraryHandler) ListLibraryItems(c *gin.Context) {
 
 	var query services2.CharacterLibraryQuery
@@ -53,6 +65,15 @@ func (h *CharacterLibraryHandler) ListLibraryItems(c *gin.Context) {
 }
 
 // CreateLibraryItem 添加到角色库
+// @Summary 添加到角色库
+// @Tags CharacterLibrary
+// @Accept json
+// @Produce json
+// @Param request body services2.CreateLibraryItemRequest true "创建角色库项"
+// @Success 201 {object} response.Response{data=CharacterLibrary}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/character-library [post]
 func (h *CharacterLibraryHandler) CreateLibraryItem(c *gin.Context) {
 
 	var req services2.CreateLibraryItemRequest
@@ -72,6 +93,14 @@ func (h *CharacterLibraryHandler) CreateLibraryItem(c *gin.Context) {
 }
 
 // GetLibraryItem 获取角色库项详情
+// @Summary 获取角色库项详情
+// @Tags CharacterLibrary
+// @Produce json
+// @Param id path string true "角色库项ID"
+// @Success 200 {object} response.Response{data=CharacterLibrary}
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/character-library/{id} [get]
 func (h *CharacterLibraryHandler) GetLibraryItem(c *gin.Context) {
 
 	itemID := c.Param("id")
@@ -91,6 +120,14 @@ func (h *CharacterLibraryHandler) GetLibraryItem(c *gin.Context) {
 }
 
 // DeleteLibraryItem 删除角色库项
+// @Summary 删除角色库项
+// @Tags CharacterLibrary
+// @Produce json
+// @Param id path string true "角色库项ID"
+// @Success 200 {object} response.Response{data=MessageResponse}
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/character-library/{id} [delete]
 func (h *CharacterLibraryHandler) DeleteLibraryItem(c *gin.Context) {
 
 	itemID := c.Param("id")
@@ -109,6 +146,18 @@ func (h *CharacterLibraryHandler) DeleteLibraryItem(c *gin.Context) {
 }
 
 // UploadCharacterImage 上传角色图片
+// @Summary 上传角色图片（URL方式）
+// @Tags Characters
+// @Accept json
+// @Produce json
+// @Param id path string true "角色ID"
+// @Param request body UploadCharacterImageRequest true "角色图片URL"
+// @Success 200 {object} response.Response{data=MessageResponse}
+// @Failure 400 {object} response.Response
+// @Failure 403 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/characters/{id}/image [put]
 func (h *CharacterLibraryHandler) UploadCharacterImage(c *gin.Context) {
 
 	characterID := c.Param("id")
@@ -116,9 +165,7 @@ func (h *CharacterLibraryHandler) UploadCharacterImage(c *gin.Context) {
 	// TODO: 处理文件上传
 	// 这里需要实现文件上传逻辑，保存到OSS或本地
 	// 暂时使用简单的实现
-	var req struct {
-		ImageURL string `json:"image_url" binding:"required"`
-	}
+	var req UploadCharacterImageRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, err.Error())
@@ -143,13 +190,23 @@ func (h *CharacterLibraryHandler) UploadCharacterImage(c *gin.Context) {
 }
 
 // ApplyLibraryItemToCharacter 从角色库应用形象
+// @Summary 从角色库应用形象
+// @Tags Characters
+// @Accept json
+// @Produce json
+// @Param id path string true "角色ID"
+// @Param request body ApplyLibraryItemRequest true "角色库项ID"
+// @Success 200 {object} response.Response{data=MessageResponse}
+// @Failure 400 {object} response.Response
+// @Failure 403 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/characters/{id}/image-from-library [put]
 func (h *CharacterLibraryHandler) ApplyLibraryItemToCharacter(c *gin.Context) {
 
 	characterID := c.Param("id")
 
-	var req struct {
-		LibraryItemID string `json:"library_item_id" binding:"required"`
-	}
+	var req ApplyLibraryItemRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, err.Error())
@@ -178,13 +235,23 @@ func (h *CharacterLibraryHandler) ApplyLibraryItemToCharacter(c *gin.Context) {
 }
 
 // AddCharacterToLibrary 将角色添加到角色库
+// @Summary 将角色添加到角色库
+// @Tags Characters
+// @Accept json
+// @Produce json
+// @Param id path string true "角色ID"
+// @Param request body AddCharacterToLibraryRequest false "角色库分类（可选）"
+// @Success 201 {object} response.Response{data=CharacterLibrary}
+// @Failure 400 {object} response.Response
+// @Failure 403 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/characters/{id}/add-to-library [post]
 func (h *CharacterLibraryHandler) AddCharacterToLibrary(c *gin.Context) {
 
 	characterID := c.Param("id")
 
-	var req struct {
-		Category *string `json:"category"`
-	}
+	var req AddCharacterToLibraryRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		// 允许空body
@@ -214,16 +281,23 @@ func (h *CharacterLibraryHandler) AddCharacterToLibrary(c *gin.Context) {
 }
 
 // UpdateCharacter 更新角色信息
+// @Summary 更新角色信息
+// @Tags Characters
+// @Accept json
+// @Produce json
+// @Param id path string true "角色ID"
+// @Param request body UpdateCharacterRequest true "更新角色请求"
+// @Success 200 {object} response.Response{data=MessageResponse}
+// @Failure 400 {object} response.Response
+// @Failure 403 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/characters/{id} [put]
 func (h *CharacterLibraryHandler) UpdateCharacter(c *gin.Context) {
 
 	characterID := c.Param("id")
 
-	var req struct {
-		Name        *string `json:"name"`
-		Appearance  *string `json:"appearance"`
-		Personality *string `json:"personality"`
-		Description *string `json:"description"`
-	}
+	var req UpdateCharacterRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, err.Error())
@@ -248,6 +322,16 @@ func (h *CharacterLibraryHandler) UpdateCharacter(c *gin.Context) {
 }
 
 // DeleteCharacter 删除单个角色
+// @Summary 删除角色
+// @Tags Characters
+// @Produce json
+// @Param id path string true "角色ID"
+// @Success 200 {object} response.Response{data=MessageResponse}
+// @Failure 400 {object} response.Response
+// @Failure 403 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/characters/{id} [delete]
 func (h *CharacterLibraryHandler) DeleteCharacter(c *gin.Context) {
 
 	characterIDStr := c.Param("id")

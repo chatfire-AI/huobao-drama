@@ -8,7 +8,10 @@ import (
 	"github.com/drama-generator/backend/pkg/config"
 	"github.com/drama-generator/backend/pkg/logger"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
+	"os"
 )
 
 func SetupRouter(cfg *config.Config, db *gorm.DB, log *logger.Logger, localStorage interface{}) *gin.Engine {
@@ -28,6 +31,23 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, log *logger.Logger, localStora
 			"version": cfg.App.Version,
 		})
 	})
+
+	if cfg.App.Debug {
+		r.GET("/docs/swagger.json", func(c *gin.Context) {
+			if _, err := os.Stat("./docs/swagger.json"); err != nil {
+				c.JSON(404, gin.H{
+					"error":   "swagger.json not found",
+					"message": "请先运行 scripts/generate_swagger.sh 生成文档",
+				})
+				return
+			}
+			c.File("./docs/swagger.json")
+		})
+		r.GET("/docs/*any", ginSwagger.WrapHandler(
+			swaggerFiles.Handler,
+			ginSwagger.URL("/docs/swagger.json"),
+		))
+	}
 
 	aiService := services2.NewAIService(db, log)
 	localStoragePtr := localStorage.(*storage2.LocalStorage)
