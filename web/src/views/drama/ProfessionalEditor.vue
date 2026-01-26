@@ -33,7 +33,7 @@
           <div
             v-for="(shot, index) in storyboards"
             :key="shot.id"
-            class="shot-item"
+            class="storyboard-item"
             :class="{ active: currentStoryboardId === Number(shot.id) }"
             @click="selectStoryboard(Number(shot.id))"
           >
