@@ -81,7 +81,13 @@ export interface Storyboard {
   duration?: number
   dialogue?: string
   action?: string
-  atmosphere?: string
+  result?: string
+  shot_type?: string
+  movement?: string
+  angle?: string
+  visual_effect?: string
+  sound_effect?: string
+  bgm_prompt?: string
   image_prompt?: string
   video_prompt?: string
   characters?: any

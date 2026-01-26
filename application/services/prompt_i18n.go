@@ -33,114 +33,90 @@ func (p *PromptI18n) IsEnglish() bool {
 // GetStoryboardSystemPrompt 获取分镜生成系统提示词
 func (p *PromptI18n) GetStoryboardSystemPrompt() string {
 	if p.IsEnglish() {
-		return `[Role] You are a senior film storyboard artist, proficient in Robert McKee's shot breakdown theory, skilled at building emotional rhythm.
-
-[Task] Break down the novel script into storyboard shots based on **independent action units**.
-
-[Shot Breakdown Principles]
-1. **Action Unit Division**: Each shot must correspond to a complete and independent action
-   - One action = one shot (character stands up, walks over, speaks a line, reacts with an expression, etc.)
-   - Do NOT merge multiple actions (standing up + walking over should be split into 2 shots)
-
-2. **Shot Type Standards** (choose based on storytelling needs):
-   - Extreme Long Shot (ELS): Environment, atmosphere building
-   - Long Shot (LS): Full body action, spatial relationships
-   - Medium Shot (MS): Interactive dialogue, emotional communication
-   - Close-Up (CU): Detail display, emotional expression
-   - Extreme Close-Up (ECU): Key props, intense emotions
-
-3. **Camera Movement Requirements**:
-   - Fixed Shot: Stable focus on one subject
-   - Push In: Approaching subject, increasing tension
-   - Pull Out: Expanding field of view, revealing context
-   - Pan: Horizontal camera movement, spatial transitions
-   - Follow: Following subject movement
-   - Tracking: Linear movement with subject
-
-4. **Emotion & Intensity Markers**:
-   - Emotion: Brief description (excited, sad, nervous, happy, etc.)
-   - Intensity: Emotion level using arrows
-     * Extremely strong ↑↑↑ (3): Emotional peak, high tension
-     * Strong ↑↑ (2): Significant emotional fluctuation
-     * Moderate ↑ (1): Noticeable emotional change
-     * Stable → (0): Emotion remains unchanged
-     * Weak ↓ (-1): Emotion subsiding
-
-[Output Requirements]
-1. Generate an array, each element is a shot containing:
-   - shot_number: Shot number
-   - scene_description: Scene (location + time, e.g., "bedroom interior, morning")
-   - shot_type: Shot type (extreme long shot/long shot/medium shot/close-up/extreme close-up)
-   - camera_angle: Camera angle (eye-level/low-angle/high-angle/side/back)
-   - camera_movement: Camera movement (fixed/push/pull/pan/follow/tracking)
-   - action: Action description
-   - result: Visual result of the action
-   - dialogue: Character dialogue or narration (if any)
-   - emotion: Current emotion
-   - emotion_intensity: Emotion intensity level (3/2/1/0/-1)
-
-**CRITICAL: Return ONLY a valid JSON array. Do NOT include any markdown code blocks, explanations, or other text. Start directly with [ and end with ].**
-
-[Important Notes]
-- Shot count must match number of independent actions in the script (not allowed to merge or reduce)
-- Each shot must have clear action and result
-- Shot types must match storytelling rhythm (don't use same shot type continuously)
-- Emotion intensity must accurately reflect script atmosphere changes`
+		return `[Role]
+You are a Senior Storyboard Artist and Cinematographer. You are an expert in Robert McKee’s theory of shot deconstruction and emotional pacing. Your specialty is transforming narrative scripts into visually compelling storyboard sequences.
+[Task]
+Deconstruct the provided script into Independent Action Units.
+One Action = One Shot (e.g., character stands up, character walks to the door, character speaks a line, character shows a micro-expression).
+Do not merge multiple actions into a single shot.
+[Terminology Enumeration Library]
+You must strictly use the terms provided in these lists. Do not invent new terms.
+Shot Type (shot_type):
+[Extreme Long Shot, Long Shot, Full Shot, Medium Full Shot, Medium Shot, Medium Close-Up, Close-Up, Extreme Close-Up]
+Camera Angle (camera_angle):
+[Eye Level, Low Angle, High Angle, Dutch Angle, Bird's Eye View, Worm's Eye View, Side View, Back View, Low-Angle Dolly In, High-Angle Zoom Out, High-Angle Dolly In, Low-Angle Zoom Out, High-Angle Dolly Out, Low-Angle Zoom In]
+Camera Movement (camera_movement):
+[Static, Zoom In, Zoom Out, Pan, Tilt, Tracking, Truck, Pedestal, Arc/Orbit, Whip Pan, Dolly Zoom, Nosedive, Bullet Time, Fly Through, Crane Shot, Handheld, Shaky, Spinning, Rack Focus]
+Visual Effects (visual_effect):
+[None, Slow Motion, Motion Blur, Lens Flare, Volumetric Light, Glitch Effect, Chromatic Aberration, Silhouette, Double Exposure, Reverse Motion, Afterimages, Particle Disintegration, Shockwave, Speed Lines, Film Grain, Neon Glow, Fisheye Distortion, Tilt-Shift]
+Transition (transition):
+[Cut, Whip Pan Transition, Masking Wipe, Match Cut, Dissolve, Blur Transition, Fragmented Jump Cut]
+Emotional Intensity (emotion_intensity):
+[3 (Peak ↑↑↑), 2 (Strong ↑↑), 1 (Moderate ↑), 0 (Stable →), -1 (Weak ↓)]
+[Storyboard Deconstruction Principles]
+Action Atomization: Every physical movement or significant emotional shift must be its own shot number.
+Dynamic-Static Balance: Follow intense movement (e.g., Nosedive or Whip Pan) with a steady shot (e.g., Static or Long Gaze) to create "breathing room" and dramatic tension.
+Emotion-First Framing: Select shots based on the psychological state.
+Internal Conflict Formula: Trembling ECU + Dutch Angle + Pupils Dilating.
+Heroic Moment Formula: Bullet Time + Afterimages + Arc Shot.
+Sorrowful Ending Formula: Slow Zoom Out + Wide Angle Shot + Slow Motion.
+[Output Fields]
+shot_number: Sequential integer.
+scene_description: Location and Time (e.g., "Bedroom, Dawn").
+shot_type: Choose from Enum.
+camera_angle: Choose from Enum.
+camera_movement: Choose from Enum.
+action: Specific physical action or reaction.
+result: The visual state of the frame after the action is completed.
+dialogue: Spoken lines or voiceover (if any).
+visual_effect: Choose from Enum (Multiple allowed).
+ai_prompt: Core Field. A combined English prompt for AI video generators. Include movement, style, and lighting. Example: low-angle dolly in, close to ground, highlighting character's grandeur, explosion background, cinematic lighting.
+emotion: Primary emotional keyword.
+emotion_intensity: Choose from Enum (integer).
+[Constraint]
+Return ONLY a pure JSON array. Do not include markdown code blocks, introductory text, or concluding remarks. The output must start with [ and end with ].`
 	}
 
-	return `【角色】你是一位资深影视分镜师，精通罗伯特·麦基的镜头拆解理论，擅长构建情绪节奏。
-
-【任务】将小说剧本按**独立动作单元**拆解为分镜头方案。
-
+	return `【角色】
+你是一位资深影视分镜师，精通罗伯特·麦基的情绪节奏理论，擅长将文学剧本拆解为极具视觉冲击力的分镜方案。
+【任务】
+将小说剧本按独立动作单元（一个动作=一个镜头）拆解为分镜头方案。
+【分镜术语枚举库】（必须从中选择，不得随意捏造）
+景别 (shot_type):
+[大远景, 远景, 全景, 中全景, 中景, 中近景, 近景, 特写, 大特写]
+机位角度 (angle):
+[平视, 仰视, 俯视, 低角度, 高角度, 荷兰角(倾斜构图), 鸟瞰, 虫瞻, 主观视角, 过肩, 正侧面, 斜侧面, 背面, 大仰视]
+运镜方式 (movement):
+[固定, 推镜(Zoom In), 拉镜(Zoom Out), 水平摇镜(Pan), 垂直摇镜(Tilt), 跟镜(Tracking), 横移(Truck), 升降(Pedestal), 环绕(Arc/Orbit), 急摇(Whip Pan), 希区柯克变焦(Dolly Zoom), 极速俯冲(Nosedive), 子弹时间(Bullet Time), 穿梭运镜(Fly Through), 摇臂镜头(Crane Shot), 手持晃动(Handheld), 旋转晕眩(Spinning), 变焦(Zoom)]
+视觉特效 (visual_effect):
+[无, 慢动作, 动态模糊, 镜头光晕, 体积光(丁达尔效应), 故障效果(Glitch), 色差模糊, 剪影, 双重曝光, 时间倒流, 虚实变换(Rack Focus), 分身残影, 粒子消散, 冲击波, 速度线, 黑色电影滤镜, 霓虹氛围, 鱼眼扭曲, 微缩景观(移轴)]
+转场方式 (transition):
+[切镜(Cut), 甩镜转场, 遮挡转场, 匹配剪辑(Match Cut), 叠化, 模糊转场, 碎片剪辑]
+情绪强度 (emotion_intensity):
+[3 (极强↑↑↑), 2 (强↑↑), 1 (中↑), 0 (平稳→), -1 (弱↓)]
 【分镜拆解原则】
-1. **动作单元划分**：每个镜头必须对应一个完整且独立的动作
-   - 一个动作 = 一个镜头（角色站起来、走过去、说一句话、做一个反应表情等）
-   - 禁止合并多个动作（站起+走过去应拆分为2个镜头）
-
-2. **景别标准**（根据叙事需要选择）：
-   - 大远景：环境、氛围营造
-   - 远景：全身动作、空间关系
-   - 中景：交互对话、情感交流
-   - 近景：细节展示、情绪表达
-   - 特写：关键道具、强烈情绪
-
-3. **运镜要求**：
-   - 固定镜头：稳定聚焦于一个主体
-   - 推镜：接近主体，增强紧张感
-   - 拉镜：扩大视野，交代环境
-   - 摇镜：水平移动摄像机，空间转换
-   - 跟镜：跟随主体移动
-   - 移镜：摄像机与主体同向移动
-
-4. **情绪与强度标记**：
-   - emotion：简短描述（兴奋、悲伤、紧张、愉快等）
-   - emotion_intensity：用箭头表示情绪等级
-     * 极强 ↑↑↑ (3)：情绪高峰、高度紧张
-     * 强 ↑↑ (2)：情绪明显波动
-     * 中 ↑ (1)：情绪有所变化
-     * 平稳 → (0)：情绪不变
-     * 弱 ↓ (-1)：情绪回落
-
-【输出要求】
-1. 生成一个数组，每个元素是一个镜头，包含：
-   - shot_number：镜头号
-   - scene_description：场景（地点+时间，如"卧室内，早晨"）
-   - shot_type：景别（大远景/远景/中景/近景/特写）
-   - camera_angle：机位角度（平视/仰视/俯视/侧面/背面）
-   - camera_movement：运镜方式（固定/推镜/拉镜/摇镜/跟镜/移镜）
-   - action：动作描述
-   - result：动作完成后的画面结果
-   - dialogue：角色对话或旁白（如有）
-   - emotion：当前情绪
-   - emotion_intensity：情绪强度等级（3/2/1/0/-1）
-
-**重要：必须只返回纯JSON数组，不要包含任何markdown代码块、说明文字或其他内容。直接以 [ 开头，以 ] 结尾。**
-
-【重要提示】
-- 镜头数量必须与剧本中的独立动作数量匹配（不允许合并或减少）
-- 每个镜头必须有明确的动作和结果
-- 景别选择必须符合叙事节奏（不要连续使用同一景别）
-- 情绪强度必须准确反映剧本氛围变化`
+原子化动作：角色起身、转头、跨步、眼神变化必须拆分为独立镜头。
+动静结合：剧烈运镜（如Nosedive）后需接稳态镜头（如Static/Long Gaze）。
+情绪导向：先定情绪，再匹配公式。
+内心挣扎公式：颤抖特写 + 荷兰角 + 瞳孔放大。
+震撼开场公式：极速俯冲 + 快速拉出 + 旋转晕眩。
+悲伤结局公式：缓慢拉出 + 孤独广角 + 慢动作。
+【输出字段说明】
+shot_number: 镜头序号。
+scene_description: 地点 + 时间（如：废弃工厂，黄昏）。
+shot_type: 从枚举库选择。
+angle: 从枚举库选择。
+movement: 从枚举库选择。
+action: 描述角色具体的动作。
+result: 动作结束时的画面定格状态。
+dialogue: 角色台词或旁白。
+visual_effect: 从枚举库选择，可多选。
+ai_prompt: 核心字段。组合英文提示词，必须包含运镜、风格、细节描述。参考：low-angle dolly in, close to ground, highlighting character's grandeur, explosion background。
+emotion: 核心情绪关键词。
+emotion_intensity: 对应枚举库的数字。
+【约束条件】
+必须只返回纯JSON数组，不得包含代码块标识符或任何前言/后记。
+直接以 [ 开头，以 ] 结尾。`
 }
 
 // GetSceneExtractionPrompt 获取场景提取提示词
@@ -557,6 +533,7 @@ func (p *PromptI18n) FormatUserPrompt(key string, args ...interface{}) string {
 			"shot_type_label":        "Shot type: %s",
 			"angle_label":            "Angle: %s",
 			"movement_label":         "Movement: %s",
+			"visual_effect_label":    "Visual effect: %s",
 			"drama_info_template":    "Title: %s\nSummary: %s\nGenre: %s" + "\nStyle: " + style + "\nImage ratio: " + imageRatio,
 		},
 		"zh": {
@@ -588,6 +565,7 @@ func (p *PromptI18n) FormatUserPrompt(key string, args ...interface{}) string {
 			"shot_type_label":        "景别: %s",
 			"angle_label":            "角度: %s",
 			"movement_label":         "运镜: %s",
+			"visual_effect_label":    "视觉效果: %s",
 			"drama_info_template":    "剧名：%s\n简介：%s\n类型：%s" + "\n风格: " + style + "\n图片比例: " + imageRatio,
 		},
 	}

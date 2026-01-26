@@ -36,24 +36,25 @@ func NewStoryboardService(db *gorm.DB, cfg *config.Config, log *logger.Logger) *
 }
 
 type Storyboard struct {
-	ShotNumber  int    `json:"shot_number"`
-	Title       string `json:"title"`        // 镜头标题
-	ShotType    string `json:"shot_type"`    // 景别
-	Angle       string `json:"angle"`        // 镜头角度
-	Time        string `json:"time"`         // 时间
-	Location    string `json:"location"`     // 地点
-	SceneID     *uint  `json:"scene_id"`     // 背景ID（AI直接返回，可为null）
-	Movement    string `json:"movement"`     // 运镜
-	Action      string `json:"action"`       // 动作
-	Dialogue    string `json:"dialogue"`     // 对话/独白
-	Result      string `json:"result"`       // 画面结果
-	Atmosphere  string `json:"atmosphere"`   // 环境氛围
-	Emotion     string `json:"emotion"`      // 情绪
-	Duration    int    `json:"duration"`     // 时长（秒）
-	BgmPrompt   string `json:"bgm_prompt"`   // 配乐提示词
-	SoundEffect string `json:"sound_effect"` // 音效描述
-	Characters  []uint `json:"characters"`   // 涉及的角色ID列表
-	IsPrimary   bool   `json:"is_primary"`   // 是否主镜
+	ShotNumber   int    `json:"shot_number"`
+	Title        string `json:"title"`         // 镜头标题
+	ShotType     string `json:"shot_type"`     // 景别
+	Angle        string `json:"angle"`         // 镜头角度
+	Time         string `json:"time"`          // 时间
+	Location     string `json:"location"`      // 地点
+	SceneID      *uint  `json:"scene_id"`      // 背景ID（AI直接返回，可为null）
+	Movement     string `json:"movement"`      // 运镜
+	Action       string `json:"action"`        // 动作
+	Dialogue     string `json:"dialogue"`      // 对话/独白
+	Result       string `json:"result"`        // 画面结果
+	Atmosphere   string `json:"atmosphere"`    // 环境氛围
+	Emotion      string `json:"emotion"`       // 情绪
+	Duration     int    `json:"duration"`      // 时长（秒）
+	BgmPrompt    string `json:"bgm_prompt"`    // 配乐提示词
+	VisualEffect string `json:"visual_effect"` // 视觉特效
+	SoundEffect  string `json:"sound_effect"`  // 音效描述
+	Characters   []uint `json:"characters"`    // 涉及的角色ID列表
+	IsPrimary    bool   `json:"is_primary"`    // 是否主镜
 }
 
 type GenerateStoryboardResult struct {
@@ -138,7 +139,7 @@ func (s *StoryboardService) GenerateStoryboard(episodeID string, model string) (
 %s
 %s
 
-%s%s
+%s
 
 %s
 %s
@@ -161,9 +162,9 @@ func (s *StoryboardService) GenerateStoryboard(episodeID string, model string) (
 3. **地点**：[场景完整描述+空间布局+环境细节]
    - 例如："废弃码头仓库·锈蚀货架林立，地面积水反射微弱灯光，墙角堆放腐朽木箱"
 4. **镜头设计**：
-   - **景别(shot_type)**：[远景/全景/中景/近景/特写]
-   - **镜头角度(angle)**：[平视/仰视/俯视/侧面/背面]
-   - **运镜方式(movement)**：[固定镜头/推镜/拉镜/摇镜/跟镜/移镜]
+   - **景别(shot_type)**：[大远景, 远景, 全景, 中全景, 中景, 中近景, 近景, 特写, 大特写]
+   - **镜头角度(angle)**：[平视, 仰视, 俯视, 低角度, 高角度, 荷兰角(倾斜构图), 鸟瞰, 虫瞻, 主观视角, 过肩, 正侧面, 斜侧面, 背面, 大仰视]
+   - **运镜方式(movement)**：[固定, 推镜(Zoom In), 拉镜(Zoom Out), 水平摇镜(Pan), 垂直摇镜(Tilt), 跟镜(Tracking), 横移(Truck), 升降(Pedestal), 环绕(Arc/Orbit), 急摇(Whip Pan), 希区柯克变焦(Dolly Zoom), 极速俯冲(Nosedive), 子弹时间(Bullet Time), 穿梭运镜(Fly Through), 摇臂镜头(Crane Shot), 手持晃动(Handheld), 旋转晕眩(Spinning), 变焦(Zoom)]
 5. **人物行为**：**详细动作描述**，包含[谁+具体怎么做+肢体细节+表情状态]
    - 例如："陈峥弯腰用撬棍撬动保险箱门，手臂青筋暴起，眉头紧锁，汗水滑落脸颊"
 6. **对话/独白**：提取该镜头中的完整对话或独白内容（如无对话则为空字符串）
@@ -175,7 +176,9 @@ func (s *StoryboardService) GenerateStoryboard(episodeID string, model string) (
    - 例如："低沉紧张的弦乐，节奏缓慢，营造压抑氛围"
 10. **音效描述(sound_effect)**：描述该镜头的关键音效（如无特殊音效则为空字符串）
     - 例如："金属碰撞声、脚步声、海浪拍打声"
-11. **观众情绪**：[情绪类型]（[强度：↑↑↑/↑↑/↑/→/↓] + [落点：悬置/释放/反转]）
+11. **视觉特效(visual_effect)**：特殊视觉效果描述（如无则为空字符串）
+    - 例如：[无, 慢动作, 动态模糊, 镜头光晕, 体积光(丁达尔效应), 故障效果(Glitch), 色差模糊, 剪影, 双重曝光, 时间倒流, 虚实变换(Rack Focus), 分身残影, 粒子消散, 冲击波, 速度线, 黑色电影滤镜, 霓虹氛围, 鱼眼扭曲, 微缩景观(移轴)]
+12. **观众情绪**：[情绪类型]（[强度：↑↑↑/↑↑/↑/→/↓] + [落点：悬置/释放/反转]）
 
 【输出格式】请以JSON格式输出，每个镜头包含以下字段（**所有描述性字段都要详细完整**）：
 {
@@ -195,6 +198,7 @@ func (s *StoryboardService) GenerateStoryboard(episodeID string, model string) (
       "atmosphere": "昏暗冷色调·青灰色为主，只有手电筒光束在黑暗中晃动，远处传来海浪拍打码头的沉闷声，整体氛围压抑沉重",
       "emotion": "好奇感↑↑转失望↓（情绪反转）",
       "duration": 9,
+      "visual_effect": "体积光(丁达尔效应)",
       "bgm_prompt": "低沉紧张的弦乐，节奏缓慢，营造压抑悬疑氛围",
       "sound_effect": "金属碰撞声、灰尘飘散声、海浪拍打声",
       "characters": [159],
@@ -209,6 +213,7 @@ func (s *StoryboardService) GenerateStoryboard(episodeID string, model string) (
       "location": "废弃码头仓库·保险箱旁，背景是模糊的货架剪影",
       "scene_id": 1,
       "movement": "推镜",
+      "visual_effect": "体积光(丁达尔效应)",
       "action": "陈峥缓缓转身，目光与身后的李芳对视，李芳手握手电筒，光束在两人之间晃动，眼神中透露疑惑和警惕",
       "dialogue": "陈峥：\"我们被耍了，这里根本没有我们要找的东西。\" 李芳：\"现在怎么办？我们的时间不多了。\"",
       "result": "两人站在昏暗中陷入沉思，手电筒光束照在地面形成圆形光斑，背景传来微弱的金属摩擦声，气氛紧张凝重",
@@ -477,6 +482,7 @@ func (s *StoryboardService) processStoryboardGeneration(taskID, episodeID, model
 func (s *StoryboardService) generateImagePrompt(sb Storyboard) string {
 	var parts []string
 
+	style := s.config.Style.DefaultSceneStyle
 	// 1. 完整的场景背景描述
 	if sb.Location != "" {
 		locationDesc := sb.Location
@@ -499,13 +505,18 @@ func (s *StoryboardService) generateImagePrompt(sb Storyboard) string {
 		parts = append(parts, sb.Emotion)
 	}
 
-	// 4. 动漫风格
-	parts = append(parts, "anime style, first frame")
+	// 4. 视觉特效
+	if sb.VisualEffect != "" {
+		parts = append(parts, sb.VisualEffect)
+	}
+
+	// 5. 动漫风格
+	parts = append(parts, style+", first frame")
 
 	if len(parts) > 0 {
 		return strings.Join(parts, ", ")
 	}
-	return "anime scene"
+	return style + ", first frame"
 }
 
 // extractInitialPose 提取初始静态姿态（去除动作过程）
@@ -674,6 +685,9 @@ func (s *StoryboardService) generateVideoPrompt(sb Storyboard) string {
 	if sb.SoundEffect != "" {
 		parts = append(parts, fmt.Sprintf("Sound effects: %s", sb.SoundEffect))
 	}
+	if sb.VisualEffect != "" {
+		parts = append(parts, fmt.Sprintf("Visual effects: %s", sb.VisualEffect))
+	}
 
 	// 9. 视频风格要求
 	parts = append(parts, fmt.Sprintf("Style: %s", style))
@@ -804,13 +818,16 @@ func (s *StoryboardService) saveStoryboards(episodeID string, storyboards []Stor
 				movementPtr = &sb.Movement
 			}
 
-			// 处理bgm_prompt、sound_effect字段
-			var bgmPromptPtr, soundEffectPtr *string
+			// 处理bgm_prompt、sound_effect、visual_effect字段
+			var bgmPromptPtr, soundEffectPtr, visualEffectPtr *string
 			if sb.BgmPrompt != "" {
 				bgmPromptPtr = &sb.BgmPrompt
 			}
 			if sb.SoundEffect != "" {
 				soundEffectPtr = &sb.SoundEffect
+			}
+			if sb.VisualEffect != "" {
+				visualEffectPtr = &sb.VisualEffect
 			}
 
 			// 处理result、atmosphere字段
@@ -841,6 +858,7 @@ func (s *StoryboardService) saveStoryboards(episodeID string, storyboards []Stor
 				VideoPrompt:      &videoPrompt,
 				BgmPrompt:        bgmPromptPtr,
 				SoundEffect:      soundEffectPtr,
+				VisualEffect:     visualEffectPtr,
 				Duration:         sb.Duration,
 			}
 

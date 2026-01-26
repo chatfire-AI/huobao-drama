@@ -142,7 +142,7 @@ func (h *PropHandler) GenerateImage(c *gin.Context) {
 
 // AssociateProps 关联道具
 func (h *PropHandler) AssociateProps(c *gin.Context) {
-	storyboardIDStr := c.Param("storyboard_id")
+	storyboardIDStr := c.Param("id")
 	storyboardID, err := strconv.ParseUint(storyboardIDStr, 10, 32)
 	if err != nil {
 		response.BadRequest(c, "Invalid storyboard_id")

@@ -73,6 +73,10 @@ func (s *StoryboardService) UpdateStoryboard(storyboardID string, updates map[st
 		updateData["sound_effect"] = val
 		sb.SoundEffect = val
 	}
+	if val, ok := updates["visual_effect"].(string); ok && val != "" {
+		updateData["visual_effect"] = val
+		sb.VisualEffect = val
+	}
 	if val, ok := updates["duration"].(float64); ok {
 		updateData["duration"] = int(val)
 		sb.Duration = int(val)
@@ -114,6 +118,9 @@ func (s *StoryboardService) UpdateStoryboard(storyboardID string, updates map[st
 	}
 	if sb.SoundEffect == "" && storyboard.SoundEffect != nil {
 		sb.SoundEffect = *storyboard.SoundEffect
+	}
+	if sb.VisualEffect == "" && storyboard.VisualEffect != nil {
+		sb.VisualEffect = *storyboard.VisualEffect
 	}
 	if sb.Duration == 0 {
 		sb.Duration = storyboard.Duration

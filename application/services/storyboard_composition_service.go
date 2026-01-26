@@ -29,6 +29,12 @@ type SceneCharacterInfo struct {
 	ImageURL *string `json:"image_url,omitempty"`
 }
 
+type ScenePropInfo struct {
+	ID       uint    `json:"id"`
+	Name     string  `json:"name"`
+	ImageURL *string `json:"image_url,omitempty"`
+}
+
 type SceneBackgroundInfo struct {
 	ID       uint    `json:"id"`
 	Location string  `json:"location"`
@@ -54,9 +60,11 @@ type SceneCompositionInfo struct {
 	Atmosphere            *string              `json:"atmosphere"`
 	BgmPrompt             *string              `json:"bgm_prompt,omitempty"`
 	SoundEffect           *string              `json:"sound_effect,omitempty"`
+	VisualEffect          *string              `json:"visual_effect,omitempty"`
 	ImagePrompt           *string              `json:"image_prompt,omitempty"`
 	VideoPrompt           *string              `json:"video_prompt,omitempty"`
 	Characters            []SceneCharacterInfo `json:"characters"`
+	Props                 []ScenePropInfo      `json:"props"`
 	Background            *SceneBackgroundInfo `json:"background"`
 	SceneID               *uint                `json:"scene_id"`
 	ComposedImage         *string              `json:"composed_image,omitempty"`
@@ -84,6 +92,7 @@ func (s *StoryboardCompositionService) GetScenesForEpisode(episodeID string) ([]
 	var storyboards []models.Storyboard
 	if err := s.db.Where("episode_id = ?", episodeID).
 		Preload("Characters").
+		Preload("Props").
 		Order("storyboard_number ASC").
 		Find(&storyboards).Error; err != nil {
 		return nil, fmt.Errorf("failed to load storyboards: %w", err)
@@ -200,6 +209,7 @@ func (s *StoryboardCompositionService) GetScenesForEpisode(episodeID string) ([]
 			Atmosphere:       storyboard.Atmosphere,
 			BgmPrompt:        storyboard.BgmPrompt,
 			SoundEffect:      storyboard.SoundEffect,
+			VisualEffect:     storyboard.VisualEffect,
 			ImagePrompt:      storyboard.ImagePrompt,
 			VideoPrompt:      storyboard.VideoPrompt,
 			SceneID:          storyboard.SceneID,
@@ -214,6 +224,18 @@ func (s *StoryboardCompositionService) GetScenesForEpisode(episodeID string) ([]
 					ImageURL: char.ImageURL,
 				}
 				storyboardInfo.Characters = append(storyboardInfo.Characters, storyboardChar)
+			}
+		}
+
+		// 添加关联的道具信息
+		if len(storyboard.Props) > 0 {
+			for _, prop := range storyboard.Props {
+				storyboardProp := ScenePropInfo{
+					ID:       prop.ID,
+					Name:     prop.Name,
+					ImageURL: prop.ImageURL,
+				}
+				storyboardInfo.Props = append(storyboardInfo.Props, storyboardProp)
 			}
 		}
 
@@ -261,16 +283,17 @@ func (s *StoryboardCompositionService) GetScenesForEpisode(episodeID string) ([]
 }
 
 type UpdateSceneRequest struct {
-	SceneID     *uint   `json:"scene_id"`
-	Characters  []uint  `json:"characters"` // 改为存储角色ID数组
-	Location    *string `json:"location"`
-	Time        *string `json:"time"`
-	Action      *string `json:"action"`
-	Dialogue    *string `json:"dialogue"`
-	Description *string `json:"description"`
-	Duration    *int    `json:"duration"`
-	ImagePrompt *string `json:"image_prompt"`
-	VideoPrompt *string `json:"video_prompt"`
+	SceneID      *uint   `json:"scene_id"`
+	Characters   []uint  `json:"characters"` // 改为存储角色ID数组
+	Location     *string `json:"location"`
+	Time         *string `json:"time"`
+	Action       *string `json:"action"`
+	Dialogue     *string `json:"dialogue"`
+	Description  *string `json:"description"`
+	Duration     *int    `json:"duration"`
+	ImagePrompt  *string `json:"image_prompt"`
+	VideoPrompt  *string `json:"video_prompt"`
+	VisualEffect *string `json:"visual_effect"`
 }
 
 func (s *StoryboardCompositionService) UpdateScene(sceneID string, req *UpdateSceneRequest) error {
@@ -322,6 +345,9 @@ func (s *StoryboardCompositionService) UpdateScene(sceneID string, req *UpdateSc
 	}
 	if req.VideoPrompt != nil {
 		updates["video_prompt"] = req.VideoPrompt
+	}
+	if req.VisualEffect != nil {
+		updates["visual_effect"] = req.VisualEffect
 	}
 
 	// 执行更新

@@ -155,5 +155,10 @@ export const dramaAPI = {
 
   deleteStoryboard(storyboardId: number) {
     return request.delete(`/storyboards/${storyboardId}`)
+  },
+
+  // 获取镜头的所有帧提示词
+  getFramePrompts(storyboardId: number) {
+    return request.get<{ frame_prompts: any[] }>(`/storyboards/${storyboardId}/frame-prompts`);
   }
 }

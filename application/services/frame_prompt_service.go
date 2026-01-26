@@ -12,22 +12,22 @@ import (
 
 // FramePromptService 处理帧提示词生成
 type FramePromptService struct {
-	db         *gorm.DB
-	aiService  *AIService
-	log        *logger.Logger
-	config     *config.Config
-	promptI18n *PromptI18n
+	db          *gorm.DB
+	aiService   *AIService
+	log         *logger.Logger
+	config      *config.Config
+	promptI18n  *PromptI18n
 	taskService *TaskService
 }
 
 // NewFramePromptService 创建帧提示词服务
 func NewFramePromptService(db *gorm.DB, cfg *config.Config, log *logger.Logger) *FramePromptService {
 	return &FramePromptService{
-		db:         db,
-		aiService:  NewAIService(db, log),
-		log:        log,
-		config:     cfg,
-		promptI18n: NewPromptI18n(cfg),
+		db:          db,
+		aiService:   NewAIService(db, log),
+		log:         log,
+		config:      cfg,
+		promptI18n:  NewPromptI18n(cfg),
 		taskService: NewTaskService(db, log),
 	}
 }
@@ -363,6 +363,12 @@ func (s *FramePromptService) generatePanelFrames(sb models.Storyboard, scene *mo
 		frames[1] = *s.generateKeyFrame(sb, scene, model)
 		frames[2] = *s.generateKeyFrame(sb, scene, model)
 		frames[3] = *s.generateLastFrame(sb, scene, model)
+	} else {
+		frames[0] = *s.generateFirstFrame(sb, scene, model)
+		for i := 1; i < count-1; i++ {
+			frames[i] = *s.generateKeyFrame(sb, scene, model)
+		}
+		frames[count-1] = *s.generateLastFrame(sb, scene, model)
 	}
 
 	return &MultiFramePrompt{
@@ -434,6 +440,11 @@ func (s *FramePromptService) buildStoryboardContext(sb models.Storyboard, scene 
 		parts = append(parts, s.promptI18n.FormatUserPrompt("atmosphere_label", *sb.Atmosphere))
 	}
 
+	// 视觉特效
+	if sb.VisualEffect != nil && *sb.VisualEffect != "" {
+		parts = append(parts, fmt.Sprintf("Visual Effect: %s", *sb.VisualEffect))
+	}
+
 	// 镜头参数
 	if sb.ShotType != nil {
 		parts = append(parts, s.promptI18n.FormatUserPrompt("shot_type_label", *sb.ShotType))
@@ -443,6 +454,9 @@ func (s *FramePromptService) buildStoryboardContext(sb models.Storyboard, scene 
 	}
 	if sb.Movement != nil {
 		parts = append(parts, s.promptI18n.FormatUserPrompt("movement_label", *sb.Movement))
+	}
+	if sb.VisualEffect != nil {
+		parts = append(parts, s.promptI18n.FormatUserPrompt("visual_effect_label", *sb.VisualEffect))
 	}
 
 	return strings.Join(parts, "\n")

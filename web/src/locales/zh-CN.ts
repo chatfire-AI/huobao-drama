@@ -511,6 +511,9 @@ export default {
     loadFailed: '加载分镜失败'
   },
   editor: {
+    errorDetail: '错误详情',
+    visualEffect: '视效',
+    visualEffectPlaceholder: '选择视效',
     backToEpisode: '返回剧集编辑',
     episode: '第{number}集',
     settings: '设置',

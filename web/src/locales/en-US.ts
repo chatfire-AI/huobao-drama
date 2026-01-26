@@ -608,6 +608,9 @@ export default {
     loadFailed: 'Failed to load storyboards'
   },
   editor: {
+    errorDetail: 'Error Detail',
+    visualEffect: 'Visual Effect',
+    visualEffectPlaceholder: 'Select visual effect',
     backToEpisode: 'Back to Episode Edit',
     episode: 'Episode {number}',
     settings: 'Settings',
