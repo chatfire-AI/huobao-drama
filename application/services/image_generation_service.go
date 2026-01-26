@@ -1,8 +1,11 @@
 package services
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -84,6 +87,7 @@ type GenerateImageRequest struct {
 	Seed            *int64   `json:"seed"`
 	Width           *int     `json:"width"`
 	Height          *int     `json:"height"`
+	ImageLocalPath  *string  `json:"image_local_path"` // 本地图片路径，用于图生图
 	ReferenceImages []string `json:"reference_images"` // 参考图片URL列表
 }
 
@@ -138,6 +142,7 @@ func (s *ImageGenerationService) GenerateImage(request *GenerateImageRequest) (*
 		Seed:            request.Seed,
 		Width:           request.Width,
 		Height:          request.Height,
+		LocalPath:       request.ImageLocalPath,
 		Status:          models.ImageStatusPending,
 	}
 
@@ -187,13 +192,42 @@ func (s *ImageGenerationService) ProcessImageGeneration(imageGenID uint) {
 	}
 
 	// 解析参考图片
-	var referenceImages []string
+	var referenceImagePaths []string
 	if len(imageGen.ReferenceImages) > 0 {
-		if err := json.Unmarshal(imageGen.ReferenceImages, &referenceImages); err == nil {
+		if err := json.Unmarshal(imageGen.ReferenceImages, &referenceImagePaths); err == nil {
 			s.log.Infow("Using reference images for generation",
 				"id", imageGenID,
-				"reference_count", len(referenceImages),
-				"references", referenceImages)
+				"reference_count", len(referenceImagePaths),
+				"references", referenceImagePaths)
+		}
+	}
+
+	// 如果有 local_path，添加到参考图片列表的开头
+	if imageGen.LocalPath != nil && *imageGen.LocalPath != "" {
+		referenceImagePaths = append([]string{*imageGen.LocalPath}, referenceImagePaths...)
+	}
+
+	// 将所有参考图片路径转换为 base64（如果是本地路径）或保持原样（如果是 URL）
+	var referenceImages []string
+	for _, imgPath := range referenceImagePaths {
+		// 判断是否为 HTTP/HTTPS URL
+		if strings.HasPrefix(imgPath, "http://") || strings.HasPrefix(imgPath, "https://") {
+			// 保持 URL 原样
+			referenceImages = append(referenceImages, imgPath)
+		} else {
+			// 视为本地路径，转换为 base64
+			base64Image, err := s.loadImageAsBase64(imgPath)
+			if err != nil {
+				s.log.Warnw("Failed to load local image as base64",
+					"error", err,
+					"id", imageGenID,
+					"local_path", imgPath)
+			} else {
+				referenceImages = append(referenceImages, base64Image)
+				s.log.Infow("Loaded local image as base64 for generation",
+					"id", imageGenID,
+					"local_path", imgPath)
+			}
 		}
 	}
 
@@ -285,11 +319,11 @@ func (s *ImageGenerationService) pollTaskStatus(imageGenID uint, client image.Im
 func (s *ImageGenerationService) completeImageGeneration(imageGenID uint, result *image.ImageResult) {
 	now := time.Now()
 
-	// 下载图片到本地存储（仅用于缓存，不更新数据库）
-	// 仅下载 HTTP/HTTPS URL，跳过 data URI
+	// 下载图片到本地存储并保存相对路径到数据库
+	var localPath *string
 	if s.localStorage != nil && result.ImageURL != "" &&
 		(strings.HasPrefix(result.ImageURL, "http://") || strings.HasPrefix(result.ImageURL, "https://")) {
-		_, err := s.localStorage.DownloadFromURL(result.ImageURL, "images")
+		downloadResult, err := s.localStorage.DownloadFromURLWithPath(result.ImageURL, "images")
 		if err != nil {
 			errStr := err.Error()
 			if len(errStr) > 200 {
@@ -300,16 +334,19 @@ func (s *ImageGenerationService) completeImageGeneration(imageGenID uint, result
 				"id", imageGenID,
 				"original_url", truncateImageURL(result.ImageURL))
 		} else {
-			s.log.Infow("Image downloaded to local storage for caching",
+			localPath = &downloadResult.RelativePath
+			s.log.Infow("Image downloaded to local storage",
 				"id", imageGenID,
-				"original_url", truncateImageURL(result.ImageURL))
+				"original_url", truncateImageURL(result.ImageURL),
+				"local_path", downloadResult.RelativePath)
 		}
 	}
 
-	// 数据库中保持使用原始URL
+	// 数据库中保存原始URL和本地路径
 	updates := map[string]interface{}{
 		"status":       models.ImageStatusCompleted,
 		"image_url":    result.ImageURL,
+		"local_path":   localPath,
 		"completed_at": now,
 	}
 
@@ -327,7 +364,17 @@ func (s *ImageGenerationService) completeImageGeneration(imageGenID uint, result
 		return
 	}
 
-	s.db.Model(&models.ImageGeneration{}).Where("id = ?", imageGenID).Updates(updates)
+	// 使用 Updates 更新基本字段
+	if err := s.db.Model(&models.ImageGeneration{}).Where("id = ?", imageGenID).Updates(updates).Error; err != nil {
+		s.log.Errorw("Failed to update image generation", "error", err, "id", imageGenID)
+		return
+	}
+
+	// 单独更新 local_path 字段（即使为 nil 也要更新）
+	if err := s.db.Model(&models.ImageGeneration{}).Where("id = ?", imageGenID).Update("local_path", localPath).Error; err != nil {
+		s.log.Errorw("Failed to update local_path", "error", err, "id", imageGenID)
+	}
+
 	s.log.Infow("Image generation completed", "id", imageGenID)
 
 	// 如果关联了storyboard，同步更新storyboard的composed_image
@@ -341,40 +388,58 @@ func (s *ImageGenerationService) completeImageGeneration(imageGenID uint, result
 		}
 	}
 
-	// 如果关联了scene，同步更新scene的image_url和status（仅当ImageType是scene时）
+	// 如果关联了scene，同步更新scene的image_url、local_path和status（仅当ImageType是scene时）
 	if imageGen.SceneID != nil && imageGen.ImageType == string(models.ImageTypeScene) {
 		sceneUpdates := map[string]interface{}{
 			"status":    "generated",
 			"image_url": result.ImageURL,
+		}
+		if localPath != nil {
+			sceneUpdates["local_path"] = localPath
 		}
 		if err := s.db.Model(&models.Scene{}).Where("id = ?", *imageGen.SceneID).Updates(sceneUpdates).Error; err != nil {
 			s.log.Errorw("Failed to update scene", "error", err, "scene_id", *imageGen.SceneID)
 		} else {
 			s.log.Infow("Scene updated with generated image",
 				"scene_id", *imageGen.SceneID,
-				"image_url", truncateImageURL(result.ImageURL))
+				"image_url", truncateImageURL(result.ImageURL),
+				"local_path", localPath)
 		}
 	}
 
-	// 如果关联了角色，同步更新角色的image_url
+	// 如果关联了角色，同步更新角色的image_url和local_path
 	if imageGen.CharacterID != nil {
-		if err := s.db.Model(&models.Character{}).Where("id = ?", *imageGen.CharacterID).Update("image_url", result.ImageURL).Error; err != nil {
-			s.log.Errorw("Failed to update character image_url", "error", err, "character_id", *imageGen.CharacterID)
+		characterUpdates := map[string]interface{}{
+			"image_url": result.ImageURL,
+		}
+		if localPath != nil {
+			characterUpdates["local_path"] = localPath
+		}
+		if err := s.db.Model(&models.Character{}).Where("id = ?", *imageGen.CharacterID).Updates(characterUpdates).Error; err != nil {
+			s.log.Errorw("Failed to update character", "error", err, "character_id", *imageGen.CharacterID)
 		} else {
 			s.log.Infow("Character updated with generated image",
 				"character_id", *imageGen.CharacterID,
-				"image_url", truncateImageURL(result.ImageURL))
+				"image_url", truncateImageURL(result.ImageURL),
+				"local_path", localPath)
 		}
 	}
 
-	// 如果关联了道具，同步更新道具的image_url
+	// 如果关联了道具，同步更新道具的image_url和local_path
 	if imageGen.PropID != nil {
-		if err := s.db.Model(&models.Prop{}).Where("id = ?", *imageGen.PropID).Update("image_url", result.ImageURL).Error; err != nil {
-			s.log.Errorw("Failed to update prop image_url", "error", err, "prop_id", *imageGen.PropID)
+		propUpdates := map[string]interface{}{
+			"image_url": result.ImageURL,
+		}
+		if localPath != nil {
+			propUpdates["local_path"] = localPath
+		}
+		if err := s.db.Model(&models.Prop{}).Where("id = ?", *imageGen.PropID).Updates(propUpdates).Error; err != nil {
+			s.log.Errorw("Failed to update prop", "error", err, "prop_id", *imageGen.PropID)
 		} else {
 			s.log.Infow("Prop updated with generated image",
 				"prop_id", *imageGen.PropID,
-				"image_url", truncateImageURL(result.ImageURL))
+				"image_url", truncateImageURL(result.ImageURL),
+				"local_path", localPath)
 		}
 	}
 }
@@ -1237,4 +1302,55 @@ func (s *ImageGenerationService) extractUniqueBackgrounds(scenes []models.Storyb
 	}
 
 	return backgrounds
+}
+
+// loadImageAsBase64 读取本地图片文件并转换为 base64 格式的 data URI
+func (s *ImageGenerationService) loadImageAsBase64(localPath string) (string, error) {
+	// 构建完整的文件路径
+	var fullPath string
+	if filepath.IsAbs(localPath) {
+		fullPath = localPath
+	} else {
+		// 如果是相对路径，拼接存储根目录
+		if s.localStorage != nil {
+			fullPath = s.localStorage.GetAbsolutePath(localPath)
+		} else {
+			fullPath = filepath.Join(s.config.Storage.LocalPath, localPath)
+		}
+	}
+
+	// 读取文件
+	fileData, err := os.ReadFile(fullPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read image file: %w", err)
+	}
+
+	// 根据文件扩展名确定 MIME 类型
+	ext := strings.ToLower(filepath.Ext(fullPath))
+	mimeType := "image/jpeg" // 默认
+	switch ext {
+	case ".png":
+		mimeType = "image/png"
+	case ".jpg", ".jpeg":
+		mimeType = "image/jpeg"
+	case ".gif":
+		mimeType = "image/gif"
+	case ".webp":
+		mimeType = "image/webp"
+	}
+
+	// 转换为 base64
+	base64Data := base64.StdEncoding.EncodeToString(fileData)
+
+	// 构建 data URI
+	dataURI := fmt.Sprintf("data:%s;base64,%s", mimeType, base64Data)
+
+	s.log.Infow("Converted local image to base64",
+		"local_path", localPath,
+		"full_path", fullPath,
+		"mime_type", mimeType,
+		"size_bytes", len(fileData),
+		"base64_length", len(base64Data))
+
+	return dataURI, nil
 }

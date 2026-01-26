@@ -12,6 +12,7 @@ type CharacterLibrary struct {
 	Name        string         `gorm:"type:varchar(100);not null" json:"name"`
 	Category    *string        `gorm:"type:varchar(50)" json:"category"`
 	ImageURL    string         `gorm:"type:varchar(500);not null" json:"image_url"`
+	LocalPath   *string        `gorm:"type:varchar(500)" json:"local_path,omitempty"`
 	Description *string        `gorm:"type:text" json:"description"`
 	Tags        *string        `gorm:"type:varchar(500)" json:"tags"`
 	SourceType  string         `gorm:"type:varchar(20);default:'generated'" json:"source_type"` // generated, uploaded

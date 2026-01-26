@@ -160,6 +160,7 @@ func (s *DramaService) GetDrama(dramaID string) (*models.Drama, error) {
 		// 查询角色的图片生成状态
 		for j := range drama.Episodes[i].Characters {
 			var imageGen models.ImageGeneration
+			// 查询进行中或失败的任务状态
 			err := s.db.Where("character_id = ? AND (status = ? OR status = ?)",
 				drama.Episodes[i].Characters[j].ID, "pending", "processing").
 				Order("created_at DESC").
@@ -192,6 +193,7 @@ func (s *DramaService) GetDrama(dramaID string) (*models.Drama, error) {
 		// 查询场景的图片生成状态
 		for j := range drama.Episodes[i].Scenes {
 			var imageGen models.ImageGeneration
+			// 查询进行中或失败的任务状态
 			err := s.db.Where("scene_id = ? AND (status = ? OR status = ?)",
 				drama.Episodes[i].Scenes[j].ID, "pending", "processing").
 				Order("created_at DESC").
@@ -236,6 +238,8 @@ func (s *DramaService) GetDrama(dramaID string) (*models.Drama, error) {
 	for _, scene := range sceneMap {
 		drama.Scenes = append(drama.Scenes, *scene)
 	}
+
+	// local_path 已通过 Preload 从 characters 和 scenes 表加载，无需额外查询
 
 	return &drama, nil
 }

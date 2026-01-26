@@ -31,12 +31,18 @@ func NewUploadService(cfg *config.Config, log *logger.Logger) (*UploadService, e
 	}, nil
 }
 
+// UploadResult 上传结果
+type UploadResult struct {
+	URL       string // 完整访问URL
+	LocalPath string // 相对路径（相对于 storage 根目录）
+}
+
 // UploadFile 上传文件到本地存储
-func (s *UploadService) UploadFile(file io.Reader, fileName, contentType string, category string) (string, error) {
+func (s *UploadService) UploadFile(file io.Reader, fileName, contentType string, category string) (*UploadResult, error) {
 	// 创建分类目录
 	categoryPath := filepath.Join(s.storagePath, category)
 	if err := os.MkdirAll(categoryPath, 0755); err != nil {
-		return "", fmt.Errorf("failed to create category directory: %w", err)
+		return nil, fmt.Errorf("failed to create category directory: %w", err)
 	}
 
 	// 生成唯一文件名
@@ -50,25 +56,29 @@ func (s *UploadService) UploadFile(file io.Reader, fileName, contentType string,
 	dst, err := os.Create(filePath)
 	if err != nil {
 		s.log.Errorw("Failed to create file", "error", err, "path", filePath)
-		return "", fmt.Errorf("创建文件失败: %w", err)
+		return nil, fmt.Errorf("创建文件失败: %w", err)
 	}
 	defer dst.Close()
 
 	// 写入文件
 	if _, err := io.Copy(dst, file); err != nil {
 		s.log.Errorw("Failed to write file", "error", err, "path", filePath)
-		return "", fmt.Errorf("写入文件失败: %w", err)
+		return nil, fmt.Errorf("写入文件失败: %w", err)
 	}
 
-	// 构建访问URL
+	// 构建访问URL和相对路径
 	fileURL := fmt.Sprintf("%s/%s/%s", s.baseURL, category, newFileName)
+	localPath := fmt.Sprintf("%s/%s", category, newFileName)
 
-	s.log.Infow("File uploaded successfully", "path", filePath, "url", fileURL)
-	return fileURL, nil
+	s.log.Infow("File uploaded successfully", "path", filePath, "url", fileURL, "local_path", localPath)
+	return &UploadResult{
+		URL:       fileURL,
+		LocalPath: localPath,
+	}, nil
 }
 
 // UploadCharacterImage 上传角色图片
-func (s *UploadService) UploadCharacterImage(file io.Reader, fileName, contentType string) (string, error) {
+func (s *UploadService) UploadCharacterImage(file io.Reader, fileName, contentType string) (*UploadResult, error) {
 	return s.UploadFile(file, fileName, contentType, "characters")
 }
 

@@ -8,24 +8,34 @@
 
     <el-card shadow="never" class="main-card">
       <el-tabs v-model="activeEpisode">
-        <el-tab-pane 
-          v-for="episode in episodes" 
+        <el-tab-pane
+          v-for="episode in episodes"
           :key="episode.id"
           :label="`第${episode.episode_number}集`"
           :name="episode.id"
         >
           <el-row :gutter="20">
             <el-col :span="8" v-for="scene in episode.scenes" :key="scene.id">
-              <el-card shadow="hover" class="scene-card" :class="{ 'has-image': scene.image_url }">
+              <el-card
+                shadow="hover"
+                class="scene-card"
+                :class="{ 'has-image': scene.image_url }"
+              >
                 <template #header>
                   <div class="scene-header">
-                    <span class="scene-number">场景 {{ scene.storyboard_number }}</span>
+                    <span class="scene-number"
+                      >场景 {{ scene.storyboard_number }}</span
+                    >
                     <el-tag size="small">{{ scene.location }}</el-tag>
                   </div>
                 </template>
 
                 <div class="scene-preview">
-                  <img v-if="scene.image_url" :src="scene.image_url" :alt="scene.title" />
+                  <el-image
+                    v-if="hasImage(scene)"
+                    :src="getImageUrl(scene)"
+                    fit="cover"
+                  />
                   <div v-else class="placeholder">
                     <el-icon :size="48"><Picture /></el-icon>
                     <p>未生成</p>
@@ -37,14 +47,14 @@
                   <p class="description">{{ scene.description }}</p>
                 </div>
 
-                <el-button 
-                  type="primary" 
+                <el-button
+                  type="primary"
                   @click="generateImage(scene)"
                   :loading="generatingId === scene.id"
                   :disabled="!!generatingId && generatingId !== scene.id"
                   style="width: 100%"
                 >
-                  {{ scene.image_url ? '重新生成' : '生成图片' }}
+                  {{ hasImage(scene) ? "重新生成" : "生成图片" }}
                 </el-button>
               </el-card>
             </el-col>
@@ -53,7 +63,12 @@
       </el-tabs>
 
       <div class="actions">
-        <el-button type="success" size="large" @click="goToNextStep" :disabled="!allImagesGenerated">
+        <el-button
+          type="success"
+          size="large"
+          @click="goToNextStep"
+          :disabled="!allImagesGenerated"
+        >
           下一步：视频生成
         </el-button>
       </div>
@@ -62,64 +77,63 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { Picture } from '@element-plus/icons-vue'
-import type { Episode, Scene } from '@/types/drama'
+import { ref, computed, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { ElMessage } from "element-plus";
+import { Picture } from "@element-plus/icons-vue";
+import type { Episode, Scene } from "@/types/drama";
+import { getImageUrl, hasImage } from "@/utils/image";
 
-const route = useRoute()
-const router = useRouter()
-const dramaId = route.params.id as string
+const route = useRoute();
+const router = useRouter();
+const dramaId = route.params.id as string;
 
-const episodes = ref<Episode[]>([])
-const activeEpisode = ref<string>()
-const generatingId = ref<string>()
+const episodes = ref<Episode[]>([]);
+const activeEpisode = ref<string>();
+const generatingId = ref<string>();
 
 const allImagesGenerated = computed(() => {
-  return episodes.value.every(ep => 
-    ep.scenes?.every(s => s.image_url)
-  )
-})
+  return episodes.value.every((ep) => ep.scenes?.every((s) => s.image_url));
+});
 
 const goBack = () => {
-  router.push(`/dramas/${dramaId}`)
-}
+  router.push(`/dramas/${dramaId}`);
+};
 
 const generateImage = async (scene: Scene) => {
-  generatingId.value = scene.id
+  generatingId.value = scene.id;
   try {
-    const { imageAPI } = await import('@/api/image')
-    
+    const { imageAPI } = await import("@/api/image");
+
     // 构建场景提示词
-    let prompt = `${scene.location}, ${scene.time}`
+    let prompt = `${scene.location}, ${scene.time}`;
     if (scene.description) {
-      prompt += `, ${scene.description}`
+      prompt += `, ${scene.description}`;
     }
 
     const result = await imageAPI.generateImage({
       drama_id: dramaId,
       scene_id: scene.id as number,
-      image_type: 'scene',
-      prompt: prompt
-    })
-    
-    ElMessage.success('场景图片生成任务已提交')
+      image_type: "scene",
+      prompt: prompt,
+    });
+
+    ElMessage.success("场景图片生成任务已提交");
   } catch (error: any) {
-    ElMessage.error(error.message || '生成失败')
+    ElMessage.error(error.message || "生成失败");
   } finally {
-    generatingId.value = undefined
+    generatingId.value = undefined;
   }
-}
+};
 
 const goToNextStep = () => {
-  router.push(`/dramas/${dramaId}/videos`)
-}
+  router.push(`/dramas/${dramaId}/videos`);
+};
 
 onMounted(() => {
   // TODO: 加载剧集和场景列表
-  episodes.value = []
-})
+  episodes.value = [];
+});
 </script>
 
 <style scoped>

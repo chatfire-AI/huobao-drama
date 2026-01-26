@@ -63,8 +63,8 @@ func (h *UploadHandler) UploadImage(c *gin.Context) {
 		return
 	}
 
-	// 上传到MinIO
-	fileURL, err := h.uploadService.UploadCharacterImage(file, header.Filename, contentType)
+	// 上传到本地存储
+	result, err := h.uploadService.UploadCharacterImage(file, header.Filename, contentType)
 	if err != nil {
 		h.log.Errorw("Failed to upload image", "error", err)
 		response.InternalError(c, "上传失败")
@@ -72,9 +72,10 @@ func (h *UploadHandler) UploadImage(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{
-		"url":      fileURL,
-		"filename": header.Filename,
-		"size":     header.Size,
+		"url":        result.URL,
+		"local_path": result.LocalPath,
+		"filename":   header.Filename,
+		"size":       header.Size,
 	})
 }
 
@@ -116,8 +117,8 @@ func (h *UploadHandler) UploadCharacterImage(c *gin.Context) {
 		return
 	}
 
-	// 上传到MinIO
-	fileURL, err := h.uploadService.UploadCharacterImage(file, header.Filename, contentType)
+	// 上传到本地存储
+	result, err := h.uploadService.UploadCharacterImage(file, header.Filename, contentType)
 	if err != nil {
 		h.log.Errorw("Failed to upload character image", "error", err)
 		response.InternalError(c, "上传失败")
@@ -125,18 +126,19 @@ func (h *UploadHandler) UploadCharacterImage(c *gin.Context) {
 	}
 
 	// 更新角色的image_url字段到数据库
-	err = h.characterLibraryService.UploadCharacterImage(characterID, fileURL)
+	err = h.characterLibraryService.UploadCharacterImage(characterID, result.URL)
 	if err != nil {
 		h.log.Errorw("Failed to update character image_url", "error", err, "character_id", characterID)
 		response.InternalError(c, "更新角色图片失败")
 		return
 	}
 
-	h.log.Infow("Character image uploaded and saved", "character_id", characterID, "url", fileURL)
+	h.log.Infow("Character image uploaded and saved", "character_id", characterID, "url", result.URL, "local_path", result.LocalPath)
 
 	response.Success(c, gin.H{
-		"url":      fileURL,
-		"filename": header.Filename,
-		"size":     header.Size,
+		"url":        result.URL,
+		"local_path": result.LocalPath,
+		"filename":   header.Filename,
+		"size":       header.Size,
 	})
 }

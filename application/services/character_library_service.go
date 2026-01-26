@@ -37,6 +37,7 @@ type CreateLibraryItemRequest struct {
 	Name        string  `json:"name" binding:"required,min=1,max=100"`
 	Category    *string `json:"category"`
 	ImageURL    string  `json:"image_url" binding:"required"`
+	LocalPath   *string `json:"local_path"`
 	Description *string `json:"description"`
 	Tags        *string `json:"tags"`
 	SourceType  string  `json:"source_type"`
@@ -102,6 +103,7 @@ func (s *CharacterLibraryService) CreateLibraryItem(req *CreateLibraryItemReques
 		Name:        req.Name,
 		Category:    req.Category,
 		ImageURL:    req.ImageURL,
+		LocalPath:   req.LocalPath,
 		Description: req.Description,
 		Tags:        req.Tags,
 		SourceType:  sourceType,
@@ -178,10 +180,19 @@ func (s *CharacterLibraryService) ApplyLibraryItemToCharacter(characterID string
 		return err
 	}
 
-	// 更新角色的image_url
-	if err := s.db.Model(&character).Update("image_url", libraryItem.ImageURL).Error; err != nil {
-		s.log.Errorw("Failed to update character image", "error", err)
-		return err
+	// 更新角色的 local_path 和 image_url
+	updates := map[string]interface{}{}
+	if libraryItem.LocalPath != nil && *libraryItem.LocalPath != "" {
+		updates["local_path"] = libraryItem.LocalPath
+	}
+	if libraryItem.ImageURL != "" {
+		updates["image_url"] = libraryItem.ImageURL
+	}
+	if len(updates) > 0 {
+		if err := s.db.Model(&character).Updates(updates).Error; err != nil {
+			s.log.Errorw("Failed to update character image", "error", err)
+			return err
+		}
 	}
 
 	s.log.Infow("Library item applied to character", "character_id", characterID, "library_item_id", libraryItemID)
@@ -247,6 +258,7 @@ func (s *CharacterLibraryService) AddCharacterToLibrary(characterID string, cate
 	charLibrary := &models.CharacterLibrary{
 		Name:        character.Name,
 		ImageURL:    *character.ImageURL,
+		LocalPath:   character.LocalPath,
 		Description: character.Description,
 		SourceType:  "character",
 	}
@@ -422,6 +434,7 @@ type UpdateCharacterRequest struct {
 	Personality *string `json:"personality"`
 	Description *string `json:"description"`
 	ImageURL    *string `json:"image_url"`
+	LocalPath   *string `json:"local_path"`
 }
 
 // UpdateCharacter 更新角色信息
@@ -464,6 +477,9 @@ func (s *CharacterLibraryService) UpdateCharacter(characterID string, req *Updat
 	}
 	if req.ImageURL != nil {
 		updates["image_url"] = *req.ImageURL
+	}
+	if req.LocalPath != nil {
+		updates["local_path"] = *req.LocalPath
 	}
 
 	if len(updates) == 0 {

@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type LocalStorage struct {
@@ -58,17 +60,33 @@ func (s *LocalStorage) GetURL(path string) string {
 	return fmt.Sprintf("%s/%s", s.baseURL, path)
 }
 
+// DownloadResult 下载结果，包含URL和相对路径
+type DownloadResult struct {
+	URL          string // 完整的访问URL
+	RelativePath string // 相对于basePath的路径，用于保存到数据库
+	AbsolutePath string // 绝对文件路径
+}
+
 // DownloadFromURL 从远程URL下载文件到本地存储
 func (s *LocalStorage) DownloadFromURL(url, category string) (string, error) {
+	result, err := s.DownloadFromURLWithPath(url, category)
+	if err != nil {
+		return "", err
+	}
+	return result.URL, nil
+}
+
+// DownloadFromURLWithPath 从远程URL下载文件到本地存储，返回详细信息
+func (s *LocalStorage) DownloadFromURLWithPath(url, category string) (*DownloadResult, error) {
 	// 发送HTTP请求下载文件
 	resp, err := http.Get(url)
 	if err != nil {
-		return "", fmt.Errorf("failed to download file: %w", err)
+		return nil, fmt.Errorf("failed to download file: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to download file: HTTP %d", resp.StatusCode)
+		return nil, fmt.Errorf("failed to download file: HTTP %d", resp.StatusCode)
 	}
 
 	// 从URL或Content-Type推断文件扩展名
@@ -77,28 +95,40 @@ func (s *LocalStorage) DownloadFromURL(url, category string) (string, error) {
 	// 创建目录
 	dir := filepath.Join(s.basePath, category)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return "", fmt.Errorf("failed to create category directory: %w", err)
+		return nil, fmt.Errorf("failed to create category directory: %w", err)
 	}
 
-	// 生成唯一文件名
-	timestamp := time.Now().Format("20060102_150405_000")
-	filename := fmt.Sprintf("%s%s", timestamp, ext)
+	// 生成唯一文件名（时间戳 + UUID 前8位）
+	timestamp := time.Now().Format("20060102_150405")
+	uniqueID := uuid.New().String()[:8]
+	filename := fmt.Sprintf("%s_%s%s", timestamp, uniqueID, ext)
 	filePath := filepath.Join(dir, filename)
 
 	// 保存文件
 	dst, err := os.Create(filePath)
 	if err != nil {
-		return "", fmt.Errorf("failed to create file: %w", err)
+		return nil, fmt.Errorf("failed to create file: %w", err)
 	}
 	defer dst.Close()
 
 	if _, err := io.Copy(dst, resp.Body); err != nil {
-		return "", fmt.Errorf("failed to save file: %w", err)
+		return nil, fmt.Errorf("failed to save file: %w", err)
 	}
 
-	// 返回本地URL
+	// 返回详细信息
+	relativePath := filepath.Join(category, filename)
 	localURL := fmt.Sprintf("%s/%s/%s", s.baseURL, category, filename)
-	return localURL, nil
+	
+	return &DownloadResult{
+		URL:          localURL,
+		RelativePath: relativePath,
+		AbsolutePath: filePath,
+	}, nil
+}
+
+// GetAbsolutePath 根据相对路径获取绝对路径
+func (s *LocalStorage) GetAbsolutePath(relativePath string) string {
+	return filepath.Join(s.basePath, relativePath)
 }
 
 // getFileExtension 从URL或Content-Type推断文件扩展名

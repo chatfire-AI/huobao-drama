@@ -54,6 +54,7 @@ type Character struct {
 	Personality     *string        `gorm:"type:text" json:"personality"`
 	VoiceStyle      *string        `gorm:"type:varchar(200)" json:"voice_style"`
 	ImageURL        *string        `gorm:"type:varchar(500)" json:"image_url"`
+	LocalPath       *string        `gorm:"type:text" json:"local_path,omitempty"`
 	ReferenceImages datatypes.JSON `gorm:"type:json" json:"reference_images"`
 	SeedValue       *string        `gorm:"type:varchar(100)" json:"seed_value"`
 	SortOrder       int            `gorm:"default:0" json:"sort_order"`
@@ -149,6 +150,7 @@ type Scene struct {
 	Prompt          string         `gorm:"type:text;not null" json:"prompt"`
 	StoryboardCount int            `gorm:"default:1" json:"storyboard_count"`
 	ImageURL        *string        `gorm:"type:varchar(500)" json:"image_url"`
+	LocalPath       *string        `gorm:"type:text" json:"local_path,omitempty"`
 	Status          string         `gorm:"type:varchar(20);default:'pending'" json:"status"` // pending, generated, failed
 	CreatedAt       time.Time      `gorm:"not null;autoCreateTime" json:"created_at"`
 	UpdatedAt       time.Time      `gorm:"not null;autoUpdateTime" json:"updated_at"`
@@ -171,6 +173,7 @@ type Prop struct {
 	Description     *string        `gorm:"type:text" json:"description"`
 	Prompt          *string        `gorm:"type:text" json:"prompt"` // AI Image prompt
 	ImageURL        *string        `gorm:"type:varchar(500)" json:"image_url"`
+	LocalPath       *string        `gorm:"type:text" json:"local_path,omitempty"`
 	ReferenceImages datatypes.JSON `gorm:"type:json" json:"reference_images"`
 	CreatedAt       time.Time      `gorm:"not null;autoCreateTime" json:"created_at"`
 	UpdatedAt       time.Time      `gorm:"not null;autoUpdateTime" json:"updated_at"`

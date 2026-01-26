@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS characters (
     personality TEXT,
     voice_style TEXT,
     image_url TEXT,
+    local_path TEXT,
     reference_images TEXT, -- JSON存储
     seed_value TEXT,
     sort_order INTEGER NOT NULL DEFAULT 0,
@@ -79,6 +80,7 @@ CREATE TABLE IF NOT EXISTS scenes (
     prompt TEXT NOT NULL,
     storyboard_count INTEGER NOT NULL DEFAULT 1,
     image_url TEXT,
+    local_path TEXT,
     status TEXT NOT NULL DEFAULT 'pending', -- pending, generated, failed
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -88,6 +90,25 @@ CREATE TABLE IF NOT EXISTS scenes (
 CREATE INDEX IF NOT EXISTS idx_scenes_drama_id ON scenes(drama_id);
 CREATE INDEX IF NOT EXISTS idx_scenes_status ON scenes(status);
 CREATE INDEX IF NOT EXISTS idx_scenes_deleted_at ON scenes(deleted_at);
+
+-- 道具表
+CREATE TABLE IF NOT EXISTS props (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    drama_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    type TEXT,
+    description TEXT,
+    prompt TEXT,
+    image_url TEXT,
+    local_path TEXT,
+    reference_images TEXT, -- JSON存储
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at DATETIME
+);
+
+CREATE INDEX IF NOT EXISTS idx_props_drama_id ON props(drama_id);
+CREATE INDEX IF NOT EXISTS idx_props_deleted_at ON props(deleted_at);
 
 -- 分镜表
 CREATE TABLE IF NOT EXISTS storyboards (
@@ -235,6 +256,7 @@ CREATE TABLE IF NOT EXISTS character_libraries (
     name TEXT NOT NULL,
     category TEXT,
     image_url TEXT NOT NULL,
+    local_path TEXT,
     description TEXT,
     tags TEXT,
     source_type TEXT NOT NULL DEFAULT 'generated', -- generated, uploaded

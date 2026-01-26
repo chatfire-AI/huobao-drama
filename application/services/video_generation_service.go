@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	models "github.com/drama-generator/backend/domain/models"
 	"github.com/drama-generator/backend/infrastructure/external/ffmpeg"
 	"github.com/drama-generator/backend/infrastructure/storage"
 	"github.com/drama-generator/backend/pkg/logger"
+	"github.com/drama-generator/backend/pkg/utils"
 	"github.com/drama-generator/backend/pkg/video"
 	"gorm.io/gorm"
 )
@@ -47,11 +49,14 @@ type GenerateVideoRequest struct {
 	ReferenceMode string `json:"reference_mode"`
 
 	// 单图模式
-	ImageURL string `json:"image_url"`
+	ImageURL      string  `json:"image_url"`
+	ImageLocalPath *string `json:"image_local_path"` // 单图模式的本地路径
 
 	// 首尾帧模式
-	FirstFrameURL *string `json:"first_frame_url"`
-	LastFrameURL  *string `json:"last_frame_url"`
+	FirstFrameURL      *string `json:"first_frame_url"`
+	FirstFrameLocalPath *string `json:"first_frame_local_path"` // 首帧本地路径
+	LastFrameURL       *string `json:"last_frame_url"`
+	LastFrameLocalPath  *string `json:"last_frame_local_path"` // 尾帧本地路径
 
 	// 多图模式
 	ReferenceImageURLs []string `json:"reference_image_urls"`
@@ -117,16 +122,22 @@ func (s *VideoGenerationService) GenerateVideo(request *GenerateVideoRequest) (*
 
 	switch request.ReferenceMode {
 	case "single":
-		// 单图模式
-		if request.ImageURL != "" {
+		// 单图模式 - 优先使用 local_path
+		if request.ImageLocalPath != nil && *request.ImageLocalPath != "" {
+			videoGen.ImageURL = request.ImageLocalPath
+		} else if request.ImageURL != "" {
 			videoGen.ImageURL = &request.ImageURL
 		}
 	case "first_last":
-		// 首尾帧模式
-		if request.FirstFrameURL != nil {
+		// 首尾帧模式 - 优先使用 local_path
+		if request.FirstFrameLocalPath != nil && *request.FirstFrameLocalPath != "" {
+			videoGen.FirstFrameURL = request.FirstFrameLocalPath
+		} else if request.FirstFrameURL != nil {
 			videoGen.FirstFrameURL = request.FirstFrameURL
 		}
-		if request.LastFrameURL != nil {
+		if request.LastFrameLocalPath != nil && *request.LastFrameLocalPath != "" {
+			videoGen.LastFrameURL = request.LastFrameLocalPath
+		} else if request.LastFrameURL != nil {
 			videoGen.LastFrameURL = request.LastFrameURL
 		}
 	case "multiple":
@@ -215,32 +226,61 @@ func (s *VideoGenerationService) ProcessVideoGeneration(videoGenID uint) {
 		opts = append(opts, video.WithSeed(*videoGen.Seed))
 	}
 
-	// 根据参考图模式添加相应的选项
+	// 根据参考图模式添加相应的选项，并将本地图片转换为base64
 	if videoGen.ReferenceMode != nil {
 		switch *videoGen.ReferenceMode {
 		case "first_last":
-			// 首尾帧模式
+			// 首尾帧模式 - 转换本地图片为base64
 			if videoGen.FirstFrameURL != nil {
-				opts = append(opts, video.WithFirstFrame(*videoGen.FirstFrameURL))
+				firstFrameBase64, err := s.convertImageToBase64(*videoGen.FirstFrameURL)
+				if err != nil {
+					s.log.Warnw("Failed to convert first frame to base64, using original URL", "error", err)
+					opts = append(opts, video.WithFirstFrame(*videoGen.FirstFrameURL))
+				} else {
+					opts = append(opts, video.WithFirstFrame(firstFrameBase64))
+				}
 			}
 			if videoGen.LastFrameURL != nil {
-				opts = append(opts, video.WithLastFrame(*videoGen.LastFrameURL))
+				lastFrameBase64, err := s.convertImageToBase64(*videoGen.LastFrameURL)
+				if err != nil {
+					s.log.Warnw("Failed to convert last frame to base64, using original URL", "error", err)
+					opts = append(opts, video.WithLastFrame(*videoGen.LastFrameURL))
+				} else {
+					opts = append(opts, video.WithLastFrame(lastFrameBase64))
+				}
 			}
 		case "multiple":
-			// 多图模式
+			// 多图模式 - 转换本地图片为base64
 			if videoGen.ReferenceImageURLs != nil {
 				var imageURLs []string
 				if err := json.Unmarshal([]byte(*videoGen.ReferenceImageURLs), &imageURLs); err == nil {
-					opts = append(opts, video.WithReferenceImages(imageURLs))
+					var base64Images []string
+					for _, imgURL := range imageURLs {
+						base64Img, err := s.convertImageToBase64(imgURL)
+						if err != nil {
+							s.log.Warnw("Failed to convert reference image to base64, using original URL", "error", err, "url", imgURL)
+							base64Images = append(base64Images, imgURL)
+						} else {
+							base64Images = append(base64Images, base64Img)
+						}
+					}
+					opts = append(opts, video.WithReferenceImages(base64Images))
 				}
 			}
 		}
 	}
 
 	// 构造imageURL参数（单图模式使用，其他模式传空字符串）
+	// 如果是本地图片，转换为base64
 	imageURL := ""
 	if videoGen.ImageURL != nil {
-		imageURL = *videoGen.ImageURL
+		base64Image, err := s.convertImageToBase64(*videoGen.ImageURL)
+		if err != nil {
+			s.log.Warnw("Failed to convert image to base64, using original URL", "error", err)
+			imageURL = *videoGen.ImageURL
+		} else {
+			imageURL = base64Image
+		}
 	}
 
 	result, err := client.GenerateVideo(imageURL, videoGen.Prompt, opts...)
@@ -319,28 +359,29 @@ func (s *VideoGenerationService) pollTaskStatus(videoGenID uint, taskID string, 
 }
 
 func (s *VideoGenerationService) completeVideoGeneration(videoGenID uint, videoURL string, duration *int, width *int, height *int, firstFrameURL *string) {
-	var localVideoPath string
+	var localVideoPath *string
 
-	// 下载视频到本地存储（仅用于缓存，不更新数据库）
+	// 下载视频到本地存储并保存相对路径到数据库
 	if s.localStorage != nil && videoURL != "" {
-		downloadedPath, err := s.localStorage.DownloadFromURL(videoURL, "videos")
+		downloadResult, err := s.localStorage.DownloadFromURLWithPath(videoURL, "videos")
 		if err != nil {
 			s.log.Warnw("Failed to download video to local storage",
 				"error", err,
 				"id", videoGenID,
 				"original_url", videoURL)
 		} else {
-			localVideoPath = downloadedPath
-			s.log.Infow("Video downloaded to local storage for caching",
+			localVideoPath = &downloadResult.RelativePath
+			s.log.Infow("Video downloaded to local storage",
 				"id", videoGenID,
 				"original_url", videoURL,
-				"local_path", localVideoPath)
+				"local_path", downloadResult.RelativePath)
 		}
 	}
 
 	// 如果视频已下载到本地，探测真实时长
-	if localVideoPath != "" && s.ffmpeg != nil {
-		if probedDuration, err := s.ffmpeg.GetVideoDuration(localVideoPath); err == nil {
+	if localVideoPath != nil && s.ffmpeg != nil {
+		absPath := s.localStorage.GetAbsolutePath(*localVideoPath)
+		if probedDuration, err := s.ffmpeg.GetVideoDuration(absPath); err == nil {
 			// 转换为整数秒（向上取整）
 			durationInt := int(probedDuration + 0.5)
 			duration = &durationInt
@@ -352,7 +393,7 @@ func (s *VideoGenerationService) completeVideoGeneration(videoGenID uint, videoU
 			s.log.Warnw("Failed to probe video duration, using provided duration",
 				"error", err,
 				"id", videoGenID,
-				"local_path", localVideoPath)
+				"local_path", *localVideoPath)
 		}
 	}
 
@@ -371,10 +412,11 @@ func (s *VideoGenerationService) completeVideoGeneration(videoGenID uint, videoU
 		}
 	}
 
-	// 数据库中使用本地URL
+	// 数据库中保存原始URL和本地路径
 	updates := map[string]interface{}{
-		"status":    models.VideoStatusCompleted,
-		"video_url": localVideoPath,
+		"status":     models.VideoStatusCompleted,
+		"video_url":  videoURL,
+		"local_path": localVideoPath,
 	}
 	if duration != nil {
 		updates["duration"] = *duration
@@ -597,4 +639,56 @@ func (s *VideoGenerationService) BatchGenerateVideosForEpisode(episodeID string)
 
 func (s *VideoGenerationService) DeleteVideoGeneration(id uint) error {
 	return s.db.Delete(&models.VideoGeneration{}, id).Error
+}
+
+// convertImageToBase64 将图片转换为base64格式
+// 优先使用本地存储的图片，如果没有则使用URL
+func (s *VideoGenerationService) convertImageToBase64(imageURL string) (string, error) {
+	// 如果已经是base64格式，直接返回
+	if strings.HasPrefix(imageURL, "data:") {
+		return imageURL, nil
+	}
+
+	// 尝试从本地存储读取
+	if s.localStorage != nil {
+		var relativePath string
+		
+		// 1. 检查是否是本地URL（包含 /static/）
+		if strings.Contains(imageURL, "/static/") {
+			// 提取相对路径，例如从 "http://localhost:5678/static/images/xxx.jpg" 提取 "images/xxx.jpg"
+			parts := strings.Split(imageURL, "/static/")
+			if len(parts) == 2 {
+				relativePath = parts[1]
+			}
+		} else if !strings.HasPrefix(imageURL, "http://") && !strings.HasPrefix(imageURL, "https://") {
+			// 2. 如果不是 HTTP/HTTPS URL，视为相对路径（如 "images/xxx.jpg"）
+			relativePath = imageURL
+		}
+		
+		// 如果识别出相对路径，尝试读取本地文件
+		if relativePath != "" {
+			absPath := s.localStorage.GetAbsolutePath(relativePath)
+			
+			// 使用工具函数转换为base64
+			base64Str, err := utils.ImageToBase64(absPath)
+			if err == nil {
+				s.log.Infow("Converted local image to base64", "path", relativePath)
+				return base64Str, nil
+			}
+			s.log.Warnw("Failed to convert local image to base64, will try URL", "error", err, "path", absPath)
+		}
+	}
+
+	// 如果本地读取失败或不是本地路径，尝试从URL下载并转换
+	base64Str, err := utils.ImageToBase64(imageURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to convert image to base64: %w", err)
+	}
+
+	urlLen := len(imageURL)
+	if urlLen > 50 {
+		urlLen = 50
+	}
+	s.log.Infow("Converted remote image to base64", "url", imageURL[:urlLen])
+	return base64Str, nil
 }

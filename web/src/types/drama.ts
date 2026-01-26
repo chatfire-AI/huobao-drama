@@ -50,6 +50,7 @@ export interface Character {
   seed_value?: string
   sort_order?: number
   image_url?: string
+  local_path?: string
   image_generation_status?: string
   image_generation_error?: string
   created_at: string
@@ -123,6 +124,7 @@ export interface Scene {
   storyboard_number?: number
   storyboard_count?: number
   image_url?: string
+  local_path?: string
   video_url?: string
   status: string
   image_generation_status?: string

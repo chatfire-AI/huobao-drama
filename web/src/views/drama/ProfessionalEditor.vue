@@ -111,11 +111,11 @@
                 </div>
                 <div
                   class="scene-preview"
-                  v-if="currentStoryboard.background?.image_url"
+                  v-if="hasImage(currentStoryboard.background)"
                   @click="showSceneImage"
                 >
                   <img
-                    :src="currentStoryboard.background.image_url"
+                    :src="getImageUrl(currentStoryboard.background)"
                     alt="场景"
                     style="cursor: pointer"
                   />
@@ -164,8 +164,8 @@
                   >
                     <div class="cast-avatar" @click="showCharacterImage(char)">
                       <img
-                        v-if="char.image_url"
-                        :src="char.image_url"
+                        v-if="hasImage(char)"
+                        :src="getImageUrl(char)"
                         :alt="char.name"
                       />
                       <span v-else>{{ char.name?.[0] || "?" }}</span>
@@ -213,8 +213,8 @@
                   >
                     <div class="cast-avatar">
                       <img
-                        v-if="prop.image_url"
-                        :src="prop.image_url"
+                        v-if="hasImage(prop)"
+                        :src="getImageUrl(prop)"
                         :alt="prop.name"
                       />
                       <el-icon v-else><Box /></el-icon>
@@ -591,11 +591,11 @@
                       class="image-item"
                     >
                       <el-image
-                        v-if="img.image_url"
-                        :src="img.image_url"
+                        v-if="hasImage(img)"
+                        :src="getImageUrl(img)"
                         :preview-src-list="
                           generatedImages
-                            .filter((i) => i.image_url)
+                            .filter((i) => hasImage(i))
                             .map((i) => i.image_url!)
                         "
                         :initial-index="
@@ -824,7 +824,7 @@
                             @click="selectPreviousLastFrame(img)"
                           >
                             <el-image
-                              :src="img.image_url"
+                              :src="getImageUrl(img)"
                               fit="cover"
                               style="
                                 width: 60px;
@@ -877,7 +877,7 @@
                           @click="handleImageSelect(img.id)"
                         >
                           <el-image
-                            :src="img.image_url"
+                            :src="getImageUrl(img)"
                             fit="cover"
                             style="
                               max-width: 120px;
@@ -959,7 +959,7 @@
                           @click="handleImageSelect(img.id)"
                         >
                           <el-image
-                            :src="img.image_url"
+                            :src="getImageUrl(img)"
                             fit="cover"
                             style="
                               max-width: 120px;
@@ -1041,7 +1041,7 @@
                           @click="handleImageSelect(img.id)"
                         >
                           <el-image
-                            :src="img.image_url"
+                            :src="getImageUrl(img)"
                             fit="cover"
                             style="
                               max-width: 120px;
@@ -1123,7 +1123,7 @@
                           @click="handleImageSelect(img.id)"
                         >
                           <el-image
-                            :src="img.image_url"
+                            :src="getImageUrl(img)"
                             fit="cover"
                             style="
                               max-width: 120px;
@@ -1205,7 +1205,7 @@
                           @click="handleImageSelect(img.id)"
                         >
                           <el-image
-                            :src="img.image_url"
+                            :src="getImageUrl(img)"
                             fit="cover"
                             style="
                               max-width: 120px;
@@ -1283,7 +1283,7 @@
                         >
                           <img
                             v-if="selectedImageObjects[0]"
-                            :src="selectedImageObjects[0].image_url"
+                            :src="getImageUrl(selectedImageObjects[0])"
                             alt=""
                             style="width: 100%; height: 100%; object-fit: cover"
                           />
@@ -2211,6 +2211,7 @@ import type { VideoMerge } from "@/api/videoMerge";
 import VideoTimelineEditor from "@/components/editor/VideoTimelineEditor.vue";
 import type { Drama, Episode, Storyboard } from "@/types/drama";
 import { AppHeader } from "@/components/common";
+import { getImageUrl, hasImage } from "@/utils/image";
 
 const route = useRoute();
 const router = useRouter();
@@ -3214,20 +3215,20 @@ const generateFrameImage = async () => {
 
   generatingImage.value = true;
   try {
-    // 收集参考图片URL
+    // 收集参考图片的 local_path
     const referenceImages: string[] = [];
 
-    // 1. 添加场景图片（从background字段获取）
-    if (currentStoryboard.value.background?.image_url) {
-      referenceImages.push(currentStoryboard.value.background.image_url);
+    // 1. 添加场景图片（从background字段获取 local_path）
+    if (currentStoryboard.value.background?.local_path) {
+      referenceImages.push(currentStoryboard.value.background.local_path);
     }
 
-    // 2. 添加当前镜头登场的角色图片
+    // 2. 添加当前镜头登场的角色图片（使用 local_path）
     const storyboardCharacters = currentStoryboardCharacters.value;
     if (storyboardCharacters && storyboardCharacters.length > 0) {
       storyboardCharacters.forEach((char: any) => {
-        if (char.image_url) {
-          referenceImages.push(char.image_url);
+        if (char.local_path) {
+          referenceImages.push(char.local_path);
         }
       });
     }
@@ -3584,8 +3585,12 @@ const generateVideo = async () => {
     // 根据参考图模式设置参数
     switch (selectedReferenceMode.value) {
       case "single":
-        // 单图模式
-        requestParams.image_url = selectedImage.image_url;
+        // 单图模式 - 优先使用 local_path
+        if (selectedImage.local_path) {
+          requestParams.image_local_path = selectedImage.local_path;
+        } else if (selectedImage.image_url) {
+          requestParams.image_url = selectedImage.image_url;
+        }
         requestParams.image_gen_id = selectedImage.id;
         break;
 
@@ -3606,20 +3611,25 @@ const generateVideo = async () => {
             (img) => img.id === selectedLastImageForVideo.value,
           );
 
-        if (firstImage?.image_url) {
+        // 优先使用 local_path
+        if (firstImage?.local_path) {
+          requestParams.first_frame_local_path = firstImage.local_path;
+        } else if (firstImage?.image_url) {
           requestParams.first_frame_url = firstImage.image_url;
         }
-        if (lastImage?.image_url) {
+        if (lastImage?.local_path) {
+          requestParams.last_frame_local_path = lastImage.local_path;
+        } else if (lastImage?.image_url) {
           requestParams.last_frame_url = lastImage.image_url;
         }
         break;
 
       case "multiple":
-        // 多图模式
+        // 多图模式 - 优先使用 local_path
         const selectedImages = selectedImagesForVideo.value
           .map((id) => videoReferenceImages.value.find((img) => img.id === id))
-          .filter((img) => img?.image_url)
-          .map((img) => img!.image_url);
+          .filter((img) => img?.local_path || img?.image_url)
+          .map((img) => img!.local_path || img!.image_url);
         requestParams.reference_image_urls = selectedImages;
         break;
 

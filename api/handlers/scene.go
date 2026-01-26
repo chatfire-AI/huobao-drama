@@ -39,13 +39,13 @@ func (h *SceneHandler) GetStoryboardsForEpisode(c *gin.Context) {
 func (h *SceneHandler) UpdateScene(c *gin.Context) {
 	sceneID := c.Param("scene_id")
 
-	var req services2.UpdateSceneRequest
+	var req services2.UpdateSceneInfoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "Invalid request")
 		return
 	}
 
-	if err := h.sceneService.UpdateScene(sceneID, &req); err != nil {
+	if err := h.sceneService.UpdateSceneInfo(sceneID, &req); err != nil {
 		h.log.Errorw("Failed to update scene", "error", err, "scene_id", sceneID)
 		response.InternalError(c, err.Error())
 		return

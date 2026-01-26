@@ -4,27 +4,46 @@
       <template #left>
         <el-button text @click="goBack" class="back-btn">
           <el-icon><ArrowLeft /></el-icon>
-          <span>{{ $t('dramaWorkflow.returnToList') }}</span>
+          <span>{{ $t("dramaWorkflow.returnToList") }}</span>
         </el-button>
         <h2 class="drama-title">{{ drama?.title }}</h2>
-        <el-tag :type="getStatusType(drama?.status)" size="small">{{ getStatusText(drama?.status) }}</el-tag>
+        <el-tag :type="getStatusType(drama?.status)" size="small">{{
+          getStatusText(drama?.status)
+        }}</el-tag>
       </template>
       <template #center>
         <!-- 步骤进度条 -->
         <div class="custom-steps">
-          <div class="step-item" :class="{ active: currentStep >= 0, current: currentStep === 0 }">
+          <div
+            class="step-item"
+            :class="{ active: currentStep >= 0, current: currentStep === 0 }"
+          >
             <div class="step-circle">1</div>
-            <span class="step-text">{{ $t('dramaWorkflow.episodeScript', { number: currentEpisodeNumber }) }}</span>
+            <span class="step-text">{{
+              $t("dramaWorkflow.episodeScript", {
+                number: currentEpisodeNumber,
+              })
+            }}</span>
           </div>
           <el-icon class="step-arrow"><ArrowRight /></el-icon>
-          <div class="step-item" :class="{ active: currentStep >= 1, current: currentStep === 1 }">
+          <div
+            class="step-item"
+            :class="{ active: currentStep >= 1, current: currentStep === 1 }"
+          >
             <div class="step-circle">2</div>
-            <span class="step-text">{{ $t('dramaWorkflow.storyboardBreakdown') }}</span>
+            <span class="step-text">{{
+              $t("dramaWorkflow.storyboardBreakdown")
+            }}</span>
           </div>
           <el-icon class="step-arrow"><ArrowRight /></el-icon>
-          <div class="step-item" :class="{ active: currentStep >= 2, current: currentStep === 2 }">
+          <div
+            class="step-item"
+            :class="{ active: currentStep >= 2, current: currentStep === 2 }"
+          >
             <div class="step-circle">3</div>
-            <span class="step-text">{{ $t('dramaWorkflow.characterImages') }}</span>
+            <span class="step-text">{{
+              $t("dramaWorkflow.characterImages")
+            }}</span>
           </div>
         </div>
       </template>
@@ -33,18 +52,29 @@
     <!-- 当前阶段内容区域 -->
     <div class="stage-area">
       <!-- 阶段 0: 剧本生成 -->
-      <el-card v-show="currentStep === 0" shadow="never" class="stage-card stage-card-fullscreen">
+      <el-card
+        v-show="currentStep === 0"
+        shadow="never"
+        class="stage-card stage-card-fullscreen"
+      >
         <div class="stage-body stage-body-fullscreen">
           <!-- 初始状态：显示创建第一章按钮 -->
-          <div v-if="!hasScript && !showScriptInput" class="create-chapter-prompt">
+          <div
+            v-if="!hasScript && !showScriptInput"
+            class="create-chapter-prompt"
+          >
             <el-empty :description="$t('dramaWorkflow.createChapterPrompt')">
-              <el-button 
-                type="primary" 
+              <el-button
+                type="primary"
                 size="large"
                 @click="startCreateChapter"
                 :icon="Document"
               >
-                {{ $t('dramaWorkflow.createChapter', { number: currentEpisodeNumber }) }}
+                {{
+                  $t("dramaWorkflow.createChapter", {
+                    number: currentEpisodeNumber,
+                  })
+                }}
               </el-button>
             </el-empty>
           </div>
@@ -58,7 +88,7 @@
                 @click="generateScriptByAI"
                 :loading="generatingScript"
               >
-                {{ generatingScript ? 'AI生成中...' : '随机生成' }}
+                {{ generatingScript ? "AI生成中..." : "随机生成" }}
               </el-button>
             </div>
 
@@ -71,9 +101,9 @@
             />
 
             <div class="action-buttons-inline">
-              <el-button 
-                type="primary" 
-                size="default" 
+              <el-button
+                type="primary"
+                size="default"
                 @click="saveChapterScript"
                 :disabled="!scriptContent.trim() || generatingScript"
               >
@@ -85,14 +115,14 @@
 
           <div v-if="hasScript" class="overview-section">
             <el-divider />
-            
+
             <div class="episode-info">
               <h3>第{{ currentEpisodeNumber }}集剧本内容</h3>
               <el-tag type="success" size="large">当前正在制作</el-tag>
             </div>
             <div class="overview-content">
               <div class="overview-item script-content-display">
-                <el-input 
+                <el-input
                   v-model="currentEpisode.script_content"
                   type="textarea"
                   :rows="15"
@@ -105,11 +135,7 @@
             <el-divider />
 
             <div class="action-buttons">
-              <el-button 
-                type="success"
-                size="large"
-                @click="nextStep"
-              >
+              <el-button type="success" size="large" @click="nextStep">
                 开始分镜拆解
                 <el-icon><ArrowRight /></el-icon>
               </el-button>
@@ -129,7 +155,11 @@
                 <p>将第{{ currentEpisodeNumber }}集剧本拆分为多个镜头</p>
               </div>
             </div>
-            <el-tag v-if="currentEpisode?.shots?.length" type="success" size="large">
+            <el-tag
+              v-if="currentEpisode?.shots?.length"
+              type="success"
+              size="large"
+            >
               已拆分 {{ currentEpisode.shots.length }} 个镜头
             </el-tag>
           </div>
@@ -137,10 +167,13 @@
 
         <div class="stage-body">
           <!-- 分镜列表 -->
-          <div v-if="currentEpisode?.shots && currentEpisode.shots.length > 0" class="shots-list">
+          <div
+            v-if="currentEpisode?.shots && currentEpisode.shots.length > 0"
+            class="shots-list"
+          >
             <div class="shots-header">
               <h3>镜头列表</h3>
-              <el-button 
+              <el-button
                 type="primary"
                 @click="parseShotsToCharacters"
                 :loading="parsingCharacters"
@@ -149,19 +182,28 @@
                 解析角色
               </el-button>
             </div>
-            
-            <el-table :data="currentEpisode.shots" border stripe style="margin-top: 16px;">
+
+            <el-table
+              :data="currentEpisode.shots"
+              border
+              stripe
+              style="margin-top: 16px"
+            >
               <el-table-column type="index" label="镜头" width="80" />
-              <el-table-column prop="content" label="镜头内容" show-overflow-tooltip />
+              <el-table-column
+                prop="content"
+                label="镜头内容"
+                show-overflow-tooltip
+              />
               <el-table-column label="时长" width="100">
                 <template #default="{ row }">
-                  {{ row.duration || '-' }}秒
+                  {{ row.duration || "-" }}秒
                 </template>
               </el-table-column>
               <el-table-column label="操作" width="100" fixed="right">
                 <template #default="{ row, $index }">
-                  <el-button 
-                    type="primary" 
+                  <el-button
+                    type="primary"
                     size="small"
                     @click="editShot(row, $index)"
                   >
@@ -170,35 +212,36 @@
                 </template>
               </el-table-column>
             </el-table>
-            
-            <div class="action-buttons" style="margin-top: 24px;">
-              <el-button 
-                @click="regenerateShots"
-                :icon="MagicStick"
-              >
-                {{ $t('dramaWorkflow.reGenerateShots') }}
+
+            <div class="action-buttons" style="margin-top: 24px">
+              <el-button @click="regenerateShots" :icon="MagicStick">
+                {{ $t("dramaWorkflow.reGenerateShots") }}
               </el-button>
-              <el-button 
+              <el-button
                 type="success"
                 @click="nextStep"
                 :disabled="!hasCharacters"
               >
-                {{ $t('dramaWorkflow.nextStepCharacterImages') }}
+                {{ $t("dramaWorkflow.nextStepCharacterImages") }}
                 <el-icon><ArrowRight /></el-icon>
               </el-button>
             </div>
           </div>
-          
+
           <!-- 未拆分时显示 -->
           <div v-else class="empty-shots">
             <el-empty :description="$t('dramaWorkflow.splitStoryboardFirst')">
-              <el-button 
-                type="primary" 
+              <el-button
+                type="primary"
                 @click="generateShots"
                 :loading="generatingShots"
                 :icon="MagicStick"
               >
-                {{ generatingShots ? $t('dramaWorkflow.aiSplitting') : $t('dramaWorkflow.aiAutoSplit') }}
+                {{
+                  generatingShots
+                    ? $t("dramaWorkflow.aiSplitting")
+                    : $t("dramaWorkflow.aiAutoSplit")
+                }}
               </el-button>
             </el-empty>
           </div>
@@ -206,35 +249,54 @@
       </el-card>
 
       <!-- 阶段 2: 角色图片 -->
-      <el-card v-show="currentStep === 2" shadow="never" class="stage-card stage-card-fullscreen">
+      <el-card
+        v-show="currentStep === 2"
+        shadow="never"
+        class="stage-card stage-card-fullscreen"
+      >
         <div class="stage-body stage-body-fullscreen">
-
           <div class="batch-toolbar-compact">
             <div class="toolbar-left">
-              <el-checkbox v-model="selectAllCharacters" @change="handleSelectAllCharacters" :indeterminate="isCharacterIndeterminate">
-                {{ $t('common.selectAll') }}
+              <el-checkbox
+                v-model="selectAllCharacters"
+                @change="handleSelectAllCharacters"
+                :indeterminate="isCharacterIndeterminate"
+              >
+                {{ $t("common.selectAll") }}
               </el-checkbox>
-              <span class="selection-info">{{ $t('dramaWorkflow.selected') }} {{ selectedCharacterIds.length }}/{{ drama?.characters?.length || 0 }}</span>
+              <span class="selection-info"
+                >{{ $t("dramaWorkflow.selected") }}
+                {{ selectedCharacterIds.length }}/{{
+                  drama?.characters?.length || 0
+                }}</span
+              >
             </div>
             <div class="toolbar-right">
-              <span class="stats-compact">{{ $t('dramaWorkflow.characterCount') }}: {{ drama?.characters?.length || 0 }} | {{ $t('dramaWorkflow.generated') }}: {{ characterImagesCount || 0 }}</span>
-              <el-button 
-                type="primary" 
+              <span class="stats-compact"
+                >{{ $t("dramaWorkflow.characterCount") }}:
+                {{ drama?.characters?.length || 0 }} |
+                {{ $t("dramaWorkflow.generated") }}:
+                {{ characterImagesCount || 0 }}</span
+              >
+              <el-button
+                type="primary"
                 size="small"
                 :disabled="selectedCharacterIds.length === 0"
                 :loading="batchGenerating"
                 @click="batchGenerateCharacterImages"
                 :icon="MagicStick"
               >
-                {{ $t('dramaWorkflow.batchGenerate') }}({{ selectedCharacterIds.length }})
+                {{ $t("dramaWorkflow.batchGenerate") }}({{
+                  selectedCharacterIds.length
+                }})
               </el-button>
-              <el-button 
+              <el-button
                 type="success"
                 size="small"
-                @click="nextStep" 
+                @click="nextStep"
                 :disabled="!allCharactersHaveImages"
               >
-                {{ $t('dramaWorkflow.nextStep') }}
+                {{ $t("dramaWorkflow.nextStep") }}
                 <el-icon><ArrowRight /></el-icon>
               </el-button>
             </div>
@@ -242,27 +304,55 @@
 
           <div class="character-cards-area-fullscreen">
             <el-row :gutter="16">
-              <el-col :span="4" v-for="character in drama?.characters" :key="character.id">
-                <el-card shadow="hover" class="character-card" :class="{ 'has-image': character.image_url, 'selected': isCharacterSelected(character.id) }">
-                  <el-checkbox 
-                    class="card-checkbox" 
-                    :model-value="isCharacterSelected(character.id)" 
+              <el-col
+                :span="4"
+                v-for="character in drama?.characters"
+                :key="character.id"
+              >
+                <el-card
+                  shadow="hover"
+                  class="character-card"
+                  :class="{
+                    'has-image': character.image_url,
+                    selected: isCharacterSelected(character.id),
+                  }"
+                >
+                  <el-checkbox
+                    class="card-checkbox"
+                    :model-value="isCharacterSelected(character.id)"
                     @change="toggleCharacterSelection(character.id)"
                   />
                   <div class="character-preview">
-                    <img v-if="character.image_url" :src="fixImageUrl(character.image_url)" :alt="character.name" />
-                    <el-avatar v-else :size="120">{{ character.name[0] }}</el-avatar>
+                    <img
+                      v-if="hasImage(character)"
+                      :src="getImageUrl(character)"
+                      :alt="character.name"
+                    />
+                    <el-avatar v-else :size="120">{{
+                      character.name[0]
+                    }}</el-avatar>
                   </div>
-                  
+
                   <div class="character-info">
                     <h4>{{ character.name }}</h4>
-                    <el-tag :type="character.role === 'main' ? 'danger' : 'info'" size="small">
-                      {{ character.role === 'main' ? '主角' : character.role === 'supporting' ? '配角' : '次要' }}
+                    <el-tag
+                      :type="character.role === 'main' ? 'danger' : 'info'"
+                      size="small"
+                    >
+                      {{
+                        character.role === "main"
+                          ? "主角"
+                          : character.role === "supporting"
+                            ? "配角"
+                            : "次要"
+                      }}
                     </el-tag>
-                    <p class="desc">{{ character.appearance || character.description }}</p>
-                    <el-button 
-                      size="small" 
-                      text 
+                    <p class="desc">
+                      {{ character.appearance || character.description }}
+                    </p>
+                    <el-button
+                      size="small"
+                      text
                       type="primary"
                       @click="editCharacterDescription(character)"
                       :icon="Edit"
@@ -271,45 +361,57 @@
                     </el-button>
                   </div>
 
-                  <div v-if="character.image_generation_status === 'failed'" class="error-hint" style="margin-bottom: 10px;">
+                  <div
+                    v-if="character.image_generation_status === 'failed'"
+                    class="error-hint"
+                    style="margin-bottom: 10px"
+                  >
                     <el-alert type="error" :closable="false" show-icon>
-                      <template #title>
-                        生成失败
-                      </template>
-                      <template #default v-if="character.image_generation_error">
+                      <template #title> 生成失败 </template>
+                      <template
+                        #default
+                        v-if="character.image_generation_error"
+                      >
                         {{ character.image_generation_error }}
                       </template>
                     </el-alert>
                   </div>
 
                   <div class="character-actions">
-                    <el-button 
-                      type="primary" 
+                    <el-button
+                      type="primary"
                       size="small"
                       :loading="generatingCharacterIds.includes(character.id)"
                       @click="generateCharacterImage(character)"
                       :icon="MagicStick"
                     >
-                      <span v-if="generatingCharacterIds.includes(character.id)">生成中...</span>
-                      <span v-else-if="character.image_generation_status === 'failed'">重新生成</span>
+                      <span v-if="generatingCharacterIds.includes(character.id)"
+                        >生成中...</span
+                      >
+                      <span
+                        v-else-if="
+                          character.image_generation_status === 'failed'
+                        "
+                        >重新生成</span
+                      >
                       <span v-else>AI生成形象</span>
                     </el-button>
-                    <el-button 
+                    <el-button
                       size="small"
                       @click="openUploadDialog(character)"
                       :icon="UploadFilled"
                     >
                       上传图片
                     </el-button>
-                    <el-button 
+                    <el-button
                       size="small"
                       @click="openCharacterLibrary(character)"
                       :icon="FolderOpened"
                     >
                       从角色库选择
                     </el-button>
-                    <el-button 
-                      v-if="character.image_url"
+                    <el-button
+                      v-if="hasImage(character)"
                       size="small"
                       type="success"
                       plain
@@ -318,7 +420,7 @@
                     >
                       添加到角色库
                     </el-button>
-                    <el-button 
+                    <el-button
                       size="small"
                       type="danger"
                       plain
@@ -330,10 +432,14 @@
                   </div>
                 </el-card>
               </el-col>
-              
+
               <!-- 添加角色卡片 -->
               <el-col :span="4">
-                <el-card shadow="hover" class="character-card add-character-card" @click="openAddCharacterDialog">
+                <el-card
+                  shadow="hover"
+                  class="character-card add-character-card"
+                  @click="openAddCharacterDialog"
+                >
                   <div class="add-character-content">
                     <el-icon :size="40" color="#909399"><Plus /></el-icon>
                     <span class="add-text">添加角色</span>
@@ -342,7 +448,6 @@
               </el-col>
             </el-row>
           </div>
-
         </div>
       </el-card>
 
@@ -357,8 +462,15 @@
                 <p>对每一集进行分镜、图片、视频、剪辑</p>
               </div>
             </div>
-            <el-tag v-if="completedEpisodesCount > 0" type="success" size="large">
-              {{ completedEpisodesCount }}/{{ drama?.episodes?.length || 0 }} 已完成
+            <el-tag
+              v-if="completedEpisodesCount > 0"
+              type="success"
+              size="large"
+            >
+              {{ completedEpisodesCount }}/{{
+                drama?.episodes?.length || 0
+              }}
+              已完成
             </el-tag>
           </div>
         </template>
@@ -382,26 +494,44 @@
           <el-divider />
 
           <h3>剧集列表</h3>
-          <el-table :data="sortedEpisodes" border size="small" max-height="400" style="margin-bottom: 24px;">
-            <el-table-column prop="episode_number" label="集数" width="80" sortable />
+          <el-table
+            :data="sortedEpisodes"
+            border
+            size="small"
+            max-height="400"
+            style="margin-bottom: 24px"
+          >
+            <el-table-column
+              prop="episode_number"
+              label="集数"
+              width="80"
+              sortable
+            />
             <el-table-column prop="title" label="标题" width="200" />
-            <el-table-column prop="description" label="简介" show-overflow-tooltip />
+            <el-table-column
+              prop="description"
+              label="简介"
+              show-overflow-tooltip
+            />
             <el-table-column label="状态" width="100">
               <template #default="{ row }">
-                <el-tag :type="row.status === 'completed' ? 'success' : 'info'" size="small">
-                  {{ row.status === 'completed' ? '已完成' : '制作中' }}
+                <el-tag
+                  :type="row.status === 'completed' ? 'success' : 'info'"
+                  size="small"
+                >
+                  {{ row.status === "completed" ? "已完成" : "制作中" }}
                 </el-tag>
               </template>
             </el-table-column>
             <el-table-column label="时长" width="100">
               <template #default="{ row }">
-                {{ row.duration ? `${row.duration}秒` : '-' }}
+                {{ row.duration ? `${row.duration}秒` : "-" }}
               </template>
             </el-table-column>
             <el-table-column label="操作" width="120" fixed="right">
               <template #default="{ row }">
-                <el-button 
-                  type="primary" 
+                <el-button
+                  type="primary"
                   size="small"
                   @click="goToEpisodeDetail(row.id)"
                 >
@@ -413,8 +543,15 @@
 
           <div class="action-area">
             <h3>操作</h3>
-            <p class="hint-text">点击进入剧集列表，对每一集进行分镜、背景、合成、视频、剪辑</p>
-            <el-button type="primary" size="large" @click="goToEpisodeList" class="main-action-btn">
+            <p class="hint-text">
+              点击进入剧集列表，对每一集进行分镜、背景、合成、视频、剪辑
+            </p>
+            <el-button
+              type="primary"
+              size="large"
+              @click="goToEpisodeList"
+              class="main-action-btn"
+            >
               <el-icon :size="20"><Film /></el-icon>
               <span>进入剧集制作</span>
             </el-button>
@@ -424,15 +561,19 @@
     </div>
 
     <!-- 编辑角色描述对话框 -->
-    <el-dialog v-model="editDescDialogVisible" title="编辑角色描述" width="600px">
+    <el-dialog
+      v-model="editDescDialogVisible"
+      title="编辑角色描述"
+      width="600px"
+    >
       <el-form v-if="editingCharacter" label-width="100px">
         <el-form-item label="角色名称">
           <el-input v-model="editingCharacter.name" disabled />
         </el-form-item>
         <el-form-item label="外貌描述">
-          <el-input 
-            v-model="editingCharacter.appearance" 
-            type="textarea" 
+          <el-input
+            v-model="editingCharacter.appearance"
+            type="textarea"
             :rows="4"
             placeholder="描述角色的外貌特征，如身高、体型、发型、穿着等"
             maxlength="500"
@@ -440,9 +581,9 @@
           />
         </el-form-item>
         <el-form-item label="性格描述">
-          <el-input 
-            v-model="editingCharacter.personality" 
-            type="textarea" 
+          <el-input
+            v-model="editingCharacter.personality"
+            type="textarea"
             :rows="3"
             placeholder="描述角色的性格特点"
             maxlength="300"
@@ -450,9 +591,9 @@
           />
         </el-form-item>
         <el-form-item label="角色简介">
-          <el-input 
-            v-model="editingCharacter.description" 
-            type="textarea" 
+          <el-input
+            v-model="editingCharacter.description"
+            type="textarea"
             :rows="3"
             placeholder="角色的背景故事或简介"
             maxlength="500"
@@ -462,12 +603,21 @@
       </el-form>
       <template #footer>
         <el-button @click="editDescDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveCharacterDescription" :loading="saving">保存</el-button>
+        <el-button
+          type="primary"
+          @click="saveCharacterDescription"
+          :loading="saving"
+          >保存</el-button
+        >
       </template>
     </el-dialog>
 
     <!-- 添加角色对话框 -->
-    <el-dialog v-model="addCharacterDialogVisible" title="添加新角色" width="600px">
+    <el-dialog
+      v-model="addCharacterDialogVisible"
+      title="添加新角色"
+      width="600px"
+    >
       <el-form :model="newCharacter" label-width="80px">
         <el-form-item label="角色名称" required>
           <el-input v-model="newCharacter.name" placeholder="请输入角色名称" />
@@ -480,24 +630,24 @@
           </el-select>
         </el-form-item>
         <el-form-item label="外貌描述">
-          <el-input 
-            v-model="newCharacter.appearance" 
+          <el-input
+            v-model="newCharacter.appearance"
             type="textarea"
             :rows="3"
             placeholder="描述角色的外貌特征，如身高、体型、发型、穿着等"
           />
         </el-form-item>
         <el-form-item label="性格特点">
-          <el-input 
-            v-model="newCharacter.personality" 
+          <el-input
+            v-model="newCharacter.personality"
             type="textarea"
             :rows="3"
             placeholder="描述角色的性格特点、行为习惯等"
           />
         </el-form-item>
         <el-form-item label="角色描述" required>
-          <el-input 
-            v-model="newCharacter.description" 
+          <el-input
+            v-model="newCharacter.description"
             type="textarea"
             :rows="4"
             placeholder="请输入角色的详细描述，包括背景故事、角色关系等"
@@ -506,25 +656,35 @@
       </el-form>
       <template #footer>
         <el-button @click="addCharacterDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="addCharacter" :loading="saving">添加</el-button>
+        <el-button type="primary" @click="addCharacter" :loading="saving"
+          >添加</el-button
+        >
       </template>
     </el-dialog>
 
     <!-- 角色库选择对话框 -->
-    <el-dialog v-model="libraryDialogVisible" title="从角色库选择" width="800px">
+    <el-dialog
+      v-model="libraryDialogVisible"
+      title="从角色库选择"
+      width="800px"
+    >
       <div class="library-grid" v-if="characterLibrary.length > 0">
         <el-row :gutter="16">
           <el-col :span="6" v-for="item in characterLibrary" :key="item.id">
-            <el-card 
-              shadow="hover" 
-              class="library-item" 
+            <el-card
+              shadow="hover"
+              class="library-item"
               @click="selectFromLibrary(item)"
               :body-style="{ padding: '10px' }"
             >
-              <img :src="fixImageUrl(item.image_url)" :alt="item.name" class="library-image" />
+              <img
+                :src="getImageUrl(item)"
+                :alt="item.name"
+                class="library-image"
+              />
               <div class="library-info">
                 <div class="library-name">{{ item.name }}</div>
-                <el-tag size="small">{{ item.category || '未分类' }}</el-tag>
+                <el-tag size="small">{{ item.category || "未分类" }}</el-tag>
               </div>
             </el-card>
           </el-col>
@@ -536,10 +696,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ref, computed, onMounted, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
+import { ElMessage, ElMessageBox } from "element-plus";
 import {
   MagicStick,
   Film,
@@ -557,769 +717,796 @@ import {
   WarningFilled,
   InfoFilled,
   Check,
-  Delete
-} from '@element-plus/icons-vue'
-import { dramaAPI } from '@/api/drama'
-import { generationAPI } from '@/api/generation'
-import { characterLibraryAPI } from '@/api/character-library'
-import request from '@/utils/request'
-import type { Drama, DramaStatus } from '@/types/drama'
-import { AppHeader } from '@/components/common'
+  Delete,
+} from "@element-plus/icons-vue";
+import { dramaAPI } from "@/api/drama";
+import { generationAPI } from "@/api/generation";
+import { characterLibraryAPI } from "@/api/character-library";
+import request from "@/utils/request";
+import type { Drama, DramaStatus } from "@/types/drama";
+import { AppHeader } from "@/components/common";
+import { getImageUrl, hasImage } from "@/utils/image";
 
-const route = useRoute()
-const router = useRouter()
-const { t } = useI18n()
-const drama = ref<Drama>()
-const currentStep = ref(0)
-const currentEpisodeNumber = ref(1) // 当前正在创作的集数
-const generatingCharacterIds = ref<(number | string)[]>([])
-const batchGenerating = ref(false)
-const selectedCharacterIds = ref<(number | string)[]>([])
-const selectAllCharacters = ref(false)
-const generatingScript = ref(false)
-const scriptContent = ref('')
-const showScriptInput = ref(false) // 控制是否显示剧本输入框
+const route = useRoute();
+const router = useRouter();
+const { t } = useI18n();
+const drama = ref<Drama>();
+const currentStep = ref(0);
+const currentEpisodeNumber = ref(1); // 当前正在创作的集数
+const generatingCharacterIds = ref<(number | string)[]>([]);
+const batchGenerating = ref(false);
+const selectedCharacterIds = ref<(number | string)[]>([]);
+const selectAllCharacters = ref(false);
+const generatingScript = ref(false);
+const scriptContent = ref("");
+const showScriptInput = ref(false); // 控制是否显示剧本输入框
 
 // 分镜相关状态
-const generatingShots = ref(false)
-const parsingCharacters = ref(false)
+const generatingShots = ref(false);
+const parsingCharacters = ref(false);
 
 const isCharacterIndeterminate = computed(() => {
-  const selectedCount = selectedCharacterIds.value.length
-  const totalCount = drama.value?.characters?.length || 0
-  return selectedCount > 0 && selectedCount < totalCount
-})
+  const selectedCount = selectedCharacterIds.value.length;
+  const totalCount = drama.value?.characters?.length || 0;
+  return selectedCount > 0 && selectedCount < totalCount;
+});
 
 const isCharacterSelected = (id: number | string) => {
-  return selectedCharacterIds.value.includes(id)
-}
+  return selectedCharacterIds.value.includes(id);
+};
 
 const toggleCharacterSelection = (id: number | string) => {
-  const index = selectedCharacterIds.value.indexOf(id)
+  const index = selectedCharacterIds.value.indexOf(id);
   if (index > -1) {
-    selectedCharacterIds.value.splice(index, 1)
+    selectedCharacterIds.value.splice(index, 1);
   } else {
-    selectedCharacterIds.value.push(id)
+    selectedCharacterIds.value.push(id);
   }
-  updateSelectAllCharactersState()
-}
+  updateSelectAllCharactersState();
+};
 
 const handleSelectAllCharacters = (val: boolean) => {
   if (val && drama.value?.characters) {
-    selectedCharacterIds.value = drama.value.characters.map(c => c.id)
+    selectedCharacterIds.value = drama.value.characters.map((c) => c.id);
   } else {
-    selectedCharacterIds.value = []
+    selectedCharacterIds.value = [];
   }
-}
+};
 
 const updateSelectAllCharactersState = () => {
-  const totalCount = drama.value?.characters?.length || 0
-  selectAllCharacters.value = selectedCharacterIds.value.length === totalCount && totalCount > 0
-}
-const libraryDialogVisible = ref(false)
-const selectedCharacter = ref<any>(null)
-const characterLibrary = ref<any[]>([])
-const editDescDialogVisible = ref(false)
-const editingCharacter = ref<any>(null)
-const saving = ref(false)
-const addCharacterDialogVisible = ref(false)
+  const totalCount = drama.value?.characters?.length || 0;
+  selectAllCharacters.value =
+    selectedCharacterIds.value.length === totalCount && totalCount > 0;
+};
+const libraryDialogVisible = ref(false);
+const selectedCharacter = ref<any>(null);
+const characterLibrary = ref<any[]>([]);
+const editDescDialogVisible = ref(false);
+const editingCharacter = ref<any>(null);
+const saving = ref(false);
+const addCharacterDialogVisible = ref(false);
 const newCharacter = ref({
-  name: '',
-  role: 'supporting',
-  appearance: '',
-  personality: '',
-  description: ''
-})
+  name: "",
+  role: "supporting",
+  appearance: "",
+  personality: "",
+  description: "",
+});
 
 // 各阶段完成状态
 // 判断当前集是否已有剧本
 const hasScript = computed(() => {
   if (!drama.value?.episodes || drama.value.episodes.length === 0) {
-    return false
+    return false;
   }
   // 检查当前集是否存在
   const currentEpisode = drama.value.episodes.find(
-    ep => ep.episode_number === currentEpisodeNumber.value
-  )
-  return currentEpisode && currentEpisode.script_content && currentEpisode.script_content.length > 0
-})
+    (ep) => ep.episode_number === currentEpisodeNumber.value,
+  );
+  return (
+    currentEpisode &&
+    currentEpisode.script_content &&
+    currentEpisode.script_content.length > 0
+  );
+});
 
 // 获取当前集
 const currentEpisode = computed(() => {
-  if (!drama.value?.episodes) return null
+  if (!drama.value?.episodes) return null;
   return drama.value.episodes.find(
-    ep => ep.episode_number === currentEpisodeNumber.value
-  )
-})
+    (ep) => ep.episode_number === currentEpisodeNumber.value,
+  );
+});
 
 // 判断是否有角色
 const hasCharacters = computed(() => {
-  return drama.value?.characters && drama.value.characters.length > 0
-})
-const episodesCount = computed(() => drama.value?.episodes?.length || 0)
+  return drama.value?.characters && drama.value.characters.length > 0;
+});
+const episodesCount = computed(() => drama.value?.episodes?.length || 0);
 const sortedEpisodes = computed(() => {
-  if (!drama.value?.episodes) return []
-  return [...drama.value.episodes].sort((a, b) => a.episode_number - b.episode_number)
-})
-const charactersCount = computed(() => drama.value?.characters?.length || 0)
+  if (!drama.value?.episodes) return [];
+  return [...drama.value.episodes].sort(
+    (a, b) => a.episode_number - b.episode_number,
+  );
+});
+const charactersCount = computed(() => drama.value?.characters?.length || 0);
 const characterImagesCount = computed(() => {
-  return drama.value?.characters?.filter(c => c.image_url).length || 0
-})
+  return drama.value?.characters?.filter((c) => c.image_url).length || 0;
+});
 const allCharactersHaveImages = computed(() => {
   if (!drama.value?.characters || drama.value.characters.length === 0) {
-    return false
+    return false;
   }
-  return drama.value.characters.every(c => c.image_url && c.image_url.length > 0)
-})
+  return drama.value.characters.every(
+    (c) => c.image_url && c.image_url.length > 0,
+  );
+});
 const completedEpisodesCount = computed(() => {
-  return 0
-})
+  return 0;
+});
 const overallProgress = computed(() => {
-  return 0
-})
+  return 0;
+});
 
 // 修复图片URL协议问题
 const fixImageUrl = (url: string | undefined | null): string => {
-  if (!url) return ''
+  if (!url) return "";
   // 如果是blob URL，直接返回
-  if (url.startsWith('blob:')) return url
-  return url
-}
+  if (url.startsWith("blob:")) return url;
+  return url;
+};
 
 // 状态标签
 const getStatusType = (status?: DramaStatus) => {
   const types: Partial<Record<DramaStatus, string>> = {
-    draft: 'info',
-    planning: 'primary',
-    production: 'warning',
-    generating: 'warning',
-    completed: 'success',
-    archived: 'info',
-    error: 'danger'
-  }
-  return status ? types[status] : 'info'
-}
+    draft: "info",
+    planning: "primary",
+    production: "warning",
+    generating: "warning",
+    completed: "success",
+    archived: "info",
+    error: "danger",
+  };
+  return status ? types[status] : "info";
+};
 
 const getStatusText = (status?: DramaStatus) => {
   const texts: Partial<Record<DramaStatus, string>> = {
-    draft: '草稿',
-    planning: '策划中',
-    production: '制作中',
-    generating: '生成中',
-    completed: '已完成',
-    archived: '已归档',
-    error: '错误'
-  }
-  return status ? texts[status] : '未知'
-}
+    draft: "草稿",
+    planning: "策划中",
+    production: "制作中",
+    generating: "生成中",
+    completed: "已完成",
+    archived: "已归档",
+    error: "错误",
+  };
+  return status ? texts[status] : "未知";
+};
 
 // 导航
 const goBack = () => {
-  router.push('/dramas')
-}
+  router.push("/dramas");
+};
 
 const prevStep = () => {
   if (currentStep.value > 0) {
-    currentStep.value--
-    updateUrlState()
+    currentStep.value--;
+    updateUrlState();
   }
-}
+};
 
 const nextStep = () => {
   if (currentStep.value < 2) {
-    currentStep.value++
-    updateUrlState()
+    currentStep.value++;
+    updateUrlState();
   }
-}
+};
 
 // 更新URL状态，保存当前步骤
 const updateUrlState = () => {
   router.replace({
     query: {
       ...route.query,
-      step: currentStep.value.toString()
-    }
-  })
-}
+      step: currentStep.value.toString(),
+    },
+  });
+};
 
 // 页面跳转
 const goToScriptGeneration = () => {
-  router.push(`/dramas/${drama.value?.id}/script`)
-}
+  router.push(`/dramas/${drama.value?.id}/script`);
+};
 
 // AI流式生成剧本
 const generateScriptByAI = async () => {
   if (!drama.value?.title) {
-    ElMessage.warning('项目标题不存在')
-    return
+    ElMessage.warning("项目标题不存在");
+    return;
   }
 
-  generatingScript.value = true
-  scriptContent.value = ''
-  
+  generatingScript.value = true;
+  scriptContent.value = "";
+
   try {
-    const response = await fetch('/api/v1/ai/generate-script-stream', {
-      method: 'POST',
+    const response = await fetch("/api/v1/ai/generate-script-stream", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         drama_title: drama.value.title,
-        drama_id: drama.value.id
-      })
-    })
+        drama_id: drama.value.id,
+      }),
+    });
 
     if (!response.ok) {
-      throw new Error('生成失败')
+      throw new Error("生成失败");
     }
 
-    const reader = response.body?.getReader()
-    const decoder = new TextDecoder()
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
 
     if (!reader) {
-      throw new Error('无法读取响应流')
+      throw new Error("无法读取响应流");
     }
 
     while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      
-      const chunk = decoder.decode(value, { stream: true })
-      scriptContent.value += chunk
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      scriptContent.value += chunk;
     }
 
-    ElMessage.success('剧本生成完成')
+    ElMessage.success("剧本生成完成");
   } catch (error: any) {
-    ElMessage.error(error.message || '生成失败')
-    scriptContent.value = ''
+    ElMessage.error(error.message || "生成失败");
+    scriptContent.value = "";
   } finally {
-    generatingScript.value = false
+    generatingScript.value = false;
   }
-}
+};
 
 // 保存章节剧本（不解析角色）
 const saveChapterScript = async () => {
   if (!scriptContent.value.trim()) {
-    ElMessage.warning('请输入章节内容')
-    return
+    ElMessage.warning("请输入章节内容");
+    return;
   }
 
-  generatingScript.value = true
+  generatingScript.value = true;
   try {
-    ElMessage.info('正在保存章节...')
-    
+    ElMessage.info("正在保存章节...");
+
     // 保存当前章节内容，不进行角色解析
-    const existingEpisodes = drama.value?.episodes || []
+    const existingEpisodes = drama.value?.episodes || [];
     const episodeIndex = existingEpisodes.findIndex(
-      ep => ep.episode_number === currentEpisodeNumber.value
-    )
-    
+      (ep) => ep.episode_number === currentEpisodeNumber.value,
+    );
+
     const currentEpisodeData = {
       episode_number: currentEpisodeNumber.value,
       title: `第${currentEpisodeNumber.value}章`,
       script_content: scriptContent.value,
-      description: '',
+      description: "",
       duration: 0,
-      status: 'draft'
-    }
-    
-    let episodesToSave
+      status: "draft",
+    };
+
+    let episodesToSave;
     if (episodeIndex > -1) {
       // 更新现有章节
-      episodesToSave = [...existingEpisodes]
+      episodesToSave = [...existingEpisodes];
       episodesToSave[episodeIndex] = {
         ...existingEpisodes[episodeIndex],
-        ...currentEpisodeData
-      }
+        ...currentEpisodeData,
+      };
     } else {
       // 添加新章节
       episodesToSave = [
-        ...existingEpisodes.map(ep => ({
+        ...existingEpisodes.map((ep) => ({
           episode_number: ep.episode_number,
           title: ep.title,
           script_content: ep.script_content,
           description: ep.description,
           duration: ep.duration,
-          status: ep.status
+          status: ep.status,
         })),
-        currentEpisodeData
-      ]
+        currentEpisodeData,
+      ];
     }
-    
-    await dramaAPI.saveEpisodes(drama.value!.id, episodesToSave)
-    
-    ElMessage.success(`第${currentEpisodeNumber.value}章保存成功`)
-    await loadDramaData()
+
+    await dramaAPI.saveEpisodes(drama.value!.id, episodesToSave);
+
+    ElMessage.success(`第${currentEpisodeNumber.value}章保存成功`);
+    await loadDramaData();
   } catch (error: any) {
-    ElMessage.error(error.message || '保存失败')
+    ElMessage.error(error.message || "保存失败");
   } finally {
-    generatingScript.value = false
+    generatingScript.value = false;
   }
-}
+};
 
 // 编辑角色描述
 const editCharacterDescription = (character: any) => {
-  editingCharacter.value = { ...character }
-  editDescDialogVisible.value = true
-}
+  editingCharacter.value = { ...character };
+  editDescDialogVisible.value = true;
+};
 
 // 保存角色描述
 const saveCharacterDescription = async () => {
-  if (!editingCharacter.value) return
-  
-  saving.value = true
+  if (!editingCharacter.value) return;
+
+  saving.value = true;
   try {
     await characterLibraryAPI.updateCharacter(editingCharacter.value.id, {
       appearance: editingCharacter.value.appearance,
       personality: editingCharacter.value.personality,
-      description: editingCharacter.value.description
-    })
-    
-    ElMessage.success('角色描述已更新')
-    editDescDialogVisible.value = false
-    await loadDramaData()
+      description: editingCharacter.value.description,
+    });
+
+    ElMessage.success("角色描述已更新");
+    editDescDialogVisible.value = false;
+    await loadDramaData();
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '保存失败')
+    ElMessage.error(error.response?.data?.message || "保存失败");
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 // 集数切换
 const switchEpisode = (episodeNumber: number) => {
-  currentEpisodeNumber.value = episodeNumber
+  currentEpisodeNumber.value = episodeNumber;
   // 加载该集的剧本内容
-  const episode = drama.value?.episodes?.find(ep => ep.episode_number === episodeNumber)
+  const episode = drama.value?.episodes?.find(
+    (ep) => ep.episode_number === episodeNumber,
+  );
   if (episode && episode.script_content) {
-    scriptContent.value = episode.script_content
+    scriptContent.value = episode.script_content;
   } else {
-    scriptContent.value = ''
+    scriptContent.value = "";
   }
-}
+};
 
 // 开始创建章节
 const startCreateChapter = () => {
-  showScriptInput.value = true
-}
+  showScriptInput.value = true;
+};
 
 // 创建下一集
 const createNextEpisode = () => {
-  currentEpisodeNumber.value = episodesCount.value + 1
-  scriptContent.value = ''
-  showScriptInput.value = true // 显示输入框
-  currentStep.value = 0
-}
+  currentEpisodeNumber.value = episodesCount.value + 1;
+  scriptContent.value = "";
+  showScriptInput.value = true; // 显示输入框
+  currentStep.value = 0;
+};
 
 // 编辑当前集剧本
 const editCurrentEpisodeScript = () => {
   if (currentEpisode.value?.script_content) {
-    scriptContent.value = currentEpisode.value.script_content
+    scriptContent.value = currentEpisode.value.script_content;
   }
-}
+};
 
 // AI自动拆分分镜
 const generateShots = async () => {
   if (!currentEpisode.value?.script_content) {
-    ElMessage.warning(t('dramaWorkflow.pleaseWriteScript'))
-    return
+    ElMessage.warning(t("dramaWorkflow.pleaseWriteScript"));
+    return;
   }
-  
-  generatingShots.value = true
+
+  generatingShots.value = true;
   try {
-    ElMessage.info('AI正在拆分镜头...')
-    
+    ElMessage.info("AI正在拆分镜头...");
+
     // 调用分镜拆分API
     const result = await generationAPI.generateShots({
       episode_id: currentEpisode.value.id,
-      script_content: currentEpisode.value.script_content
-    })
-    
-    ElMessage.success(`成功拆分 ${result.shots.length} 个镜头`)
-    await loadDramaData()
+      script_content: currentEpisode.value.script_content,
+    });
+
+    ElMessage.success(`成功拆分 ${result.shots.length} 个镜头`);
+    await loadDramaData();
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '拆分失败')
+    ElMessage.error(error.response?.data?.message || "拆分失败");
   } finally {
-    generatingShots.value = false
+    generatingShots.value = false;
   }
-}
+};
 
 // 重新拆分分镜
 const regenerateShots = async () => {
   await ElMessageBox.confirm(
-    t('dramaWorkflow.reGenerateShotsConfirm'),
-    t('dramaWorkflow.reGenerateShots'),
+    t("dramaWorkflow.reGenerateShotsConfirm"),
+    t("dramaWorkflow.reGenerateShots"),
     {
-      confirmButtonText: t('common.confirm'),
-      cancelButtonText: t('common.cancel'),
-      type: 'warning'
-    }
-  )
-  await generateShots()
-}
+      confirmButtonText: t("common.confirm"),
+      cancelButtonText: t("common.cancel"),
+      type: "warning",
+    },
+  );
+  await generateShots();
+};
 
 // 编辑镜头
 const editShot = (shot: any, index: number) => {
   // TODO: 打开镜头编辑对话框
-  ElMessage.info('镜头编辑功能开发中')
-}
+  ElMessage.info("镜头编辑功能开发中");
+};
 
 // 从分镜解析角色
 const parseShotsToCharacters = async () => {
   if (!currentEpisode.value?.shots || currentEpisode.value.shots.length === 0) {
-    ElMessage.warning('请先进行分镜拆分')
-    return
+    ElMessage.warning("请先进行分镜拆分");
+    return;
   }
-  
-  parsingCharacters.value = true
+
+  parsingCharacters.value = true;
   try {
-    ElMessage.info('正在解析角色...')
-    
+    ElMessage.info("正在解析角色...");
+
     // 从所有镜头内容中提取角色
-    const shotsContent = currentEpisode.value.shots.map((s: any) => s.content).join('\n')
-    
+    const shotsContent = currentEpisode.value.shots
+      .map((s: any) => s.content)
+      .join("\n");
+
     const parseResult = await generationAPI.parseScript({
       drama_id: drama.value!.id,
       script_content: shotsContent,
-      auto_split: false
-    })
-    
+      auto_split: false,
+    });
+
     if (parseResult.characters && parseResult.characters.length > 0) {
-      const existingCharacters = drama.value?.characters || []
-      const existingNames = new Set(existingCharacters.map(c => c.name))
-      
+      const existingCharacters = drama.value?.characters || [];
+      const existingNames = new Set(existingCharacters.map((c) => c.name));
+
       // 只添加新角色
       const newCharacters = parseResult.characters.filter(
-        (c: any) => !existingNames.has(c.name)
-      )
-      
+        (c: any) => !existingNames.has(c.name),
+      );
+
       if (newCharacters.length > 0) {
         const allCharacters = [
-          ...existingCharacters.map(c => ({
+          ...existingCharacters.map((c) => ({
             name: c.name,
             role: c.role,
             appearance: c.appearance,
             personality: c.personality,
-            description: c.description
+            description: c.description,
           })),
-          ...newCharacters
-        ]
-        await dramaAPI.saveCharacters(drama.value!.id, allCharacters)
-        ElMessage.success(`成功解析 ${newCharacters.length} 个新角色`)
+          ...newCharacters,
+        ];
+        await dramaAPI.saveCharacters(drama.value!.id, allCharacters);
+        ElMessage.success(`成功解析 ${newCharacters.length} 个新角色`);
       } else {
-        ElMessage.info('未发现新角色')
+        ElMessage.info("未发现新角色");
       }
     } else {
-      ElMessage.warning('未解析到角色信息')
+      ElMessage.warning("未解析到角色信息");
     }
-    
-    await loadDramaData()
+
+    await loadDramaData();
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '解析失败')
+    ElMessage.error(error.response?.data?.message || "解析失败");
   } finally {
-    parsingCharacters.value = false
+    parsingCharacters.value = false;
   }
-}
+};
 
 // 打开添加角色对话框
 const openAddCharacterDialog = () => {
   newCharacter.value = {
-    name: '',
-    role: 'supporting',
-    appearance: '',
-    personality: '',
-    description: ''
-  }
-  addCharacterDialogVisible.value = true
-}
+    name: "",
+    role: "supporting",
+    appearance: "",
+    personality: "",
+    description: "",
+  };
+  addCharacterDialogVisible.value = true;
+};
 
 // 添加角色
 const addCharacter = async () => {
   if (!newCharacter.value.name.trim()) {
-    ElMessage.warning('请输入角色名称')
-    return
+    ElMessage.warning("请输入角色名称");
+    return;
   }
-  
+
   if (!newCharacter.value.description.trim()) {
-    ElMessage.warning('请输入角色描述')
-    return
+    ElMessage.warning("请输入角色描述");
+    return;
   }
-  
-  saving.value = true
+
+  saving.value = true;
   try {
     // 将新角色添加到现有角色列表中，而不是覆盖
-    const existingCharacters = drama.value?.characters || []
+    const existingCharacters = drama.value?.characters || [];
     const allCharacters = [
-      ...existingCharacters.map(c => ({
+      ...existingCharacters.map((c) => ({
         name: c.name,
         role: c.role,
         appearance: c.appearance,
         personality: c.personality,
-        description: c.description
+        description: c.description,
       })),
       {
         name: newCharacter.value.name,
         role: newCharacter.value.role,
         appearance: newCharacter.value.appearance,
         personality: newCharacter.value.personality,
-        description: newCharacter.value.description
-      }
-    ]
-    
-    await dramaAPI.saveCharacters(drama.value!.id, allCharacters)
-    
-    ElMessage.success('角色添加成功')
-    addCharacterDialogVisible.value = false
-    await loadDramaData()
+        description: newCharacter.value.description,
+      },
+    ];
+
+    await dramaAPI.saveCharacters(drama.value!.id, allCharacters);
+
+    ElMessage.success("角色添加成功");
+    addCharacterDialogVisible.value = false;
+    await loadDramaData();
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '添加失败')
+    ElMessage.error(error.response?.data?.message || "添加失败");
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 // 删除角色
 const deleteCharacter = async (character: any) => {
   try {
     // 检查角色是否在角色库中
     if (character.library_id) {
-      ElMessage.warning('该角色来自角色库，请到角色库中删除')
-      return
+      ElMessage.warning("该角色来自角色库，请到角色库中删除");
+      return;
     }
-    
+
     await ElMessageBox.confirm(
       `确定要删除角色 "${character.name}" 吗？此操作不可恢复。`,
-      '删除角色',
+      "删除角色",
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
-    
-    saving.value = true
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning",
+      },
+    );
+
+    saving.value = true;
     // 从现有角色列表中移除该角色，然后保存
-    const remainingCharacters = drama.value!.characters!
-      .filter(c => c.id !== character.id)
-      .map(c => ({
+    const remainingCharacters = drama
+      .value!.characters!.filter((c) => c.id !== character.id)
+      .map((c) => ({
         name: c.name,
         role: c.role,
         appearance: c.appearance,
         personality: c.personality,
-        description: c.description
-      }))
-    
-    await dramaAPI.saveCharacters(drama.value!.id, remainingCharacters)
-    
-    ElMessage.success('角色已删除')
-    await loadDramaData()
+        description: c.description,
+      }));
+
+    await dramaAPI.saveCharacters(drama.value!.id, remainingCharacters);
+
+    ElMessage.success("角色已删除");
+    await loadDramaData();
   } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || '删除失败')
+    if (error !== "cancel") {
+      ElMessage.error(error.response?.data?.message || "删除失败");
     }
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 const generateCharacterImage = async (character: any) => {
-  if (generatingCharacterIds.value.includes(character.id)) return
-  
-  generatingCharacterIds.value.push(character.id)
+  if (generatingCharacterIds.value.includes(character.id)) return;
+
+  generatingCharacterIds.value.push(character.id);
   try {
-    const res = await characterLibraryAPI.generateCharacterImage(character.id)
-    ElMessage.success(`${character.name}的形象生成成功`)
-    await loadDramaData()
+    const res = await characterLibraryAPI.generateCharacterImage(character.id);
+    ElMessage.success(`${character.name}的形象生成成功`);
+    await loadDramaData();
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || `${character.name}生成失败`)
+    ElMessage.error(
+      error.response?.data?.message || `${character.name}生成失败`,
+    );
   } finally {
-    const index = generatingCharacterIds.value.indexOf(character.id)
+    const index = generatingCharacterIds.value.indexOf(character.id);
     if (index > -1) {
-      generatingCharacterIds.value.splice(index, 1)
+      generatingCharacterIds.value.splice(index, 1);
     }
   }
-}
+};
 
 const batchGenerateCharacterImages = async () => {
   if (selectedCharacterIds.value.length === 0) {
-    ElMessage.warning('请选择要生成的角色')
-    return
+    ElMessage.warning("请选择要生成的角色");
+    return;
   }
 
   if (selectedCharacterIds.value.length > 10) {
-    ElMessage.warning('单次最多生成10个角色')
-    return
+    ElMessage.warning("单次最多生成10个角色");
+    return;
   }
 
-  batchGenerating.value = true
-  generatingCharacterIds.value = [...selectedCharacterIds.value]
-  
+  batchGenerating.value = true;
+  generatingCharacterIds.value = [...selectedCharacterIds.value];
+
   try {
     await characterLibraryAPI.batchGenerateCharacterImages(
-      selectedCharacterIds.value.map(id => String(id))
-    )
-    
-    ElMessage.success(`批量生成任务已提交，正在后台生成 ${selectedCharacterIds.value.length} 个角色形象`)
-    
-    // 轮询检查生成状态
-    startCharacterPolling()
-  } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '批量生成失败')
-    batchGenerating.value = false
-    generatingCharacterIds.value = []
-  }
-}
+      selectedCharacterIds.value.map((id) => String(id)),
+    );
 
-let characterPollingTimer: number | null = null
+    ElMessage.success(
+      `批量生成任务已提交，正在后台生成 ${selectedCharacterIds.value.length} 个角色形象`,
+    );
+
+    // 轮询检查生成状态
+    startCharacterPolling();
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.message || "批量生成失败");
+    batchGenerating.value = false;
+    generatingCharacterIds.value = [];
+  }
+};
+
+let characterPollingTimer: number | null = null;
 
 const startCharacterPolling = () => {
-  if (characterPollingTimer) return
-  
+  if (characterPollingTimer) return;
+
   characterPollingTimer = window.setInterval(async () => {
     try {
-      await loadDramaData()
-      
-      if (!drama.value?.characters) return
-      
+      await loadDramaData();
+
+      if (!drama.value?.characters) return;
+
       // 检查每个选中角色的状态
-      let completedCount = 0
-      let failedCount = 0
-      const failedCharacters: string[] = []
-      
-      selectedCharacterIds.value.forEach(id => {
-        const char = drama.value?.characters?.find(c => c.id === id)
+      let completedCount = 0;
+      let failedCount = 0;
+      const failedCharacters: string[] = [];
+
+      selectedCharacterIds.value.forEach((id) => {
+        const char = drama.value?.characters?.find((c) => c.id === id);
         if (char) {
           if (char.image_url) {
-            completedCount++
-          } else if (char.image_generation_status === 'failed') {
-            failedCount++
-            failedCharacters.push(char.name)
+            completedCount++;
+          } else if (char.image_generation_status === "failed") {
+            failedCount++;
+            failedCharacters.push(char.name);
           }
         }
-      })
-      
+      });
+
       // 如果所有任务都完成（成功或失败），停止轮询
       if (completedCount + failedCount === selectedCharacterIds.value.length) {
-        stopCharacterPolling()
-        
+        stopCharacterPolling();
+
         if (failedCount > 0) {
-          ElMessage.warning(`批量生成完成：${completedCount}个成功，${failedCount}个失败（${failedCharacters.join('、')}）`)
+          ElMessage.warning(
+            `批量生成完成：${completedCount}个成功，${failedCount}个失败（${failedCharacters.join("、")}）`,
+          );
         } else {
-          ElMessage.success('批量生成完成')
+          ElMessage.success("批量生成完成");
         }
       }
     } catch (error) {
-      console.error('轮询错误:', error)
+      console.error("轮询错误:", error);
     }
-  }, 5000) // 每5秒检查一次
-}
+  }, 5000); // 每5秒检查一次
+};
 
 const stopCharacterPolling = () => {
   if (characterPollingTimer) {
-    clearInterval(characterPollingTimer)
-    characterPollingTimer = null
+    clearInterval(characterPollingTimer);
+    characterPollingTimer = null;
   }
-  batchGenerating.value = false
-  generatingCharacterIds.value = []
-  selectedCharacterIds.value = []
-  selectAllCharacters.value = false
-}
+  batchGenerating.value = false;
+  generatingCharacterIds.value = [];
+  selectedCharacterIds.value = [];
+  selectAllCharacters.value = false;
+};
 
 const openUploadDialog = (character: any) => {
-  selectedCharacter.value = character
-  
+  selectedCharacter.value = character;
+
   // 创建临时文件输入框
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'image/jpeg,image/png,image/jpg'
-  
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/jpeg,image/png,image/jpg";
+
   input.onchange = async (e: any) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    
+    const file = e.target.files?.[0];
+    if (!file) return;
+
     // 验证文件大小（10MB）
     if (file.size > 10 * 1024 * 1024) {
-      ElMessage.error('图片大小不能超过10MB')
-      return
+      ElMessage.error("图片大小不能超过10MB");
+      return;
     }
-    
+
     try {
       // 创建FormData上传文件
-      const formData = new FormData()
-      formData.append('file', file)
-      
-      ElMessage.info('正在上传图片...')
-      
+      const formData = new FormData();
+      formData.append("file", file);
+
+      ElMessage.info("正在上传图片...");
+
       // 上传到后端MinIO（后端会自动更新数据库）
-      await request.post<{ url: string }>(`/characters/${selectedCharacter.value.id}/upload-image`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
-      
-      ElMessage.success('图片上传成功')
-      await loadDramaData()
+      await request.post<{ url: string }>(
+        `/characters/${selectedCharacter.value.id}/upload-image`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+
+      ElMessage.success("图片上传成功");
+      await loadDramaData();
     } catch (error: any) {
-      ElMessage.error(error.message || '上传失败')
+      ElMessage.error(error.message || "上传失败");
     }
-  }
-  
+  };
+
   // 触发文件选择
-  input.click()
-}
+  input.click();
+};
 
 const openCharacterLibrary = async (character: any) => {
-  selectedCharacter.value = character
+  selectedCharacter.value = character;
   try {
-    const res = await characterLibraryAPI.list({ page: 1, page_size: 100 })
-    characterLibrary.value = res.items || []
+    const res = await characterLibraryAPI.list({ page: 1, page_size: 100 });
+    characterLibrary.value = res.items || [];
   } catch (error: any) {
-    ElMessage.error(error.message || '加载角色库失败')
-    characterLibrary.value = []
+    ElMessage.error(error.message || "加载角色库失败");
+    characterLibrary.value = [];
   }
-  libraryDialogVisible.value = true
-}
+  libraryDialogVisible.value = true;
+};
 
 const selectFromLibrary = async (libraryItem: any) => {
   try {
-    await characterLibraryAPI.applyFromLibrary(selectedCharacter.value.id, libraryItem.id)
-    ElMessage.success('已应用角色库形象')
-    libraryDialogVisible.value = false
-    await loadDramaData()
+    await characterLibraryAPI.applyFromLibrary(
+      selectedCharacter.value.id,
+      libraryItem.id,
+    );
+    ElMessage.success("已应用角色库形象");
+    libraryDialogVisible.value = false;
+    await loadDramaData();
   } catch (error: any) {
-    ElMessage.error(error.message || '应用失败')
+    ElMessage.error(error.message || "应用失败");
   }
-}
+};
 
 const addToCharacterLibrary = async (character: any) => {
   try {
-    await characterLibraryAPI.addCharacterToLibrary(character.id)
-    ElMessage.success(`${character.name}已添加到角色库`)
+    await characterLibraryAPI.addCharacterToLibrary(character.id);
+    ElMessage.success(`${character.name}已添加到角色库`);
   } catch (error: any) {
-    ElMessage.error(error.message || '添加失败')
+    ElMessage.error(error.message || "添加失败");
   }
-}
+};
 
 const goToEpisodeList = () => {
-  router.push(`/dramas/${drama.value?.id}/episodes`)
-}
+  router.push(`/dramas/${drama.value?.id}/episodes`);
+};
 
 const goToEpisodeDetail = (episodeId: string) => {
-  router.push(`/dramas/${drama.value?.id}/episodes/${episodeId}`)
-}
+  router.push(`/dramas/${drama.value?.id}/episodes/${episodeId}`);
+};
 
 const loadDramaData = async () => {
-  const dramaId = route.params.id as string
+  const dramaId = route.params.id as string;
   try {
-    drama.value = await dramaAPI.get(dramaId)
+    drama.value = await dramaAPI.get(dramaId);
   } catch (error: any) {
-    ElMessage.error(error.message || '获取剧本信息失败')
-    router.push('/dramas')
+    ElMessage.error(error.message || "获取剧本信息失败");
+    router.push("/dramas");
   }
-}
+};
 
 onMounted(() => {
-  loadDramaData()
-})
+  loadDramaData();
+});
 </script>
 
 <style scoped>
@@ -1592,7 +1779,7 @@ onMounted(() => {
 }
 
 .character-card::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -1710,13 +1897,17 @@ onMounted(() => {
 }
 
 .character-preview::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(64, 158, 255, 0.05) 0%, rgba(103, 194, 58, 0.05) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(64, 158, 255, 0.05) 0%,
+    rgba(103, 194, 58, 0.05) 100%
+  );
   pointer-events: none;
 }
 
@@ -1905,7 +2096,7 @@ onMounted(() => {
 .script-display :deep(.el-textarea__inner) {
   background: #fafafa;
   border: 1px solid #e4e7ed;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   line-height: 1.8;
 }
 
@@ -2021,9 +2212,8 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-
 .script-textarea {
-  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-family: "Monaco", "Menlo", "Consolas", monospace;
   font-size: 14px;
   line-height: 1.6;
 }
