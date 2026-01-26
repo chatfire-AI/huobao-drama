@@ -23,11 +23,10 @@ type Drama struct {
 	UpdatedAt     time.Time      `gorm:"not null;autoUpdateTime" json:"updated_at"`
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
 
-	Episodes      []Episode   `gorm:"foreignKey:DramaID" json:"episodes,omitempty"`
-	Characters    []Character `gorm:"foreignKey:DramaID" json:"characters,omitempty"`
-	Scenes        []Scene     `gorm:"foreignKey:DramaID" json:"scenes,omitempty"`
-	Props         []Prop      `gorm:"foreignKey:DramaID" json:"props,omitempty"`
-	VisualEffects *string     `gorm:"type:text" json:"visual_effects"`
+	Episodes   []Episode   `gorm:"foreignKey:DramaID" json:"episodes,omitempty"`
+	Characters []Character `gorm:"foreignKey:DramaID" json:"characters,omitempty"`
+	Scenes     []Scene     `gorm:"foreignKey:DramaID" json:"scenes,omitempty"`
+	Props      []Prop      `gorm:"foreignKey:DramaID" json:"props,omitempty"`
 }
 
 func (d *Drama) TableName() string {

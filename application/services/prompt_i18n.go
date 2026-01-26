@@ -84,9 +84,9 @@ Return ONLY a pure JSON array. Do not include markdown code blocks, introductory
 【分镜术语枚举库】（必须从中选择，不得随意捏造）
 景别 (shot_type):
 [大远景, 远景, 全景, 中全景, 中景, 中近景, 近景, 特写, 大特写]
-机位角度 (camera_angle):
+机位角度 (angle):
 [平视, 仰视, 俯视, 低角度, 高角度, 荷兰角(倾斜构图), 鸟瞰, 虫瞻, 主观视角, 过肩, 正侧面, 斜侧面, 背面, 大仰视]
-运镜方式 (camera_movement):
+运镜方式 (movement):
 [固定, 推镜(Zoom In), 拉镜(Zoom Out), 水平摇镜(Pan), 垂直摇镜(Tilt), 跟镜(Tracking), 横移(Truck), 升降(Pedestal), 环绕(Arc/Orbit), 急摇(Whip Pan), 希区柯克变焦(Dolly Zoom), 极速俯冲(Nosedive), 子弹时间(Bullet Time), 穿梭运镜(Fly Through), 摇臂镜头(Crane Shot), 手持晃动(Handheld), 旋转晕眩(Spinning), 变焦(Zoom)]
 视觉特效 (visual_effect):
 [无, 慢动作, 动态模糊, 镜头光晕, 体积光(丁达尔效应), 故障效果(Glitch), 色差模糊, 剪影, 双重曝光, 时间倒流, 虚实变换(Rack Focus), 分身残影, 粒子消散, 冲击波, 速度线, 黑色电影滤镜, 霓虹氛围, 鱼眼扭曲, 微缩景观(移轴)]
@@ -105,8 +105,8 @@ Return ONLY a pure JSON array. Do not include markdown code blocks, introductory
 shot_number: 镜头序号。
 scene_description: 地点 + 时间（如：废弃工厂，黄昏）。
 shot_type: 从枚举库选择。
-camera_angle: 从枚举库选择。
-camera_movement: 从枚举库选择。
+angle: 从枚举库选择。
+movement: 从枚举库选择。
 action: 描述角色具体的动作。
 result: 动作结束时的画面定格状态。
 dialogue: 角色台词或旁白。
