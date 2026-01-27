@@ -2,21 +2,32 @@
 
 ## 使用方法
 
-### 方式一：直接运行（推荐）
+### 本地部署
 
 ```bash
 # 在项目根目录执行
 go run cmd/migrate/main.go
 ```
 
-### 方式二：编译后运行
+### Docker 部署
+
+在 Docker 容器中，迁移脚本已经被编译为可执行文件 `migrate`。
 
 ```bash
-# 编译
-go build -o migrate cmd/migrate/main.go
+# 进入容器
+docker exec -it huobao-drama sh
 
-# 运行
+# 在容器内执行迁移脚本
 ./migrate
+
+# 执行完成后，退出容器
+exit
+```
+
+或者直接执行（不进入容器）：
+
+```bash
+docker exec huobao-drama ./migrate
 ```
 
 ## 配置要求

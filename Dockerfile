@@ -13,7 +13,7 @@ ARG NPM_REGISTRY=
 # 配置 npm 镜像源（条件执行）
 ENV NPM_REGISTRY=${NPM_REGISTRY:-}
 RUN if [ -n "$NPM_REGISTRY" ]; then \
-        npm config set registry "$NPM_REGISTRY" || true; \
+    npm config set registry "$NPM_REGISTRY" || true; \
     fi
 
 WORKDIR /app/web
@@ -45,7 +45,7 @@ ARG ALPINE_MIRROR=
 # 配置 Alpine 镜像源（条件执行）
 ENV ALPINE_MIRROR=${ALPINE_MIRROR:-}
 RUN if [ -n "$ALPINE_MIRROR" ]; then \
-        sed -i "s@dl-cdn.alpinelinux.org@$ALPINE_MIRROR@g" /etc/apk/repositories 2>/dev/null || true; \
+    sed -i "s@dl-cdn.alpinelinux.org@$ALPINE_MIRROR@g" /etc/apk/repositories 2>/dev/null || true; \
     fi
 
 # 配置 Go 代理（使用 ENV 持久化到运行时）
@@ -75,6 +75,9 @@ COPY --from=frontend-builder /app/web/dist ./web/dist
 # 构建后端可执行文件（纯 Go 编译，使用 modernc.org/sqlite）
 RUN CGO_ENABLED=0 go build -ldflags="-w -s" -o huobao-drama .
 
+# 构建迁移脚本可执行文件
+RUN CGO_ENABLED=0 go build -ldflags="-w -s" -o migrate cmd/migrate/main.go
+
 # ==================== 阶段3: 运行时镜像 ====================
 # 每个阶段前重新声明构建参数
 ARG DOCKER_REGISTRY=
@@ -88,7 +91,7 @@ ARG ALPINE_MIRROR=
 # 配置 Alpine 镜像源（条件执行）
 ENV ALPINE_MIRROR=${ALPINE_MIRROR:-}
 RUN if [ -n "$ALPINE_MIRROR" ]; then \
-        sed -i "s@dl-cdn.alpinelinux.org@$ALPINE_MIRROR@g" /etc/apk/repositories 2>/dev/null || true; \
+    sed -i "s@dl-cdn.alpinelinux.org@$ALPINE_MIRROR@g" /etc/apk/repositories 2>/dev/null || true; \
     fi
 
 # 安装运行时依赖
@@ -106,6 +109,7 @@ WORKDIR /app
 
 # 从构建阶段复制可执行文件
 COPY --from=backend-builder /app/huobao-drama .
+COPY --from=backend-builder /app/migrate .
 
 # 复制前端构建产物
 COPY --from=frontend-builder /app/web/dist ./web/dist

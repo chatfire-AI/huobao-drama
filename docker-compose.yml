@@ -1,6 +1,6 @@
 services:
   huobao-drama:
-    image: huobao-drama:latest
+    # image: huobao-drama:latest
     container_name: huobao-drama
     build:
       context: .
