@@ -399,16 +399,23 @@
                 <el-alert type="info" :closable="false" style="margin: 0">
                   {{
                     $t("workflow.sceneCount", {
-                      count: drama?.scenes?.length || 0,
+                      count: currentEpisode?.scenes?.length || 0,
                     })
                   }}
                 </el-alert>
               </div>
               <div class="section-actions">
+                <!-- <el-button
+                  :icon="Document"
+                  @click="openExtractSceneDialog"
+                  size="default"
+                >
+                  {{ $t("workflow.extractFromScript") }}
+                </el-button> -->
                 <el-checkbox
                   v-model="selectAllScenes"
                   @change="toggleSelectAllScenes"
-                  style="margin-right: 12px"
+                  style="margin-left: 12px; margin-right: 12px"
                 >
                   {{ $t("workflow.selectAll") }}
                 </el-checkbox>
@@ -422,6 +429,14 @@
                   {{ $t("workflow.batchGenerateSelected") }} ({{
                     selectedSceneIds.length
                   }})
+                </el-button>
+
+                <el-button
+                  :icon="Plus"
+                  @click="openAddSceneDialog"
+                  size="default"
+                >
+                  {{ $t("workflow.addScene") }}
                 </el-button>
               </div>
             </div>
@@ -1027,6 +1042,15 @@
           <el-form-item :label="$t('common.name')">
             <el-input v-model="currentEditItem.name" disabled />
           </el-form-item>
+          <el-form-item
+            v-if="currentEditType === 'scene'"
+            :label="$t('workflow.time')"
+          >
+            <el-input
+              v-model="currentEditItem.time"
+              :placeholder="$t('workflow.timePlaceholder')"
+            />
+          </el-form-item>
           <el-form-item :label="$t('workflow.imagePrompt')">
             <el-input
               v-model="editPrompt"
@@ -1041,7 +1065,7 @@
             $t("common.cancel")
           }}</el-button>
           <el-button type="primary" @click="savePrompt">{{
-            $t("common.saveAndGenerate")
+            $t("common.save")
           }}</el-button>
         </template>
       </el-dialog>
@@ -1151,6 +1175,101 @@
           </template>
         </el-upload>
       </el-dialog>
+
+      <!-- 添加场景对话框 -->
+      <el-dialog
+        v-model="addSceneDialogVisible"
+        :title="$t('workflow.addScene')"
+        width="600px"
+      >
+        <el-form :model="newScene" label-width="100px">
+          <el-form-item :label="$t('workflow.sceneImage')">
+            <el-upload
+              class="avatar-uploader"
+              :action="`/api/v1/upload/image`"
+              :show-file-list="false"
+              :on-success="handleSceneImageSuccess"
+              :before-upload="beforeAvatarUpload"
+            >
+              <img
+                v-if="hasImage(newScene)"
+                :src="getImageUrl(newScene)"
+                class="avatar"
+                style="width: 160px; height: 90px; object-fit: cover"
+              />
+              <el-icon
+                v-else
+                class="avatar-uploader-icon"
+                style="
+                  border: 1px dashed #d9d9d9;
+                  border-radius: 6px;
+                  cursor: pointer;
+                  position: relative;
+                  overflow: hidden;
+                  width: 160px;
+                  height: 90px;
+                  font-size: 28px;
+                  color: #8c939d;
+                  text-align: center;
+                  line-height: 90px;
+                "
+                ><Plus
+              /></el-icon>
+            </el-upload>
+          </el-form-item>
+          <el-form-item :label="$t('workflow.sceneName')">
+            <el-input
+              v-model="newScene.location"
+              :placeholder="$t('workflow.sceneNamePlaceholder')"
+            />
+          </el-form-item>
+          <el-form-item :label="$t('workflow.time')">
+            <el-input
+              v-model="newScene.time"
+              :placeholder="$t('workflow.timePlaceholder')"
+            />
+          </el-form-item>
+          <el-form-item :label="$t('workflow.sceneDescription')">
+            <el-input
+              v-model="newScene.prompt"
+              type="textarea"
+              :rows="4"
+              :placeholder="$t('workflow.sceneDescriptionPlaceholder')"
+            />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="addSceneDialogVisible = false">{{
+            $t("common.cancel")
+          }}</el-button>
+          <el-button type="primary" @click="saveScene">{{
+            $t("common.confirm")
+          }}</el-button>
+        </template>
+      </el-dialog>
+
+      <!-- 从剧本提取场景对话框 -->
+      <el-dialog
+        v-model="extractScenesDialogVisible"
+        :title="$t('workflow.extractSceneDialogTitle')"
+        width="500px"
+      >
+        <el-alert type="info" :closable="false" style="margin-bottom: 16px">
+          {{ $t("workflow.extractSceneDialogTip") }}
+        </el-alert>
+        <template #footer>
+          <el-button @click="extractScenesDialogVisible = false">
+            {{ $t("common.cancel") }}
+          </el-button>
+          <el-button
+            type="primary"
+            @click="handleExtractScenes"
+            :loading="extractingScenes"
+          >
+            {{ $t("workflow.startExtract") }}
+          </el-button>
+        </template>
+      </el-dialog>
     </div>
   </div>
 </template>
@@ -1177,6 +1296,8 @@ import {
   Setting,
   Loading,
   WarningFilled,
+  Document,
+  Plus,
 } from "@element-plus/icons-vue";
 import { dramaAPI } from "@/api/drama";
 import { generationAPI } from "@/api/generation";
@@ -1225,11 +1346,23 @@ const promptDialogVisible = ref(false);
 const libraryDialogVisible = ref(false);
 const uploadDialogVisible = ref(false);
 const modelConfigDialogVisible = ref(false);
+const addSceneDialogVisible = ref(false);
+const extractScenesDialogVisible = ref(false);
 const currentEditItem = ref<any>({ name: "" });
 const currentEditType = ref<"character" | "scene">("character");
 const editPrompt = ref("");
 const libraryItems = ref<any[]>([]);
 const currentUploadTarget = ref<any>(null);
+
+// 添加场景相关
+const newScene = ref<any>({
+  location: "",
+  time: "",
+  prompt: "",
+  image_url: "",
+  local_path: "",
+});
+const extractingScenes = ref(false);
 const uploadAction = computed(() => "/api/v1/upload/image");
 const uploadHeaders = computed(() => ({
   Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -1622,7 +1755,7 @@ const handleExtractCharactersAndBackgrounds = async () => {
         },
       );
     } catch {
-      ElMessage.info("已取消提取");
+      ElMessage.info($t("workflow.extractCancelled"));
       return;
     }
   }
@@ -1703,10 +1836,10 @@ const extractCharactersAndBackgrounds = async () => {
       pollExtractTask(backgroundTask.task_id, "background"),
     ]);
 
-    ElMessage.success("角色和场景提取成功！");
+    ElMessage.success($t("workflow.charactersAndScenesExtractSuccess"));
     await loadDramaData();
   } catch (error: any) {
-    console.error("角色和场景提取失败:", error);
+    console.error($t("workflow.charactersAndScenesExtractFailed") + ":", error);
 
     const errorData = error.response?.data?.error;
     const errorMsg = errorData?.message || error.message || "提取失败";
@@ -1764,7 +1897,10 @@ const pollExtractTask = async (
       } else if (task.status === "failed") {
         // 任务失败
         throw new Error(
-          task.error || `${type === "character" ? "角色生成" : "场景提取"}失败`,
+          task.error ||
+            (type === "character"
+              ? $t("workflow.characterGenerationFailed")
+              : $t("workflow.sceneExtractionFailed")),
         );
       }
       // 否则继续轮询
@@ -1774,7 +1910,11 @@ const pollExtractTask = async (
     }
   }
 
-  throw new Error(`${type === "character" ? "角色生成" : "场景提取"}超时`);
+  throw new Error(
+    type === "character"
+      ? $t("workflow.characterGenerationTimeout")
+      : $t("workflow.sceneExtractionTimeout"),
+  );
 };
 
 const generateCharacterImage = async (characterId: number) => {
@@ -2089,35 +2229,14 @@ const savePrompt = async () => {
       });
       await generateCharacterImage(currentEditItem.value.id);
     } else {
-      // 1. 先保存场景提示词
-      await dramaAPI.updateScenePrompt(
-        currentEditItem.value.id.toString(),
-        editPrompt.value,
-      );
-
-      // 2. 生成场景图片
-      const model = selectedImageModel.value || undefined;
-      const response = await dramaAPI.generateSceneImage({
-        scene_id: parseInt(currentEditItem.value.id),
+      // 保存场景提示词和时间（合并到一个 API 调用）
+      await dramaAPI.updateScene(currentEditItem.value.id.toString(), {
         prompt: editPrompt.value,
-        model,
+        time: currentEditItem.value.time || "",
       });
-      const imageGenId = response.image_generation?.id;
 
-      // 3. 轮询图片生成状态
-      if (imageGenId) {
-        ElMessage.info("场景图片生成中，请稍候...");
-        generatingSceneImages.value[currentEditItem.value.id] = true;
-        pollImageStatus(imageGenId, async () => {
-          await loadDramaData();
-          ElMessage.success("场景图片生成完成！");
-        }).finally(() => {
-          generatingSceneImages.value[currentEditItem.value.id] = false;
-        });
-      } else {
-        ElMessage.success("场景图片生成已启动");
-        await loadDramaData();
-      }
+      ElMessage.success("保存成功");
+      await loadDramaData();
     }
     promptDialogVisible.value = false;
   } catch (error: any) {
@@ -2191,6 +2310,8 @@ const selectLibraryItem = async (item: any) => {
 const handleUploadSuccess = async (response: any) => {
   try {
     const imageUrl = response.url || response.data?.url;
+    const localPath = response.local_path || response.data?.local_path;
+
     if (!imageUrl) {
       ElMessage.error("上传失败：未获取到图片地址");
       return;
@@ -2203,8 +2324,11 @@ const handleUploadSuccess = async (response: any) => {
       );
       ElMessage.success("上传成功！");
     } else if (currentUploadTarget.value?.type === "scene") {
-      // TODO: 场景图片上传API
-      ElMessage.success("上传成功！");
+      // 更新场景图片
+      await dramaAPI.updateScene(currentUploadTarget.value.id.toString(), {
+        image_url: imageUrl,
+      });
+      ElMessage.success($t("workflow.sceneImageUploadSuccess"));
     }
 
     await loadDramaData();
@@ -2221,12 +2345,12 @@ const handleUploadError = () => {
 const deleteCharacter = async (characterId: number) => {
   try {
     await ElMessageBox.confirm(
-      "确定要删除该角色吗？删除后将无法恢复。",
-      "删除确认",
+      $t("workflow.deleteCharacterConfirm"),
+      $t("workflow.deleteConfirmTitle"),
       {
         type: "warning",
-        confirmButtonText: "确定",
-        cancelButtonText: "取消",
+        confirmButtonText: $t("workflow.confirmButtonText"),
+        cancelButtonText: $t("workflow.cancelButtonText"),
       },
     );
 
@@ -2268,6 +2392,129 @@ const goToCompose = () => {
       episodeId: currentEpisode.value.id,
     },
   });
+};
+
+// 打开添加场景对话框
+const openAddSceneDialog = () => {
+  newScene.value = {
+    location: "",
+    time: "",
+    prompt: "",
+    image_url: "",
+    local_path: "",
+  };
+  addSceneDialogVisible.value = true;
+};
+
+// 保存场景
+const saveScene = async () => {
+  if (!newScene.value.location) {
+    ElMessage.warning($t("workflow.pleaseEnterSceneName"));
+    return;
+  }
+
+  if (!currentEpisode.value?.id) {
+    ElMessage.error($t("workflow.chapterInfoNotExist"));
+    return;
+  }
+
+  try {
+    // 创建场景，关联到当前章节
+    await dramaAPI.createScene({
+      drama_id: parseInt(dramaId),
+      episode_id: currentEpisode.value.id,
+      location: newScene.value.location,
+      time: newScene.value.time || "",
+      prompt: newScene.value.prompt,
+      image_url: newScene.value.image_url,
+      local_path: newScene.value.local_path,
+    });
+
+    ElMessage.success($t("workflow.sceneAddSuccess"));
+    addSceneDialogVisible.value = false;
+
+    // 重新加载数据以更新场景列表
+    await loadDramaData();
+  } catch (error: any) {
+    ElMessage.error(error.message || $t("workflow.sceneAddFailed"));
+  }
+};
+
+// 处理场景图片上传成功
+const handleSceneImageSuccess = (response: any) => {
+  console.log("场景图片上传响应:", response);
+
+  // 处理不同的响应结构
+  const imageUrl = response.url || response.data?.url;
+  const localPath = response.local_path || response.data?.local_path;
+
+  if (imageUrl) {
+    newScene.value.image_url = imageUrl;
+  }
+  if (localPath) {
+    newScene.value.local_path = localPath;
+  }
+
+  console.log("更新后的 newScene:", newScene.value);
+
+  if (imageUrl || localPath) {
+    ElMessage.success($t("workflow.imageUploadSuccess"));
+  } else {
+    ElMessage.warning($t("workflow.imageUploadSuccessNoUrl"));
+  }
+};
+
+// 图片上传前的校验
+const beforeAvatarUpload = (file: File) => {
+  const isImage = file.type.startsWith("image/");
+  const isLt10M = file.size / 1024 / 1024 < 10;
+
+  if (!isImage) {
+    ElMessage.error("只能上传图片文件!");
+    return false;
+  }
+  if (!isLt10M) {
+    ElMessage.error("图片大小不能超过 10MB!");
+    return false;
+  }
+  return true;
+};
+
+// 打开从剧本提取场景对话框
+const openExtractSceneDialog = () => {
+  extractScenesDialogVisible.value = true;
+};
+
+// 从剧本提取场景
+const handleExtractScenes = async () => {
+  if (!currentEpisode.value?.id) {
+    ElMessage.error($t("workflow.chapterInfoNotExist"));
+    return;
+  }
+
+  try {
+    extractingScenes.value = true;
+    await dramaAPI.extractBackgrounds(currentEpisode.value.id.toString());
+
+    ElMessage.success($t("workflow.sceneExtractSubmitted"));
+    extractScenesDialogVisible.value = false;
+
+    // 自动刷新几次
+    let checkCount = 0;
+    const maxChecks = 5;
+    const checkInterval = setInterval(async () => {
+      checkCount++;
+      await loadDramaData();
+
+      if (checkCount >= maxChecks) {
+        clearInterval(checkInterval);
+      }
+    }, 3000);
+  } catch (error: any) {
+    ElMessage.error(error.message || $t("workflow.sceneExtractFailed"));
+  } finally {
+    extractingScenes.value = false;
+  }
 };
 
 // 监听步骤变化，保存到 localStorage

@@ -332,17 +332,6 @@
           <el-tab-pane :label="$t('drama.management.sceneList')" name="scenes">
             <div class="tab-header">
               <h2>{{ $t("drama.management.sceneList") }}</h2>
-              <div style="display: flex; gap: 10px">
-                <el-button :icon="Document" @click="openExtractSceneDialog">{{
-                  $t("prop.extract")
-                }}</el-button>
-                <el-button
-                  type="primary"
-                  :icon="Plus"
-                  @click="openAddSceneDialog"
-                  >{{ $t("common.add") }}</el-button
-                >
-              </div>
             </div>
 
             <el-row :gutter="16" style="margin-top: 16px">

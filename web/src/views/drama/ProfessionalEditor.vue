@@ -4801,6 +4801,7 @@ onBeforeUnmount(() => {
   gap: 16px;
   max-height: 500px;
   overflow-y: auto;
+  padding: 10px;
 
   .scene-card {
     border: 2px solid var(--border-primary);

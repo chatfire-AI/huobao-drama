@@ -116,10 +116,13 @@ export const dramaAPI = {
 
   createScene(data: {
     drama_id: number|string;
+    episode_id?: number;
     location: string;
+    time?: string;
     prompt?: string;
     description?: string;
     image_url?: string;
+    local_path?: string;
   }) {
     return request.post('/scenes', data)
   },

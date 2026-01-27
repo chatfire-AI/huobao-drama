@@ -465,6 +465,8 @@ func (s *StoryboardCompositionService) UpdateScenePrompt(sceneID string, req *Up
 
 type UpdateSceneInfoRequest struct {
 	Location    *string `json:"location"`
+	Time        *string `json:"time"`
+	Prompt      *string `json:"prompt"`
 	Description *string `json:"description"`
 	ImageURL    *string `json:"image_url"`
 	LocalPath   *string `json:"local_path"`
@@ -483,8 +485,14 @@ func (s *StoryboardCompositionService) UpdateSceneInfo(sceneID string, req *Upda
 	if req.Location != nil {
 		updates["location"] = *req.Location
 	}
+	if req.Time != nil {
+		updates["time"] = *req.Time
+	}
+	if req.Prompt != nil {
+		updates["prompt"] = *req.Prompt
+	}
 	if req.Description != nil {
-		updates["prompt"] = *req.Description
+		updates["description"] = *req.Description
 	}
 	if req.ImageURL != nil {
 		updates["image_url"] = *req.ImageURL
@@ -530,7 +538,9 @@ func getStringValue(s *string) string {
 
 type CreateSceneRequest struct {
 	DramaID     uint   `json:"drama_id"`
+	EpisodeID   *uint  `json:"episode_id"` // 添加章节ID字段
 	Location    string `json:"location"`
+	Time        string `json:"time"`
 	Prompt      string `json:"prompt"`
 	ImageURL    string `json:"image_url"`
 	LocalPath   string `json:"local_path"`
@@ -540,7 +550,9 @@ type CreateSceneRequest struct {
 func (s *StoryboardCompositionService) CreateScene(req *CreateSceneRequest) (*models.Scene, error) {
 	scene := &models.Scene{
 		DramaID:     req.DramaID,
+		EpisodeID:   req.EpisodeID, // 设置章节ID
 		Location:    req.Location,
+		Time:        req.Time,
 		Prompt:      req.Prompt,
 		Description: &req.Description,
 		Status:      "draft",
@@ -558,6 +570,6 @@ func (s *StoryboardCompositionService) CreateScene(req *CreateSceneRequest) (*mo
 		return nil, fmt.Errorf("failed to create scene: %w", err)
 	}
 
-	s.log.Infow("Scene created successfully", "scene_id", scene.ID, "drama_id", scene.DramaID)
+	s.log.Infow("Scene created successfully", "scene_id", scene.ID, "drama_id", scene.DramaID, "episode_id", req.EpisodeID)
 	return scene, nil
 }
