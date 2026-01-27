@@ -13,6 +13,19 @@ type Config struct {
 	Storage  StorageConfig  `mapstructure:"storage"`
 	AI       AIConfig       `mapstructure:"ai"`
 	Style    StyleConfig    `mapstructure:"style"`
+	Visual   VisualConfig   `mapstructure:"visual_references"`
+}
+
+type VisualConfig struct {
+	Zh VisualDetail `mapstructure:"zh"`
+	En VisualDetail `mapstructure:"en"`
+}
+
+type VisualDetail struct {
+	ShotTypes     []string `mapstructure:"shot_types"`
+	Angles        []string `mapstructure:"angles"`
+	Movements     []string `mapstructure:"movements"`
+	VisualEffects []string `mapstructure:"visual_effects"`
 }
 
 type AppConfig struct {
@@ -88,6 +101,12 @@ func LoadConfig() (*Config, error) {
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("failed to read config: %w", err)
+	}
+
+	// Load visual config
+	viper.SetConfigName("visual_config")
+	if err := viper.MergeInConfig(); err != nil {
+		fmt.Printf("Warning: failed to read visual config: %v\n", err)
 	}
 
 	var config Config

@@ -255,16 +255,15 @@
                       clearable
                       :placeholder="$t('editor.shotTypePlaceholder')"
                       @change="saveStoryboardField('shot_type')"
+                      allow-create
+                      filterable
                     >
-                      <el-option label="大远景" value="大远景" />
-                      <el-option label="远景" value="远景" />
-                      <el-option label="全景" value="全景" />
-                      <el-option label="中全景" value="中全景" />
-                      <el-option label="中景" value="中景" />
-                      <el-option label="中近景" value="中近景" />
-                      <el-option label="近景" value="近景" />
-                      <el-option label="特写" value="特写" />
-                      <el-option label="大特写" value="大特写" />
+                      <el-option
+                        v-for="item in visualOptions?.ShotTypes || []"
+                        :key="item"
+                        :label="item"
+                        :value="item"
+                      />
                     </el-select>
                   </div>
 
@@ -275,25 +274,15 @@
                       clearable
                       :placeholder="$t('editor.movementPlaceholder')"
                       @change="saveStoryboardField('movement')"
+                      allow-create
+                      filterable
                     >
-                      <el-option label="固定" value="固定" />
-                      <el-option label="推镜(Zoom In)" value="推镜(Zoom In)" />
-                      <el-option label="拉镜(Zoom Out)" value="拉镜(Zoom Out)" />
-                      <el-option label="水平摇镜(Pan)" value="水平摇镜(Pan)" />
-                      <el-option label="垂直摇镜(Tilt)" value="垂直摇镜(Tilt)" />
-                      <el-option label="跟镜(Tracking)" value="跟镜(Tracking)" />
-                      <el-option label="横移(Truck)" value="横移(Truck)" />
-                      <el-option label="升降(Pedestal)" value="升降(Pedestal)" />
-                      <el-option label="环绕(Arc/Orbit)" value="环绕(Arc/Orbit)" />
-                      <el-option label="急摇(Whip Pan)" value="急摇(Whip Pan)" />
-                      <el-option label="希区柯克变焦(Dolly Zoom)" value="希区柯克变焦(Dolly Zoom)" />
-                      <el-option label="极速俯冲(Nosedive)" value="极速俯冲(Nosedive)" />
-                      <el-option label="子弹时间(Bullet Time)" value="子弹时间(Bullet Time)" />
-                      <el-option label="穿梭运镜(Fly Through)" value="穿梭运镜(Fly Through)" />
-                      <el-option label="摇臂镜头(Crane Shot)" value="摇臂镜头(Crane Shot)" />
-                      <el-option label="手持晃动(Handheld)" value="手持晃动(Handheld)" />
-                      <el-option label="旋转晕眩(Spinning)" value="旋转晕眩(Spinning)" />
-                      <el-option label="变焦(Zoom)" value="变焦(Zoom)" />
+                      <el-option
+                        v-for="item in visualOptions?.Movements || []"
+                        :key="item"
+                        :label="item"
+                        :value="item"
+                      />
                     </el-select>
                   </div>
 
@@ -304,22 +293,15 @@
                       clearable
                       :placeholder="$t('editor.anglePlaceholder')"
                       @change="saveStoryboardField('angle')"
+                      allow-create
+                      filterable
                     >
-                      <el-option label="平视" value="平视" />
-                      <el-option label="仰视" value="仰视" />
-                      <el-option label="俯视" value="俯视" />
-                      <el-option label="低角度" value="低角度" />
-                      <el-option label="高角度" value="高角度" />
-                      <el-option label="荷兰角(倾斜构图)" value="荷兰角(倾斜构图)" />
-                      <el-option label="鸟瞰" value="鸟瞰" />
-                      <el-option label="虫瞻" value="虫瞻" />
-                      <el-option label="侧面" value="侧面" />
-                      <el-option label="背面" value="背面" />
-                      <el-option label="主观视角" value="主观视角" />
-                      <el-option label="过肩" value="过肩" />
-                      <el-option label="大仰视" value="大仰视" />
-                      <el-option label="正侧面" value="正侧面" />
-                      <el-option label="斜侧面" value="斜侧面" />
+                      <el-option
+                        v-for="item in visualOptions?.Angles || []"
+                        :key="item"
+                        :label="item"
+                        :value="item"
+                      />
                     </el-select>
                   </div>
                 </div>
@@ -390,25 +372,12 @@
                     :placeholder="$t('editor.visualEffectPlaceholder')"
                     @change="saveStoryboardField('visual_effect')"
                   >
-                    <el-option label="无" value="无" />
-                    <el-option label="慢动作" value="慢动作" />
-                    <el-option label="动态模糊" value="动态模糊" />
-                    <el-option label="镜头光晕" value="镜头光晕" />
-                    <el-option label="体积光(丁达尔效应)" value="体积光(丁达尔效应)" />
-                    <el-option label="故障效果(Glitch)" value="故障效果(Glitch)" />
-                    <el-option label="色差模糊" value="色差模糊" />
-                    <el-option label="剪影" value="剪影" />
-                    <el-option label="双重曝光" value="双重曝光" />
-                    <el-option label="时间倒流" value="时间倒流" />
-                    <el-option label="虚实变换(Rack Focus)" value="虚实变换(Rack Focus)" />
-                    <el-option label="分身残影" value="分身残影" />
-                    <el-option label="粒子消散" value="粒子消散" />
-                    <el-option label="冲击波" value="冲击波" />
-                    <el-option label="速度线" value="速度线" />
-                    <el-option label="黑色电影滤镜" value="黑色电影滤镜" />
-                    <el-option label="霓虹氛围" value="霓虹氛围" />
-                    <el-option label="鱼眼扭曲" value="鱼眼扭曲" />
-                    <el-option label="微缩景观(移轴)" value="微缩景观(移轴)" />
+                    <el-option
+                      v-for="item in visualOptions?.VisualEffects || []"
+                      :key="item"
+                      :label="item"
+                      :value="item"
+                    />
                   </el-select>
                 </div>
               </div>
@@ -2134,6 +2103,7 @@ import {
 } from "@element-plus/icons-vue";
 import { dramaAPI } from "@/api/drama";
 import { propAPI } from "@/api/prop";
+import { optionAPI, type VisualOptions } from "@/api/option";
 import { generateFramePrompt, type FrameType } from "@/api/frame";
 import { imageAPI } from "@/api/image";
 import { videoAPI } from "@/api/video";
@@ -2153,6 +2123,7 @@ import { AppHeader } from "@/components/common";
 const route = useRoute();
 const router = useRouter();
 const { t: $t } = useI18n();
+const visualOptions = ref<VisualOptions | null>(null);
 
 const openWindow = (url: string) => {
     window.open(url, '_blank');
@@ -4081,6 +4052,13 @@ const formatDateTime = (dateStr: string) => {
 };
 
 onMounted(async () => {
+  // Load visual options
+  try {
+    visualOptions.value = await optionAPI.getVisualOptions();
+  } catch (error) {
+    console.error("Failed to load visual options", error);
+  }
+
   await loadData();
   await loadVideoModels();
   await loadVideoMerges();

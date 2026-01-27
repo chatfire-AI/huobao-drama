@@ -574,32 +574,52 @@
         <el-row :gutter="16">
           <el-col :span="8">
             <el-form-item :label="$t('workflow.shotType')">
-              <el-select v-model="editingShot.shot_type" :placeholder="$t('workflow.selectShotType')">
-                <el-option :label="$t('workflow.longShot')" value="远景" />
-                <el-option :label="$t('workflow.fullShot')" value="全景" />
-                <el-option :label="$t('workflow.mediumShot')" value="中景" />
-                <el-option :label="$t('workflow.closeUp')" value="近景" />
-                <el-option :label="$t('workflow.extremeCloseUp')" value="特写" />
+              <el-select 
+                v-model="editingShot.shot_type" 
+                :placeholder="$t('workflow.selectShotType')"
+                allow-create
+                filterable
+              >
+                <el-option
+                  v-for="item in visualOptions?.ShotTypes || []"
+                  :key="item"
+                  :label="item"
+                  :value="item"
+                />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item :label="$t('workflow.cameraAngle')">
-              <el-select v-model="editingShot.angle" :placeholder="$t('workflow.selectAngle')">
-                <el-option :label="$t('workflow.eyeLevel')" value="平视" />
-                <el-option :label="$t('workflow.lowAngle')" value="仰视" />
-                <el-option :label="$t('workflow.highAngle')" value="俯视" />
-                <el-option :label="$t('workflow.sideView')" value="侧面" />
+              <el-select 
+                v-model="editingShot.angle" 
+                :placeholder="$t('workflow.selectAngle')"
+                allow-create
+                filterable
+              >
+                <el-option
+                  v-for="item in visualOptions?.Angles || []"
+                  :key="item"
+                  :label="item"
+                  :value="item"
+                />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item :label="$t('workflow.cameraMovement')">
-              <el-select v-model="editingShot.movement" :placeholder="$t('workflow.selectMovement')">
-                <el-option :label="$t('workflow.staticShot')" value="固定镜头" />
-                <el-option :label="$t('workflow.pushIn')" value="推镜" />
-                <el-option :label="$t('workflow.pullOut')" value="拉镜" />
-                <el-option :label="$t('workflow.followShot')" value="跟镜" />
+              <el-select 
+                v-model="editingShot.movement" 
+                :placeholder="$t('workflow.selectMovement')"
+                allow-create
+                filterable
+              >
+                <el-option
+                  v-for="item in visualOptions?.Movements || []"
+                  :key="item"
+                  :label="item"
+                  :value="item"
+                />
               </el-select>
             </el-form-item>
           </el-col>
@@ -666,17 +686,12 @@
                 clearable
                 :placeholder="$t('editor.visualEffectPlaceholder')"
               >
-                <el-option label="无" value="无" />
-                <el-option label="慢动作" value="慢动作" />
-                <el-option label="动态模糊" value="动态模糊" />
-                <el-option label="镜头光晕" value="镜头光晕" />
-                <el-option label="体积光(丁达尔效应)" value="体积光(丁达尔效应)" />
-                <el-option label="故障效果(Glitch)" value="故障效果(Glitch)" />
-                <el-option label="色差模糊" value="色差模糊" />
-                <el-option label="剪影" value="剪影" />
-                <el-option label="双重曝光" value="双重曝光" />
-                <el-option label="时间倒流" value="时间倒流" />
-                <el-option label="移轴摄影" value="移轴摄影" />
+                <el-option
+                  v-for="item in visualOptions?.VisualEffects || []"
+                  :key="item"
+                  :label="item"
+                  :value="item"
+                />
               </el-select>
             </el-form-item>
           </el-col>
@@ -901,6 +916,7 @@ import { characterLibraryAPI } from '@/api/character-library'
 import { aiAPI } from '@/api/ai'
 import type { AIServiceConfig } from '@/types/ai'
 import { imageAPI } from '@/api/image'
+import { optionAPI, type VisualOptions } from '@/api/option'
 import type { Drama } from '@/types/drama'
 import { AppHeader } from '@/components/common'
 
@@ -911,6 +927,7 @@ const dramaId = route.params.id as string
 const episodeNumber = parseInt(route.params.episodeNumber as string)
 
 const drama = ref<Drama>()
+const visualOptions = ref<VisualOptions | null>(null)
 
 // 生成 localStorage key
 const getStepStorageKey = () => `episode_workflow_step_${dramaId}_${episodeNumber}`
@@ -1888,7 +1905,12 @@ watch(currentStep, (newStep) => {
   localStorage.setItem(getStepStorageKey(), newStep.toString())
 })
 
-onMounted(() => {
+onMounted(async () => {
+  try {
+    visualOptions.value = await optionAPI.getVisualOptions()
+  } catch (error) {
+    console.error("Failed to load visual options", error)
+  }
   loadDramaData()
   loadSavedModelConfig()
   loadAIConfigs()

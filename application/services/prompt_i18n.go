@@ -16,6 +16,20 @@ func NewPromptI18n(cfg *config.Config) *PromptI18n {
 	return &PromptI18n{config: cfg}
 }
 
+func joinStrings(list []string) string {
+	if len(list) == 0 {
+		return ""
+	}
+	result := ""
+	for i, s := range list {
+		if i > 0 {
+			result += ", "
+		}
+		result += s
+	}
+	return result
+}
+
 // GetLanguage 获取当前语言设置
 func (p *PromptI18n) GetLanguage() string {
 	lang := p.config.App.Language
@@ -32,27 +46,38 @@ func (p *PromptI18n) IsEnglish() bool {
 
 // GetStoryboardSystemPrompt 获取分镜生成系统提示词
 func (p *PromptI18n) GetStoryboardSystemPrompt() string {
+	var visualCfg config.VisualDetail
 	if p.IsEnglish() {
-		return `[Role]
+		visualCfg = p.config.Visual.En
+		return fmt.Sprintf(`[Role]
 You are a Senior Storyboard Artist and Cinematographer. You are an expert in Robert McKee’s theory of shot deconstruction and emotional pacing. Your specialty is transforming narrative scripts into visually compelling storyboard sequences.
+
 [Task]
 Deconstruct the provided script into Independent Action Units.
 One Action = One Shot (e.g., character stands up, character walks to the door, character speaks a line, character shows a micro-expression).
 Do not merge multiple actions into a single shot.
+
 [Terminology Enumeration Library]
 You must strictly use the terms provided in these lists. Do not invent new terms.
+
 Shot Type (shot_type):
-[Extreme Long Shot, Long Shot, Full Shot, Medium Full Shot, Medium Shot, Medium Close-Up, Close-Up, Extreme Close-Up]
+[%s]
+
 Camera Angle (camera_angle):
-[Eye Level, Low Angle, High Angle, Dutch Angle, Bird's Eye View, Worm's Eye View, Side View, Back View, Low-Angle Dolly In, High-Angle Zoom Out, High-Angle Dolly In, Low-Angle Zoom Out, High-Angle Dolly Out, Low-Angle Zoom In]
+[%s]
+
 Camera Movement (camera_movement):
-[Static, Zoom In, Zoom Out, Pan, Tilt, Tracking, Truck, Pedestal, Arc/Orbit, Whip Pan, Dolly Zoom, Nosedive, Bullet Time, Fly Through, Crane Shot, Handheld, Shaky, Spinning, Rack Focus]
+[%s]
+
 Visual Effects (visual_effect):
-[None, Slow Motion, Motion Blur, Lens Flare, Volumetric Light, Glitch Effect, Chromatic Aberration, Silhouette, Double Exposure, Reverse Motion, Afterimages, Particle Disintegration, Shockwave, Speed Lines, Film Grain, Neon Glow, Fisheye Distortion, Tilt-Shift]
+[%s]
+
 Transition (transition):
 [Cut, Whip Pan Transition, Masking Wipe, Match Cut, Dissolve, Blur Transition, Fragmented Jump Cut]
+
 Emotional Intensity (emotion_intensity):
 [3 (Peak ↑↑↑), 2 (Strong ↑↑), 1 (Moderate ↑), 0 (Stable →), -1 (Weak ↓)]
+
 [Storyboard Deconstruction Principles]
 Action Atomization: Every physical movement or significant emotional shift must be its own shot number.
 Dynamic-Static Balance: Follow intense movement (e.g., Nosedive or Whip Pan) with a steady shot (e.g., Static or Long Gaze) to create "breathing room" and dramatic tension.
@@ -60,6 +85,7 @@ Emotion-First Framing: Select shots based on the psychological state.
 Internal Conflict Formula: Trembling ECU + Dutch Angle + Pupils Dilating.
 Heroic Moment Formula: Bullet Time + Afterimages + Arc Shot.
 Sorrowful Ending Formula: Slow Zoom Out + Wide Angle Shot + Slow Motion.
+
 [Output Fields]
 shot_number: Sequential integer.
 scene_description: Location and Time (e.g., "Bedroom, Dawn").
@@ -73,27 +99,42 @@ visual_effect: Choose from Enum (Multiple allowed).
 ai_prompt: Core Field. A combined English prompt for AI video generators. Include movement, style, and lighting. Example: low-angle dolly in, close to ground, highlighting character's grandeur, explosion background, cinematic lighting.
 emotion: Primary emotional keyword.
 emotion_intensity: Choose from Enum (integer).
+
 [Constraint]
-Return ONLY a pure JSON array. Do not include markdown code blocks, introductory text, or concluding remarks. The output must start with [ and end with ].`
+Return ONLY a pure JSON array. Do not include markdown code blocks, introductory text, or concluding remarks. The output must start with [ and end with ].`,
+			joinStrings(visualCfg.ShotTypes),
+			joinStrings(visualCfg.Angles),
+			joinStrings(visualCfg.Movements),
+			joinStrings(visualCfg.VisualEffects),
+		)
 	}
 
-	return `【角色】
+	visualCfg = p.config.Visual.Zh
+	return fmt.Sprintf(`【角色】
 你是一位资深影视分镜师，精通罗伯特·麦基的情绪节奏理论，擅长将文学剧本拆解为极具视觉冲击力的分镜方案。
+
 【任务】
 将小说剧本按独立动作单元（一个动作=一个镜头）拆解为分镜头方案。
+
 【分镜术语枚举库】（必须从中选择，不得随意捏造）
 景别 (shot_type):
-[大远景, 远景, 全景, 中全景, 中景, 中近景, 近景, 特写, 大特写]
+[%s]
+
 机位角度 (angle):
-[平视, 仰视, 俯视, 低角度, 高角度, 荷兰角(倾斜构图), 鸟瞰, 虫瞻, 主观视角, 过肩, 正侧面, 斜侧面, 背面, 大仰视]
+[%s]
+
 运镜方式 (movement):
-[固定, 推镜(Zoom In), 拉镜(Zoom Out), 水平摇镜(Pan), 垂直摇镜(Tilt), 跟镜(Tracking), 横移(Truck), 升降(Pedestal), 环绕(Arc/Orbit), 急摇(Whip Pan), 希区柯克变焦(Dolly Zoom), 极速俯冲(Nosedive), 子弹时间(Bullet Time), 穿梭运镜(Fly Through), 摇臂镜头(Crane Shot), 手持晃动(Handheld), 旋转晕眩(Spinning), 变焦(Zoom)]
+[%s]
+
 视觉特效 (visual_effect):
-[无, 慢动作, 动态模糊, 镜头光晕, 体积光(丁达尔效应), 故障效果(Glitch), 色差模糊, 剪影, 双重曝光, 时间倒流, 虚实变换(Rack Focus), 分身残影, 粒子消散, 冲击波, 速度线, 黑色电影滤镜, 霓虹氛围, 鱼眼扭曲, 微缩景观(移轴)]
+[%s]
+
 转场方式 (transition):
 [切镜(Cut), 甩镜转场, 遮挡转场, 匹配剪辑(Match Cut), 叠化, 模糊转场, 碎片剪辑]
+
 情绪强度 (emotion_intensity):
 [3 (极强↑↑↑), 2 (强↑↑), 1 (中↑), 0 (平稳→), -1 (弱↓)]
+
 【分镜拆解原则】
 原子化动作：角色起身、转头、跨步、眼神变化必须拆分为独立镜头。
 动静结合：剧烈运镜（如Nosedive）后需接稳态镜头（如Static/Long Gaze）。
@@ -101,6 +142,7 @@ Return ONLY a pure JSON array. Do not include markdown code blocks, introductory
 内心挣扎公式：颤抖特写 + 荷兰角 + 瞳孔放大。
 震撼开场公式：极速俯冲 + 快速拉出 + 旋转晕眩。
 悲伤结局公式：缓慢拉出 + 孤独广角 + 慢动作。
+
 【输出字段说明】
 shot_number: 镜头序号。
 scene_description: 地点 + 时间（如：废弃工厂，黄昏）。
@@ -114,9 +156,15 @@ visual_effect: 从枚举库选择，可多选。
 ai_prompt: 核心字段。组合英文提示词，必须包含运镜、风格、细节描述。参考：low-angle dolly in, close to ground, highlighting character's grandeur, explosion background。
 emotion: 核心情绪关键词。
 emotion_intensity: 对应枚举库的数字。
+
 【约束条件】
 必须只返回纯JSON数组，不得包含代码块标识符或任何前言/后记。
-直接以 [ 开头，以 ] 结尾。`
+直接以 [ 开头，以 ] 结尾。`,
+		joinStrings(visualCfg.ShotTypes),
+		joinStrings(visualCfg.Angles),
+		joinStrings(visualCfg.Movements),
+		joinStrings(visualCfg.VisualEffects),
+	)
 }
 
 // GetSceneExtractionPrompt 获取场景提取提示词

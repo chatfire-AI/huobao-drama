@@ -1,0 +1,131 @@
+visual_references:
+  zh:
+    shot_types:
+      - 大远景
+      - 远景
+      - 全景
+      - 中全景
+      - 中景
+      - 中近景
+      - 近景
+      - 特写
+      - 大特写
+    angles:
+      - 平视
+      - 仰视
+      - 俯视
+      - 低角度
+      - 高角度
+      - 荷兰角(倾斜构图)
+      - 鸟瞰
+      - 虫瞻
+      - 侧面
+      - 背面
+      - 主观视角
+      - 过肩
+      - 大仰视
+      - 正侧面
+      - 斜侧面
+    movements:
+      - 固定
+      - 推镜(Zoom In)
+      - 拉镜(Zoom Out)
+      - 水平摇镜(Pan)
+      - 垂直摇镜(Tilt)
+      - 跟镜(Tracking)
+      - 横移(Truck)
+      - 升降(Pedestal)
+      - 环绕(Arc/Orbit)
+      - 急摇(Whip Pan)
+      - 希区柯克变焦(Dolly Zoom)
+      - 极速俯冲(Nosedive)
+      - 子弹时间(Bullet Time)
+      - 穿梭运镜(Fly Through)
+      - 摇臂镜头(Crane Shot)
+      - 手持晃动(Handheld)
+      - 旋转晕眩(Spinning)
+      - 变焦(Zoom)
+    visual_effects:
+      - 无
+      - 慢动作
+      - 动态模糊
+      - 镜头光晕
+      - 体积光(丁达尔效应)
+      - 故障效果(Glitch)
+      - 色差模糊
+      - 剪影
+      - 双重曝光
+      - 时间倒流
+      - 虚实变换(Rack Focus)
+      - 分身残影
+      - 粒子消散
+      - 冲击波
+      - 速度线
+      - 黑色电影滤镜
+      - 霓虹氛围
+      - 鱼眼扭曲
+      - 微缩景观(移轴)
+  en:
+    shot_types:
+      - Extreme Long Shot
+      - Long Shot
+      - Full Shot
+      - Medium Full Shot
+      - Medium Shot
+      - Medium Close-Up
+      - Close-Up
+      - Extreme Close-Up
+    angles:
+      - Eye Level
+      - Low Angle
+      - High Angle
+      - Dutch Angle
+      - Bird's Eye View
+      - Worm's Eye View
+      - Side View
+      - Back View
+      - Low-Angle Dolly In
+      - High-Angle Zoom Out
+      - High-Angle Dolly In
+      - Low-Angle Zoom Out
+      - High-Angle Dolly Out
+      - Low-Angle Zoom In
+    movements:
+      - Static
+      - Zoom In
+      - Zoom Out
+      - Pan
+      - Tilt
+      - Tracking
+      - Truck
+      - Pedestal
+      - Arc/Orbit
+      - Whip Pan
+      - Dolly Zoom
+      - Nosedive
+      - Bullet Time
+      - Fly Through
+      - Crane Shot
+      - Handheld
+      - Shaky
+      - Spinning
+      - Rack Focus
+    visual_effects:
+      - None
+      - Slow Motion
+      - Motion Blur
+      - Lens Flare
+      - Volumetric Light
+      - Glitch Effect
+      - Chromatic Aberration
+      - Silhouette
+      - Double Exposure
+      - Reverse Motion
+      - Afterimages
+      - Particle Disintegration
+      - Shockwave
+      - Speed Lines
+      - Film Grain
+      - Neon Glow
+      - Fisheye Distortion
+      - Tilt-Shift
