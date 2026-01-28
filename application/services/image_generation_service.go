@@ -152,10 +152,20 @@ func (s *ImageGenerationService) GenerateImage(request *GenerateImageRequest) (*
 
 func (s *ImageGenerationService) ProcessImageGeneration(imageGenID uint) {
 	var imageGen models.ImageGeneration
-	imageRatio := s.config.Style.DefaultImageRatio
 	if err := s.db.First(&imageGen, imageGenID).Error; err != nil {
 		s.log.Errorw("Failed to load image generation", "error", err, "id", imageGenID)
 		return
+	}
+
+	var imageRatio string
+	// Fetch Drama for overrides
+	var drama models.Drama
+	if err := s.db.First(&drama, imageGen.DramaID).Error; err == nil {
+		if drama.DefaultImageRatio != nil {
+			imageRatio = *drama.DefaultImageRatio
+		} else {
+			imageRatio = s.config.Style.DefaultImageRatio
+		}
 	}
 
 	s.db.Model(&imageGen).Update("status", models.ImageStatusProcessing)
@@ -765,8 +775,24 @@ func (s *ImageGenerationService) processBackgroundExtraction(taskID string, epis
 	s.log.Infow("Extracting backgrounds from script", "episode_id", episodeID, "model", model, "task_id", taskID)
 	dramaID := episode.DramaID
 
+	// Fetch Drama to get ratio override
+	var drama models.Drama
+	ratio := ""
+	if err := s.db.First(&drama, dramaID).Error; err == nil {
+		if drama.DefaultImageRatio != nil {
+			ratio = *drama.DefaultImageRatio
+		}
+		// Also override style if provided and call didn't specify one (or maybe combine?)
+		// The `style` arg comes from handler, currently handler passes empty string or query param.
+		if style == "" && drama.DefaultSceneStyle != nil {
+			style = *drama.DefaultSceneStyle
+		} else if style == "" && drama.DefaultStyle != nil {
+			style = *drama.DefaultStyle
+		}
+	}
+
 	// 使用AI从剧本内容中提取场景
-	backgroundsInfo, err := s.extractBackgroundsFromScript(*episode.ScriptContent, dramaID, model, style)
+	backgroundsInfo, err := s.extractBackgroundsFromScript(*episode.ScriptContent, dramaID, model, style, ratio)
 	if err != nil {
 		s.log.Errorw("Failed to extract backgrounds from script", "error", err, "task_id", taskID)
 		s.taskService.UpdateTaskStatus(taskID, "failed", 0, "AI提取场景失败: "+err.Error())
@@ -834,7 +860,7 @@ func (s *ImageGenerationService) processBackgroundExtraction(taskID string, epis
 }
 
 // extractBackgroundsFromScript 从剧本内容中使用AI提取场景信息
-func (s *ImageGenerationService) extractBackgroundsFromScript(scriptContent string, dramaID uint, model string, style string) ([]BackgroundInfo, error) {
+func (s *ImageGenerationService) extractBackgroundsFromScript(scriptContent string, dramaID uint, model string, style, ratio string) ([]BackgroundInfo, error) {
 	if scriptContent == "" {
 		return []BackgroundInfo{}, nil
 	}
@@ -857,7 +883,7 @@ func (s *ImageGenerationService) extractBackgroundsFromScript(scriptContent stri
 	}
 
 	// 使用国际化提示词
-	systemPrompt := s.promptI18n.GetSceneExtractionPrompt(style)
+	systemPrompt := s.promptI18n.GetSceneExtractionPrompt(style, ratio)
 	contentLabel := s.promptI18n.FormatUserPrompt("script_content_label")
 
 	// 根据语言构建不同的格式说明
@@ -991,7 +1017,7 @@ Please strictly follow the JSON format and ensure all fields use English.`
 }
 
 // extractBackgroundsWithAI 使用AI智能分析场景并提取唯一背景
-func (s *ImageGenerationService) extractBackgroundsWithAI(storyboards []models.Storyboard, style string) ([]BackgroundInfo, error) {
+func (s *ImageGenerationService) extractBackgroundsWithAI(storyboards []models.Storyboard, style string, ratio string) ([]BackgroundInfo, error) {
 	if len(storyboards) == 0 {
 		return []BackgroundInfo{}, nil
 	}
@@ -1021,7 +1047,7 @@ func (s *ImageGenerationService) extractBackgroundsWithAI(storyboards []models.S
 	}
 
 	// 使用国际化提示词
-	systemPrompt := s.promptI18n.GetSceneExtractionPrompt(style)
+	systemPrompt := s.promptI18n.GetSceneExtractionPrompt(style, ratio)
 	storyboardLabel := s.promptI18n.FormatUserPrompt("storyboard_list_label")
 
 	// 根据语言构建不同的提示词

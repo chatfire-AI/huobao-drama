@@ -322,9 +322,35 @@ func (s *CharacterLibraryService) GenerateCharacterImage(characterID string, ima
 		prompt = character.Name
 	}
 
-	prompt += s.config.Style.DefaultStyle
-	prompt += s.config.Style.DefaultRoleStyle
-	prompt += s.config.Style.DefaultRoleRatio
+	if drama.DefaultStyle != nil && *drama.DefaultStyle != "" {
+		prompt += ", " + *drama.DefaultStyle
+	} else if s.config.Style.DefaultStyle != "" {
+		prompt += ", " + s.config.Style.DefaultStyle
+	}
+
+	if drama.DefaultRoleStyle != nil && *drama.DefaultRoleStyle != "" {
+		prompt += ", " + *drama.DefaultRoleStyle
+	} else if s.config.Style.DefaultRoleStyle != "" {
+		prompt += ", " + s.config.Style.DefaultRoleStyle
+	}
+
+	var ImageSize string
+	if drama.DefaultImageSize != nil && *drama.DefaultImageSize != "" {
+		ImageSize = *drama.DefaultImageSize
+	} else if s.config.Style.DefaultImageSize != "" {
+		ImageSize = s.config.Style.DefaultImageSize
+	}
+	// Ratio handling (handled by image service usually, but here we construct prompt)
+	// Actually default_role_ratio is appended to prompt?
+	// The code: prompt += s.config.Style.DefaultRoleRatio
+	// It seems ratio is part of prompt string in current implementation?
+	// Let's keep it consistent.
+	if drama.DefaultRoleRatio != nil && *drama.DefaultRoleRatio != "" {
+		prompt += ", " + *drama.DefaultRoleRatio
+	} else if s.config.Style.DefaultRoleRatio != "" {
+		prompt += ", " + s.config.Style.DefaultRoleRatio
+	}
+
 	// 调用图片生成服务
 	dramaIDStr := fmt.Sprintf("%d", character.DramaID)
 	imageType := "character"
@@ -333,9 +359,9 @@ func (s *CharacterLibraryService) GenerateCharacterImage(characterID string, ima
 		CharacterID: &character.ID,
 		ImageType:   imageType,
 		Prompt:      prompt,
-		Provider:    "openai",    // 或从配置读取
-		Model:       modelName,   // 使用用户指定的模型
-		Size:        "2560x1440", // 3,686,400像素，满足API最低要求（16:9比例）
+		Provider:    "openai",  // 或从配置读取
+		Model:       modelName, // 使用用户指定的模型
+		Size:        ImageSize, // 3,686,400像素，满足API最低要求（16:9比例）
 		Quality:     "standard",
 	}
 
@@ -511,7 +537,19 @@ func (s *CharacterLibraryService) processCharacterExtraction(taskID string, epis
 		script = *episode.ScriptContent
 	}
 
-	prompt := s.promptI18n.GetCharacterExtractionPrompt()
+	// Fetch Drama to get style overrides
+	var drama models.Drama
+	var style, ratio string
+	if err := s.db.First(&drama, episode.DramaID).Error; err == nil {
+		if drama.DefaultStyle != nil {
+			style = *drama.DefaultStyle
+		}
+		if drama.DefaultImageRatio != nil {
+			ratio = *drama.DefaultImageRatio
+		}
+	}
+
+	prompt := s.promptI18n.GetCharacterExtractionPrompt(style, ratio)
 	userPrompt := fmt.Sprintf("【剧本内容】\n%s", script)
 
 	response, err := s.aiService.GenerateText(userPrompt, prompt, ai.WithMaxTokens(3000))

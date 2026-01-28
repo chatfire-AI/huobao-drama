@@ -8,20 +8,30 @@ import (
 )
 
 type Drama struct {
-	ID            uint           `gorm:"primaryKey;autoIncrement" json:"id"`
-	Title         string         `gorm:"type:varchar(200);not null" json:"title"`
-	Description   *string        `gorm:"type:text" json:"description"`
-	Genre         *string        `gorm:"type:varchar(50)" json:"genre"`
-	Style         string         `gorm:"type:varchar(50);default:'realistic'" json:"style"`
-	TotalEpisodes int            `gorm:"default:1" json:"total_episodes"`
-	TotalDuration int            `gorm:"default:0" json:"total_duration"`
-	Status        string         `gorm:"type:varchar(20);default:'draft';not null" json:"status"`
-	Thumbnail     *string        `gorm:"type:varchar(500)" json:"thumbnail"`
-	Tags          datatypes.JSON `gorm:"type:json" json:"tags"`
-	Metadata      datatypes.JSON `gorm:"type:json" json:"metadata"`
-	CreatedAt     time.Time      `gorm:"not null;autoCreateTime" json:"created_at"`
-	UpdatedAt     time.Time      `gorm:"not null;autoUpdateTime" json:"updated_at"`
-	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
+	ID            uint    `gorm:"primaryKey;autoIncrement" json:"id"`
+	Title         string  `gorm:"type:varchar(200);not null" json:"title"`
+	Description   *string `gorm:"type:text" json:"description"`
+	Genre         *string `gorm:"type:varchar(50)" json:"genre"`
+	Style         string  `gorm:"type:varchar(50);default:'realistic'" json:"style"`
+	TotalEpisodes int     `gorm:"default:1" json:"total_episodes"`
+	TotalDuration int     `gorm:"default:0" json:"total_duration"`
+	Status        string  `gorm:"type:varchar(20);default:'draft';not null" json:"status"`
+	// 新增项目属性：样式和比例覆盖配置
+	DefaultStyle      *string        `gorm:"type:text" json:"default_style"`
+	DefaultRoleStyle  *string        `gorm:"type:text" json:"default_role_style"`
+	DefaultSceneStyle *string        `gorm:"type:text" json:"default_scene_style"`
+	DefaultPropStyle  *string        `gorm:"type:text" json:"default_prop_style"`
+	DefaultImageRatio *string        `gorm:"type:varchar(20)" json:"default_image_ratio"`
+	DefaultVideoRatio *string        `gorm:"type:varchar(20)" json:"default_video_ratio"`
+	DefaultPropRatio  *string        `gorm:"type:varchar(20)" json:"default_prop_ratio"`
+	DefaultImageSize  *string        `gorm:"type:varchar(20)" json:"default_image_size"`
+	DefaultRoleRatio  *string        `gorm:"type:varchar(20)" json:"default_role_ratio"`
+	Thumbnail         *string        `gorm:"type:varchar(500)" json:"thumbnail"`
+	Tags              datatypes.JSON `gorm:"type:json" json:"tags"`
+	Metadata          datatypes.JSON `gorm:"type:json" json:"metadata"`
+	CreatedAt         time.Time      `gorm:"not null;autoCreateTime" json:"created_at"`
+	UpdatedAt         time.Time      `gorm:"not null;autoUpdateTime" json:"updated_at"`
+	DeletedAt         gorm.DeletedAt `gorm:"index" json:"-"`
 
 	Episodes   []Episode   `gorm:"foreignKey:DramaID" json:"episodes,omitempty"`
 	Characters []Character `gorm:"foreignKey:DramaID" json:"characters,omitempty"`

@@ -7,6 +7,15 @@ export interface Drama {
   description?: string
   genre?: string
   style?: string
+  default_style?: string
+  default_role_style?: string
+  default_scene_style?: string
+  default_prop_style?: string
+  default_image_ratio?: string
+  default_video_ratio?: string
+  default_prop_ratio?: string
+  default_image_size?: string
+  default_role_ratio?: string
   total_episodes: number
   total_duration: number
   total_scenes?: number
@@ -125,6 +134,15 @@ export interface CreateDramaRequest {
   description?: string
   genre?: string
   tags?: string
+  default_style?: string
+  default_role_style?: string
+  default_scene_style?: string
+  default_prop_style?: string
+  default_image_ratio?: string
+  default_video_ratio?: string
+  default_prop_ratio?: string
+  default_image_size?: string
+  default_role_ratio?: string
 }
 
 export interface UpdateDramaRequest {
@@ -133,6 +151,15 @@ export interface UpdateDramaRequest {
   genre?: string
   tags?: string
   status?: DramaStatus
+  default_style?: string
+  default_role_style?: string
+  default_scene_style?: string
+  default_prop_style?: string
+  default_image_ratio?: string
+  default_video_ratio?: string
+  default_prop_ratio?: string
+  default_image_size?: string
+  default_role_ratio?: string
 }
 
 export interface DramaListQuery {

@@ -29,6 +29,16 @@ type CreateDramaRequest struct {
 	Description string `json:"description"`
 	Genre       string `json:"genre"`
 	Tags        string `json:"tags"`
+	// Override fields
+	DefaultStyle      string `json:"default_style"`
+	DefaultRoleStyle  string `json:"default_role_style"`
+	DefaultSceneStyle string `json:"default_scene_style"`
+	DefaultPropStyle  string `json:"default_prop_style"`
+	DefaultImageRatio string `json:"default_image_ratio"`
+	DefaultVideoRatio string `json:"default_video_ratio"`
+	DefaultPropRatio  string `json:"default_prop_ratio"`
+	DefaultImageSize  string `json:"default_image_size"`
+	DefaultRoleRatio  string `json:"default_role_ratio"`
 }
 
 type UpdateDramaRequest struct {
@@ -37,6 +47,16 @@ type UpdateDramaRequest struct {
 	Genre       string `json:"genre"`
 	Tags        string `json:"tags"`
 	Status      string `json:"status" binding:"omitempty,oneof=draft planning production completed archived"`
+	// Override fields
+	DefaultStyle      *string `json:"default_style"`
+	DefaultRoleStyle  *string `json:"default_role_style"`
+	DefaultSceneStyle *string `json:"default_scene_style"`
+	DefaultPropStyle  *string `json:"default_prop_style"`
+	DefaultImageRatio *string `json:"default_image_ratio"`
+	DefaultVideoRatio *string `json:"default_video_ratio"`
+	DefaultPropRatio  *string `json:"default_prop_ratio"`
+	DefaultImageSize  *string `json:"default_image_size"`
+	DefaultRoleRatio  *string `json:"default_role_ratio"`
 }
 
 type DramaListQuery struct {
@@ -58,6 +78,34 @@ func (s *DramaService) CreateDrama(req *CreateDramaRequest) (*models.Drama, erro
 	}
 	if req.Genre != "" {
 		drama.Genre = &req.Genre
+	}
+
+	if req.DefaultStyle != "" {
+		drama.DefaultStyle = &req.DefaultStyle
+	}
+	if req.DefaultRoleStyle != "" {
+		drama.DefaultRoleStyle = &req.DefaultRoleStyle
+	}
+	if req.DefaultSceneStyle != "" {
+		drama.DefaultSceneStyle = &req.DefaultSceneStyle
+	}
+	if req.DefaultPropStyle != "" {
+		drama.DefaultPropStyle = &req.DefaultPropStyle
+	}
+	if req.DefaultImageRatio != "" {
+		drama.DefaultImageRatio = &req.DefaultImageRatio
+	}
+	if req.DefaultVideoRatio != "" {
+		drama.DefaultVideoRatio = &req.DefaultVideoRatio
+	}
+	if req.DefaultPropRatio != "" {
+		drama.DefaultPropRatio = &req.DefaultPropRatio
+	}
+	if req.DefaultImageSize != "" {
+		drama.DefaultImageSize = &req.DefaultImageSize
+	}
+	if req.DefaultRoleRatio != "" {
+		drama.DefaultRoleRatio = &req.DefaultRoleRatio
 	}
 
 	if err := s.db.Create(drama).Error; err != nil {
@@ -268,6 +316,34 @@ func (s *DramaService) UpdateDrama(dramaID string, req *UpdateDramaRequest) (*mo
 	}
 	if req.Status != "" {
 		updates["status"] = req.Status
+	}
+
+	if req.DefaultStyle != nil {
+		updates["default_style"] = *req.DefaultStyle
+	}
+	if req.DefaultRoleStyle != nil {
+		updates["default_role_style"] = *req.DefaultRoleStyle
+	}
+	if req.DefaultSceneStyle != nil {
+		updates["default_scene_style"] = *req.DefaultSceneStyle
+	}
+	if req.DefaultPropStyle != nil {
+		updates["default_prop_style"] = *req.DefaultPropStyle
+	}
+	if req.DefaultImageRatio != nil {
+		updates["default_image_ratio"] = *req.DefaultImageRatio
+	}
+	if req.DefaultVideoRatio != nil {
+		updates["default_video_ratio"] = *req.DefaultVideoRatio
+	}
+	if req.DefaultPropRatio != nil {
+		updates["default_prop_ratio"] = *req.DefaultPropRatio
+	}
+	if req.DefaultImageSize != nil {
+		updates["default_image_size"] = *req.DefaultImageSize
+	}
+	if req.DefaultRoleRatio != nil {
+		updates["default_role_ratio"] = *req.DefaultRoleRatio
 	}
 
 	updates["updated_at"] = time.Now()

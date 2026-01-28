@@ -99,7 +99,7 @@ func (s *FramePromptService) processFramePromptGeneration(taskID string, req Gen
 
 	// 查询分镜信息
 	var storyboard models.Storyboard
-	if err := s.db.Preload("Characters").First(&storyboard, req.StoryboardID).Error; err != nil {
+	if err := s.db.Preload("Characters").Preload("Episode.Drama").First(&storyboard, req.StoryboardID).Error; err != nil {
 		s.log.Errorw("Storyboard not found during frame prompt generation", "error", err, "storyboard_id", req.StoryboardID)
 		s.taskService.UpdateTaskStatus(taskID, "failed", 0, "分镜信息不存在")
 		return
@@ -204,8 +204,16 @@ func (s *FramePromptService) generateFirstFrame(sb models.Storyboard, scene *mod
 	// 构建上下文信息
 	contextInfo := s.buildStoryboardContext(sb, scene)
 
+	var style, ratio string
+	if sb.Episode.Drama.DefaultStyle != nil {
+		style = *sb.Episode.Drama.DefaultStyle
+	}
+	if sb.Episode.Drama.DefaultImageRatio != nil {
+		ratio = *sb.Episode.Drama.DefaultImageRatio
+	}
+
 	// 使用国际化提示词
-	systemPrompt := s.promptI18n.GetFirstFramePrompt()
+	systemPrompt := s.promptI18n.GetFirstFramePrompt(style, ratio)
 	userPrompt := s.promptI18n.FormatUserPrompt("frame_info", contextInfo)
 
 	// 调用AI生成（如果指定了模型则使用指定的模型）
@@ -252,8 +260,16 @@ func (s *FramePromptService) generateKeyFrame(sb models.Storyboard, scene *model
 	// 构建上下文信息
 	contextInfo := s.buildStoryboardContext(sb, scene)
 
+	var style, ratio string
+	if sb.Episode.Drama.DefaultStyle != nil {
+		style = *sb.Episode.Drama.DefaultStyle
+	}
+	if sb.Episode.Drama.DefaultImageRatio != nil {
+		ratio = *sb.Episode.Drama.DefaultImageRatio
+	}
+
 	// 使用国际化提示词
-	systemPrompt := s.promptI18n.GetKeyFramePrompt()
+	systemPrompt := s.promptI18n.GetKeyFramePrompt(style, ratio)
 	userPrompt := s.promptI18n.FormatUserPrompt("key_frame_info", contextInfo)
 
 	// 调用AI生成（如果指定了模型则使用指定的模型）
@@ -299,8 +315,16 @@ func (s *FramePromptService) generateLastFrame(sb models.Storyboard, scene *mode
 	// 构建上下文信息
 	contextInfo := s.buildStoryboardContext(sb, scene)
 
+	var style, ratio string
+	if sb.Episode.Drama.DefaultStyle != nil {
+		style = *sb.Episode.Drama.DefaultStyle
+	}
+	if sb.Episode.Drama.DefaultImageRatio != nil {
+		ratio = *sb.Episode.Drama.DefaultImageRatio
+	}
+
 	// 使用国际化提示词
-	systemPrompt := s.promptI18n.GetLastFramePrompt()
+	systemPrompt := s.promptI18n.GetLastFramePrompt(style, ratio)
 	userPrompt := s.promptI18n.FormatUserPrompt("last_frame_info", contextInfo)
 
 	// 调用AI生成（如果指定了模型则使用指定的模型）

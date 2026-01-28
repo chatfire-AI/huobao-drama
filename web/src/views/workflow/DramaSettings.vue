@@ -40,6 +40,91 @@
           </el-form>
         </el-tab-pane>
 
+        <el-tab-pane label="样式设置" name="style">
+          <el-form :model="form" label-width="120px" style="max-width: 800px">
+            <el-divider content-position="left">全局设置</el-divider>
+            <el-form-item label="默认风格">
+              <el-input 
+                v-model="form.default_style" 
+                type="textarea" 
+                :rows="2" 
+                placeholder="全局风格提示词 (例如: Anime, Realistic)" 
+              />
+            </el-form-item>
+            
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="默认图片比例">
+                  <el-select v-model="form.default_image_ratio" placeholder="选择比例">
+                    <el-option label="16:9" value="16:9" />
+                    <el-option label="9:16" value="9:16" />
+                    <el-option label="1:1" value="1:1" />
+                    <el-option label="4:3" value="4:3" />
+                    <el-option label="3:4" value="3:4" />
+                    <el-option label="21:9" value="21:9" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="默认视频比例">
+                  <el-select v-model="form.default_video_ratio" placeholder="选择比例">
+                    <el-option label="16:9" value="16:9" />
+                    <el-option label="9:16" value="9:16" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+
+            <el-divider content-position="left">高级样式覆盖</el-divider>
+            
+            <el-form-item label="角色风格">
+              <el-input v-model="form.default_role_style" type="textarea" :rows="2" placeholder="角色生成专用风格" />
+            </el-form-item>
+            <el-form-item label="场景风格">
+              <el-input v-model="form.default_scene_style" type="textarea" :rows="2" placeholder="场景生成专用风格" />
+            </el-form-item>
+            <el-form-item label="道具风格">
+              <el-input v-model="form.default_prop_style" type="textarea" :rows="2" placeholder="道具生成专用风格" />
+            </el-form-item>
+
+            <el-row :gutter="20">
+               <el-col :span="8">
+                  <el-form-item label="角色比例">
+                    <el-select v-model="form.default_role_ratio" placeholder="默认">
+                      <el-option label="默认" value="" />
+                      <el-option label="1:1" value="1:1" />
+                      <el-option label="9:16" value="9:16" />
+                      <el-option label="3:4" value="3:4" />
+                    </el-select>
+                  </el-form-item>
+               </el-col>
+               <el-col :span="8">
+                  <el-form-item label="道具比例">
+                    <el-select v-model="form.default_prop_ratio" placeholder="默认">
+                      <el-option label="默认" value="" />
+                      <el-option label="1:1" value="1:1" />
+                      <el-option label="4:3" value="4:3" />
+                    </el-select>
+                  </el-form-item>
+               </el-col>
+               <el-col :span="8">
+                  <el-form-item label="图片尺寸">
+                     <el-select v-model="form.default_image_size" placeholder="默认">
+                        <el-option label="默认" value="" />
+                        <el-option label="1024x1024" value="1024x1024" />
+                        <el-option label="1280x720" value="1280x720" />
+                        <el-option label="720x1280" value="720x1280" />
+                     </el-select>
+                  </el-form-item>
+               </el-col>
+            </el-row>
+
+            <el-form-item>
+              <el-button type="primary" @click="saveSettings">保存设置</el-button>
+            </el-form-item>
+          </el-form>
+        </el-tab-pane>
+
         <el-tab-pane label="危险操作" name="danger">
           <el-alert
             title="警告"
@@ -72,7 +157,16 @@ const form = reactive({
   title: '',
   description: '',
   genre: '',
-  status: 'draft' as any
+  status: 'draft' as any,
+  default_style: '',
+  default_image_ratio: '',
+  default_video_ratio: '',
+  default_role_style: '',
+  default_scene_style: '',
+  default_prop_style: '',
+  default_role_ratio: '',
+  default_prop_ratio: '',
+  default_image_size: ''
 })
 
 const goBack = () => {

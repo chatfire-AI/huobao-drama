@@ -84,7 +84,31 @@ func (s *PropService) processPropExtraction(taskID string, episode models.Episod
 		script = *episode.ScriptContent
 	}
 
-	promptTemplate := s.promptI18n.GetPropExtractionPrompt()
+	promptTemplate := s.promptI18n.GetPropExtractionPrompt("", "")
+
+	// Fetch Drama for style overrides
+	var drama models.Drama
+	if err := s.db.First(&drama, episode.DramaID).Error; err == nil {
+		style := ""
+		ratio := ""
+		if drama.DefaultStyle != nil {
+			style = *drama.DefaultStyle
+		}
+		if drama.DefaultPropStyle != nil {
+			if style != "" {
+				style += ", " + *drama.DefaultPropStyle
+			} else {
+				style = *drama.DefaultPropStyle
+			}
+		}
+		if drama.DefaultPropRatio != nil {
+			ratio = *drama.DefaultPropRatio
+		} else if drama.DefaultImageRatio != nil {
+			ratio = *drama.DefaultImageRatio
+		}
+
+		promptTemplate = s.promptI18n.GetPropExtractionPrompt(style, ratio)
+	}
 	prompt := fmt.Sprintf(promptTemplate, script)
 
 	response, err := s.aiService.GenerateText(prompt, "", ai.WithMaxTokens(2000))
@@ -172,6 +196,30 @@ func (s *PropService) processPropImageGeneration(taskID string, prop models.Prop
 	imageSize := "1024x1024"
 	if s.config != nil && s.config.Style.DefaultImageSize != "" {
 		imageSize = s.config.Style.DefaultImageSize
+	}
+
+	// Fetch Drama for overrides
+	var drama models.Drama
+	if err := s.db.First(&drama, prop.DramaID).Error; err == nil {
+		if drama.DefaultStyle != nil {
+			imageStyle = *drama.DefaultStyle
+		}
+		if drama.DefaultPropStyle != nil {
+			if drama.DefaultStyle == nil { // If base style wasn't overridden, append prop style
+				if imageStyle != "" {
+					imageStyle += ", " + *drama.DefaultPropStyle
+				} else {
+					imageStyle = *drama.DefaultPropStyle
+				}
+			} else {
+				// If base style was overridden, append prop style to it
+				imageStyle += ", " + *drama.DefaultPropStyle
+			}
+		}
+
+		if drama.DefaultImageSize != nil {
+			imageSize = *drama.DefaultImageSize
+		}
 	}
 
 	// 创建生成请求

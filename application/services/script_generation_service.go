@@ -13,21 +13,21 @@ import (
 )
 
 type ScriptGenerationService struct {
-	db         *gorm.DB
-	aiService  *AIService
-	log        *logger.Logger
-	config     *config.Config
-	promptI18n *PromptI18n
+	db          *gorm.DB
+	aiService   *AIService
+	log         *logger.Logger
+	config      *config.Config
+	promptI18n  *PromptI18n
 	taskService *TaskService
 }
 
 func NewScriptGenerationService(db *gorm.DB, cfg *config.Config, log *logger.Logger) *ScriptGenerationService {
 	return &ScriptGenerationService{
-		db:         db,
-		aiService:  NewAIService(db, log),
-		log:        log,
-		config:     cfg,
-		promptI18n: NewPromptI18n(cfg),
+		db:          db,
+		aiService:   NewAIService(db, log),
+		log:         log,
+		config:      cfg,
+		promptI18n:  NewPromptI18n(cfg),
 		taskService: NewTaskService(db, log),
 	}
 }
@@ -71,7 +71,18 @@ func (s *ScriptGenerationService) processCharacterGeneration(taskID string, req 
 		count = 5
 	}
 
-	systemPrompt := s.promptI18n.GetCharacterExtractionPrompt()
+	var drama models.Drama
+	var style, ratio string
+	if err := s.db.Where("id = ? ", req.DramaID).First(&drama).Error; err == nil {
+		if drama.DefaultStyle != nil {
+			style = *drama.DefaultStyle
+		}
+		if drama.DefaultImageRatio != nil {
+			ratio = *drama.DefaultImageRatio
+		}
+	}
+
+	systemPrompt := s.promptI18n.GetCharacterExtractionPrompt(style, ratio)
 
 	outlineText := req.Outline
 	if outlineText == "" {

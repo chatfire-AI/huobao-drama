@@ -39,6 +39,90 @@
           resize="none"
         />
       </el-form-item>
+
+      <el-divider content-position="left">{{ $t('drama.styleSettings') }}</el-divider>
+
+      <el-row :gutter="20">
+        <el-col :span="12">
+          <el-form-item :label="$t('drama.defaultImageRatio')" prop="default_image_ratio">
+            <el-select v-model="form.default_image_ratio" placeholder="Select ratio">
+              <el-option label="16:9" value="16:9" />
+              <el-option label="9:16" value="9:16" />
+              <el-option label="1:1" value="1:1" />
+              <el-option label="4:3" value="4:3" />
+              <el-option label="3:4" value="3:4" />
+              <el-option label="21:9" value="21:9" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item :label="$t('drama.defaultVideoRatio')" prop="default_video_ratio">
+            <el-select v-model="form.default_video_ratio" placeholder="Select ratio">
+              <el-option label="16:9" value="16:9" />
+              <el-option label="9:16" value="9:16" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
+
+      <el-form-item :label="$t('drama.defaultStyle')" prop="default_style">
+        <el-input 
+          v-model="form.default_style" 
+          type="textarea" 
+          :rows="2"
+          placeholder="Global style prompt (e.g. Anime, Realistic)"
+        />
+      </el-form-item>
+
+      <el-collapse>
+        <el-collapse-item :title="$t('drama.advancedStyleSettings')" name="1">
+          <el-form-item :label="$t('drama.defaultRoleStyle')" prop="default_role_style">
+            <el-input v-model="form.default_role_style" type="textarea" :rows="2" placeholder="Specific style for characters" />
+          </el-form-item>
+          <el-form-item :label="$t('drama.defaultSceneStyle')" prop="default_scene_style">
+            <el-input v-model="form.default_scene_style" type="textarea" :rows="2" placeholder="Specific style for scenes" />
+          </el-form-item>
+          <el-form-item :label="$t('drama.defaultPropStyle')" prop="default_prop_style">
+            <el-input v-model="form.default_prop_style" type="textarea" :rows="2" placeholder="Specific style for props" />
+          </el-form-item>
+          
+          <el-row :gutter="20">
+             <el-col :span="8">
+                <el-form-item :label="$t('drama.defaultRoleRatio')" prop="default_role_ratio">
+                  <el-select v-model="form.default_role_ratio" placeholder="Default">
+                    <el-option label="Default" value="" />
+                    <el-option label="1:1" value="1:1" />
+                    <el-option label="9:16" value="9:16" />
+                    <el-option label="3:4" value="3:4" />
+                  </el-select>
+                </el-form-item>
+             </el-col>
+             <el-col :span="8">
+                <el-form-item :label="$t('drama.defaultPropRatio')" prop="default_prop_ratio">
+                  <el-select v-model="form.default_prop_ratio" placeholder="Default">
+                    <el-option label="Default" value="" />
+                    <el-option label="1:1" value="1:1" />
+                    <el-option label="4:3" value="4:3" />
+                  </el-select>
+                </el-form-item>
+             </el-col>
+             <el-col :span="8">
+                <el-form-item :label="$t('drama.defaultImageSize')" prop="default_image_size">
+                   <el-select v-model="form.default_image_size" placeholder="Default">
+                      <el-option label="Default" value="" />
+                      <el-option label="256x256" value="256x256" />
+                      <el-option label="512x512" value="512x512" />
+                      <el-option label="1024x1024" value="1024x1024" />
+                      <el-option label="1280x720" value="1280x720" />
+                      <el-option label="720x1280" value="720x1280" />
+                      <el-option label="1920x1080" value="1920x1080" />
+                      <el-option label="2560x1440" value="2560x1440" />
+                   </el-select>
+                </el-form-item>
+             </el-col>
+          </el-row>
+        </el-collapse-item>
+      </el-collapse>
     </el-form>
 
     <template #footer>
@@ -97,7 +181,16 @@ watch(visible, (val) => {
 // Form data / 表单数据
 const form = reactive<CreateDramaRequest>({
   title: '',
-  description: ''
+  description: '',
+  default_style: '',
+  default_image_ratio: '16:9',
+  default_video_ratio: '16:9',
+  default_role_style: '',
+  default_scene_style: '',
+  default_prop_style: '',
+  default_role_ratio: '',
+  default_prop_ratio: '',
+  default_image_size: ''
 })
 
 // Validation rules / 验证规则
@@ -112,6 +205,15 @@ const rules: FormRules = {
 const handleClosed = () => {
   form.title = ''
   form.description = ''
+  form.default_style = ''
+  form.default_image_ratio = '16:9'
+  form.default_video_ratio = '16:9'
+  form.default_role_style = ''
+  form.default_scene_style = ''
+  form.default_prop_style = ''
+  form.default_role_ratio = ''
+  form.default_prop_ratio = ''
+  form.default_image_size = ''
   formRef.value?.resetFields()
 }
 
