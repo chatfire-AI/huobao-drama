@@ -49,30 +49,13 @@
         </ProjectCard>
       </div>
 
-      <!-- Edit Dialog / 编辑对话框 -->
-      <el-dialog v-model="editDialogVisible" :title="$t('drama.editProject')" width="520px"
-        :close-on-click-modal="false" class="edit-dialog">
-        <el-form :model="editForm" label-position="top" v-loading="editLoading" class="edit-form">
-          <el-form-item :label="$t('drama.projectName')" required>
-            <el-input v-model="editForm.title" :placeholder="$t('drama.projectNamePlaceholder')" size="large" />
-          </el-form-item>
-          <el-form-item :label="$t('drama.projectDesc')">
-            <el-input v-model="editForm.description" type="textarea" :rows="4"
-              :placeholder="$t('drama.projectDescPlaceholder')" resize="none" />
-          </el-form-item>
-        </el-form>
-        <template #footer>
-          <div class="dialog-footer">
-            <el-button @click="editDialogVisible = false" size="large">{{ $t('common.cancel') }}</el-button>
-            <el-button type="primary" @click="saveEdit" :loading="editLoading" size="large">
-              {{ $t('common.save') }}
-            </el-button>
-          </div>
-        </template>
-      </el-dialog>
-
-      <!-- Create Drama Dialog / 创建短剧弹窗 -->
-      <CreateDramaDialog v-model="createDialogVisible" @created="loadDramas" />
+      <!-- Unified Project Dialog / 统一项目弹窗 -->
+      <DramaProjectDialog 
+        v-model="dialogVisible" 
+        :drama-id="currentDramaId"
+        @created="loadDramas"
+        @updated="loadDramas" 
+      />
 
     </div>
 
@@ -116,7 +99,7 @@ import {
 } from '@element-plus/icons-vue'
 import { dramaAPI } from '@/api/drama'
 import type { Drama, DramaListQuery } from '@/types/drama'
-import { AppHeader, ProjectCard, ActionButton, CreateDramaDialog, EmptyState } from '@/components/common'
+import { AppHeader, ProjectCard, ActionButton, DramaProjectDialog, EmptyState } from '@/components/common'
 
 const router = useRouter()
 const loading = ref(false)
@@ -128,8 +111,9 @@ const queryParams = ref<DramaListQuery>({
   page_size: 12
 })
 
-// Create dialog state / 创建弹窗状态
-const createDialogVisible = ref(false)
+// Dialog state
+const dialogVisible = ref(false)
+const currentDramaId = ref<string | undefined>(undefined)
 
 // Load drama list / 加载短剧列表
 const loadDramas = async () => {
@@ -146,59 +130,19 @@ const loadDramas = async () => {
 }
 
 // Navigation handlers / 导航处理
-const handleCreate = () => createDialogVisible.value = true
+const handleCreate = () => {
+  currentDramaId.value = undefined
+  dialogVisible.value = true
+}
 const viewDrama = (id: string) => router.push(`/dramas/${id}`)
 
-// Edit dialog state / 编辑对话框状态
-const editDialogVisible = ref(false)
-const editLoading = ref(false)
-const editForm = ref({
-  id: '',
-  title: '',
-  description: ''
-})
-
-// Open edit dialog / 打开编辑对话框
-const editDrama = async (id: string) => {
-  editLoading.value = true
-  editDialogVisible.value = true
-  try {
-    const drama = await dramaAPI.get(id)
-    editForm.value = {
-      id: drama.id,
-      title: drama.title,
-      description: drama.description || ''
-    }
-  } catch (error: any) {
-    ElMessage.error(error.message || '加载失败')
-    editDialogVisible.value = false
-  } finally {
-    editLoading.value = false
-  }
+// Open edit dialog
+const editDrama = (id: string) => {
+  currentDramaId.value = id
+  dialogVisible.value = true
 }
 
-// Save edit changes / 保存编辑更改
-const saveEdit = async () => {
-  if (!editForm.value.title) {
-    ElMessage.warning('请输入项目名称')
-    return
-  }
 
-  editLoading.value = true
-  try {
-    await dramaAPI.update(editForm.value.id, {
-      title: editForm.value.title,
-      description: editForm.value.description
-    })
-    ElMessage.success('保存成功')
-    editDialogVisible.value = false
-    loadDramas()
-  } catch (error: any) {
-    ElMessage.error(error.message || '保存失败')
-  } finally {
-    editLoading.value = false
-  }
-}
 
 // Delete drama / 删除短剧
 const deleteDrama = async (id: string) => {

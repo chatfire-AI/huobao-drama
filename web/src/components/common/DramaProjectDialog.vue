@@ -1,21 +1,23 @@
 <template>
-  <!-- Create Drama Dialog / 创建短剧弹窗 -->
+  <!-- Unified Drama Project Dialog / 统一短剧项目弹窗 -->
   <el-dialog
     v-model="visible"
-    :title="$t('drama.createNew')"
+    :title="isEdit ? $t('drama.editProject') : $t('drama.createNew')"
     width="520px"
     :close-on-click-modal="false"
-    class="create-dialog"
+    class="drama-project-dialog"
     @closed="handleClosed"
+    @open="handleOpen"
   >
-    <div class="dialog-desc">{{ $t('drama.createDesc') }}</div>
+    <div v-if="!isEdit" class="dialog-desc">{{ $t('drama.createDesc') }}</div>
     
     <el-form 
       ref="formRef" 
       :model="form" 
       :rules="rules" 
       label-position="top"
-      class="create-form"
+      class="project-form"
+      v-loading="loading"
       @submit.prevent="handleSubmit"
     >
       <el-form-item :label="$t('drama.projectName')" prop="title" required>
@@ -46,20 +48,24 @@
         <el-col :span="12">
           <el-form-item :label="$t('drama.defaultImageRatio')" prop="default_image_ratio">
             <el-select v-model="form.default_image_ratio" :placeholder="$t('drama.selectRatio')">
-              <el-option label="16:9" value="16:9" />
-              <el-option label="9:16" value="9:16" />
-              <el-option label="1:1" value="1:1" />
-              <el-option label="4:3" value="4:3" />
-              <el-option label="3:4" value="3:4" />
-              <el-option label="21:9" value="21:9" />
+              <el-option 
+                v-for="opt in visualOptions.Ratios?.Image || []" 
+                :key="opt.Value" 
+                :label="opt.Label" 
+                :value="opt.Value" 
+              />
             </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item :label="$t('drama.defaultVideoRatio')" prop="default_video_ratio">
             <el-select v-model="form.default_video_ratio" :placeholder="$t('drama.selectRatio')">
-              <el-option label="16:9" value="16:9" />
-              <el-option label="9:16" value="9:16" />
+              <el-option 
+                v-for="opt in visualOptions.Ratios?.Video || []" 
+                :key="opt.Value" 
+                :label="opt.Label" 
+                :value="opt.Value" 
+              />
             </el-select>
           </el-form-item>
         </el-col>
@@ -91,9 +97,12 @@
                 <el-form-item :label="$t('drama.defaultRoleRatio')" prop="default_role_ratio">
                   <el-select v-model="form.default_role_ratio" :placeholder="$t('drama.defaultOption')">
                     <el-option :label="$t('drama.defaultOption')" value="" />
-                    <el-option label="1:1" value="1:1" />
-                    <el-option label="9:16" value="9:16" />
-                    <el-option label="3:4" value="3:4" />
+                    <el-option 
+                      v-for="opt in visualOptions.Ratios?.Role || []" 
+                      :key="opt.Value" 
+                      :label="opt.Label" 
+                      :value="opt.Value" 
+                    />
                   </el-select>
                 </el-form-item>
              </el-col>
@@ -101,8 +110,12 @@
                 <el-form-item :label="$t('drama.defaultPropRatio')" prop="default_prop_ratio">
                   <el-select v-model="form.default_prop_ratio" :placeholder="$t('drama.defaultOption')">
                     <el-option :label="$t('drama.defaultOption')" value="" />
-                    <el-option label="1:1" value="1:1" />
-                    <el-option label="4:3" value="4:3" />
+                    <el-option 
+                      v-for="opt in visualOptions.Ratios?.Prop || []" 
+                      :key="opt.Value" 
+                      :label="opt.Label" 
+                      :value="opt.Value" 
+                    />
                   </el-select>
                 </el-form-item>
              </el-col>
@@ -110,13 +123,12 @@
                 <el-form-item :label="$t('drama.defaultImageSize')" prop="default_image_size">
                    <el-select v-model="form.default_image_size" :placeholder="$t('drama.defaultOption')">
                       <el-option :label="$t('drama.defaultOption')" value="" />
-                      <el-option label="256x256" value="256x256" />
-                      <el-option label="512x512" value="512x512" />
-                      <el-option label="1024x1024" value="1024x1024" />
-                      <el-option label="1280x720" value="1280x720" />
-                      <el-option label="720x1280" value="720x1280" />
-                      <el-option label="1920x1080" value="1920x1080" />
-                      <el-option label="2560x1440" value="2560x1440" />
+                      <el-option 
+                        v-for="opt in visualOptions.ImageSizes || []" 
+                        :key="opt.Value" 
+                        :label="opt.Label" 
+                        :value="opt.Value" 
+                      />
                    </el-select>
                 </el-form-item>
              </el-col>
@@ -133,11 +145,11 @@
         <el-button 
           type="primary" 
           size="large"
-          :loading="loading"
+          :loading="submitting"
           @click="handleSubmit"
         >
-          <el-icon v-if="!loading"><Plus /></el-icon>
-          {{ $t('drama.createNew') }}
+          <el-icon v-if="!submitting"><Plus v-if="!isEdit" /><Edit v-else /></el-icon>
+          {{ isEdit ? $t('common.save') : $t('drama.createNew') }}
         </el-button>
       </div>
     </template>
@@ -145,31 +157,40 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Edit } from '@element-plus/icons-vue'
 import { dramaAPI } from '@/api/drama'
+import { optionAPI, type VisualOptions } from '@/api/option'
 import type { CreateDramaRequest } from '@/types/drama'
+import { useI18n } from 'vue-i18n'
 
 /**
- * CreateDramaDialog - Reusable dialog for creating new drama projects
- * 创建短剧弹窗 - 可复用的创建短剧项目弹窗
+ * DramaProjectDialog - Unified dialog for creating and editing drama projects
+ * 统一短剧项目弹窗 - 用于创建和编辑短剧项目
  */
 const props = defineProps<{
   modelValue: boolean
+  dramaId?: string // If provided, mode is 'edit'
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
   'created': [id: string]
+  'updated': [id: string]
 }>()
 
 const router = useRouter()
+const { locale } = useI18n()
 const formRef = ref<FormInstance>()
-const loading = ref(false)
+const loading = ref(false) // Loading initial data
+const submitting = ref(false) // Submitting form
+const visualOptions = ref<Partial<VisualOptions>>({})
 
-// v-model binding / 双向绑定
+const isEdit = computed(() => !!props.dramaId)
+
+// v-model binding
 const visible = ref(props.modelValue)
 watch(() => props.modelValue, (val) => {
   visible.value = val
@@ -178,8 +199,8 @@ watch(visible, (val) => {
   emit('update:modelValue', val)
 })
 
-// Form data / 表单数据
-const form = reactive<CreateDramaRequest>({
+// Form data
+const form = reactive<CreateDramaRequest & { default_style: string }>({
   title: '',
   description: '',
   default_style: '',
@@ -193,16 +214,25 @@ const form = reactive<CreateDramaRequest>({
   default_image_size: ''
 })
 
-// Validation rules / 验证规则
+// Validation rules
 const rules: FormRules = {
   title: [
     { required: true, message: '请输入项目标题', trigger: 'blur' },
     { min: 1, max: 100, message: '标题长度在 1 到 100 个字符', trigger: 'blur' }
   ]
 }
+// Fetch options
+const fetchOptions = async () => {
+  try {
+    const res = await optionAPI.getVisualOptions(locale.value)
+    visualOptions.value = res
+  } catch (error) {
+    console.error('Failed to load visual options', error)
+  }
+}
 
-// Reset form when dialog closes / 关闭时重置表单
-const handleClosed = () => {
+// Reset form
+const resetForm = () => {
   form.title = ''
   form.description = ''
   form.default_style = ''
@@ -217,29 +247,73 @@ const handleClosed = () => {
   formRef.value?.resetFields()
 }
 
-// Close dialog / 关闭弹窗
+// Handle dialog open
+const handleOpen = async () => {
+  await fetchOptions() // Fetch options first
+  
+  if (isEdit.value && props.dramaId) {
+    loading.value = true
+    try {
+      const drama = await dramaAPI.get(props.dramaId)
+      form.title = drama.title
+      form.description = drama.description || ''
+      form.default_style = drama.default_style || ''
+      form.default_image_ratio = drama.default_image_ratio || '16:9'
+      form.default_video_ratio = drama.default_video_ratio || '16:9'
+      form.default_role_style = drama.default_role_style || ''
+      form.default_scene_style = drama.default_scene_style || ''
+      form.default_prop_style = drama.default_prop_style || ''
+      form.default_role_ratio = drama.default_role_ratio || ''
+      form.default_prop_ratio = drama.default_prop_ratio || ''
+      form.default_image_size = drama.default_image_size || ''
+    } catch (error: any) {
+      ElMessage.error(error.message || '加载项目详情失败')
+      handleClose()
+    } finally {
+      loading.value = false
+    }
+  } else {
+    resetForm()
+  }
+}
+
+// Reset on close
+const handleClosed = () => {
+  resetForm()
+  loading.value = false
+  submitting.value = false
+}
+
+// Close dialog
 const handleClose = () => {
   visible.value = false
 }
 
-// Submit form / 提交表单
+// Submit form
 const handleSubmit = async () => {
   if (!formRef.value) return
   
   await formRef.value.validate(async (valid) => {
     if (valid) {
-      loading.value = true
+      submitting.value = true
       try {
-        const drama = await dramaAPI.create(form)
-        ElMessage.success('创建成功')
-        visible.value = false
-        emit('created', drama.id)
-        // Navigate to drama detail page / 跳转到短剧详情页
-        router.push(`/dramas/${drama.id}`)
+        if (isEdit.value && props.dramaId) {
+          await dramaAPI.update(props.dramaId, form)
+          ElMessage.success('更新成功')
+          visible.value = false
+          emit('updated', props.dramaId)
+        } else {
+          const drama = await dramaAPI.create(form)
+          ElMessage.success('创建成功')
+          visible.value = false
+          emit('created', drama.id)
+          // Only navigate on create
+          router.push(`/dramas/${drama.id}`)
+        }
       } catch (error: any) {
-        ElMessage.error(error.message || '创建失败')
+        ElMessage.error(error.message || (isEdit.value ? '更新失败' : '创建失败'))
       } finally {
-        loading.value = false
+        submitting.value = false
       }
     }
   })
@@ -250,23 +324,23 @@ const handleSubmit = async () => {
 /* ========================================
    Dialog Styles / 弹窗样式
    ======================================== */
-.create-dialog :deep(.el-dialog) {
+.drama-project-dialog :deep(.el-dialog) {
   border-radius: var(--radius-xl);
 }
 
-.create-dialog :deep(.el-dialog__header) {
+.drama-project-dialog :deep(.el-dialog__header) {
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--border-primary);
   margin-right: 0;
 }
 
-.create-dialog :deep(.el-dialog__title) {
+.drama-project-dialog :deep(.el-dialog__title) {
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.create-dialog :deep(.el-dialog__body) {
+.drama-project-dialog :deep(.el-dialog__body) {
   padding: 1.5rem;
 }
 
@@ -279,45 +353,45 @@ const handleSubmit = async () => {
 /* ========================================
    Form Styles / 表单样式
    ======================================== */
-.create-form :deep(.el-form-item) {
+.project-form :deep(.el-form-item) {
   margin-bottom: 1.25rem;
 }
 
-.create-form :deep(.el-form-item__label) {
+.project-form :deep(.el-form-item__label) {
   font-weight: 500;
   color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
 
-.create-form :deep(.el-input__wrapper),
-.create-form :deep(.el-textarea__inner) {
+.project-form :deep(.el-input__wrapper),
+.project-form :deep(.el-textarea__inner) {
   background: var(--bg-secondary);
   border-radius: var(--radius-md);
   box-shadow: 0 0 0 1px var(--border-primary) inset;
   transition: all var(--transition-fast);
 }
 
-.create-form :deep(.el-input__wrapper:hover),
-.create-form :deep(.el-textarea__inner:hover) {
+.project-form :deep(.el-input__wrapper:hover),
+.project-form :deep(.el-textarea__inner:hover) {
   box-shadow: 0 0 0 1px var(--border-secondary) inset;
 }
 
-.create-form :deep(.el-input__wrapper.is-focus),
-.create-form :deep(.el-textarea__inner:focus) {
+.project-form :deep(.el-input__wrapper.is-focus),
+.project-form :deep(.el-textarea__inner:focus) {
   box-shadow: 0 0 0 2px var(--accent) inset;
 }
 
-.create-form :deep(.el-input__inner),
-.create-form :deep(.el-textarea__inner) {
+.project-form :deep(.el-input__inner),
+.project-form :deep(.el-textarea__inner) {
   color: var(--text-primary);
 }
 
-.create-form :deep(.el-input__inner::placeholder),
-.create-form :deep(.el-textarea__inner::placeholder) {
+.project-form :deep(.el-input__inner::placeholder),
+.project-form :deep(.el-textarea__inner::placeholder) {
   color: var(--text-muted);
 }
 
-.create-form :deep(.el-input__count) {
+.project-form :deep(.el-input__count) {
   color: var(--text-muted);
   background: transparent;
 }

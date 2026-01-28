@@ -16,6 +16,7 @@ export { default as ActionButton } from './ActionButton.vue'
 
 // Dialog Components / 弹窗组件
 export { default as CreateDramaDialog } from './CreateDramaDialog.vue'
+export { default as DramaProjectDialog } from './DramaProjectDialog.vue'
 export { default as AIConfigDialog } from './AIConfigDialog.vue'
 
 // Layout Components / 布局组件

@@ -198,7 +198,26 @@ export default {
       noProps: '还没有道具',
       propStats: '道具统计',
       propsCreated: '已创建道具'
-    }
+    },
+    styleSettings: '样式设置',
+    defaultImageRatio: '默认图片比例',
+    defaultVideoRatio: '默认视频比例',
+    defaultStyle: '默认风格',
+    advancedStyleSettings: '高级样式设置',
+    defaultRoleStyle: '默认角色风格',
+    defaultSceneStyle: '默认场景风格',
+    defaultPropStyle: '默认道具风格',
+    defaultRoleRatio: '默认角色比例',
+    defaultPropRatio: '默认道具比例',
+    defaultImageSize: '默认图片尺寸',
+    globalSettings: '全局设置',
+    advancedStyleOverrides: '高级样式覆盖',
+    defaultStylePlaceholder: '全局风格提示词 (例如: Anime, Realistic)',
+    roleStylePlaceholder: '角色生成专用风格',
+    sceneStylePlaceholder: '场景生成专用风格',
+    propStylePlaceholder: '道具生成专用风格',
+    selectRatio: '选择比例',
+    defaultOption: '默认'
   },
   character: {
     title: '角色管理',

@@ -180,7 +180,26 @@ export default {
       noProps: 'No props yet',
       propStats: 'Prop Statistics',
       propsCreated: 'Props Created'
-    }
+    },
+    styleSettings: 'Style Settings',
+    defaultImageRatio: 'Default Image Ratio',
+    defaultVideoRatio: 'Default Video Ratio',
+    defaultStyle: 'Default Style',
+    advancedStyleSettings: 'Advanced Style Settings',
+    defaultRoleStyle: 'Default Role Style',
+    defaultSceneStyle: 'Default Scene Style',
+    defaultPropStyle: 'Default Prop Style',
+    defaultRoleRatio: 'Default Role Ratio',
+    defaultPropRatio: 'Default Prop Ratio',
+    defaultImageSize: 'Default Image Size',
+    globalSettings: 'Global Settings',
+    advancedStyleOverrides: 'Advanced Style Overrides',
+    defaultStylePlaceholder: 'Global style prompt (e.g. Anime, Realistic)',
+    roleStylePlaceholder: 'Specific style for characters',
+    sceneStylePlaceholder: 'Specific style for scenes',
+    propStylePlaceholder: 'Specific style for props',
+    selectRatio: 'Select Ratio',
+    defaultOption: 'Default'
   },
   character: {
     title: 'Character Management',

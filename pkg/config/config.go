@@ -22,10 +22,24 @@ type VisualConfig struct {
 }
 
 type VisualDetail struct {
-	ShotTypes     []string `mapstructure:"shot_types"`
-	Angles        []string `mapstructure:"angles"`
-	Movements     []string `mapstructure:"movements"`
-	VisualEffects []string `mapstructure:"visual_effects"`
+	ShotTypes     []string    `mapstructure:"shot_types"`
+	Angles        []string    `mapstructure:"angles"`
+	Movements     []string    `mapstructure:"movements"`
+	VisualEffects []string    `mapstructure:"visual_effects"`
+	Ratios        RatioConfig `mapstructure:"ratios"`
+	ImageSizes    []Option    `mapstructure:"image_sizes"`
+}
+
+type RatioConfig struct {
+	Image []Option `mapstructure:"image"`
+	Video []Option `mapstructure:"video"`
+	Role  []Option `mapstructure:"role"`
+	Prop  []Option `mapstructure:"prop"`
+}
+
+type Option struct {
+	Label string `mapstructure:"label"`
+	Value string `mapstructure:"value"`
 }
 
 type AppConfig struct {
