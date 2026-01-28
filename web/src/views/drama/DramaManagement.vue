@@ -114,6 +114,37 @@
                     drama?.description || $t("drama.management.noDescription")
                   }}</span>
                 </el-descriptions-item>
+                <el-descriptions-item :label="$t('drama.defaultStyle')" :span="2">
+                   <span class="info-value">{{ drama?.default_style || '-' }}</span>
+                </el-descriptions-item>
+                <el-descriptions-item :label="$t('drama.defaultImageRatio')">
+                   <span class="info-value">{{ drama?.default_image_ratio || '-' }}</span>
+                </el-descriptions-item>
+                <el-descriptions-item :label="$t('drama.defaultVideoRatio')">
+                   <span class="info-value">{{ drama?.default_video_ratio || '-' }}</span>
+                </el-descriptions-item>
+                <el-descriptions-item :label="$t('drama.defaultImageSize')">
+                   <span class="info-value">{{ drama?.default_image_size || '-' }}</span>
+                </el-descriptions-item>
+
+                <el-descriptions-item :label="$t('drama.defaultRoleStyle')" :span="2">
+                   <span class="info-value">{{ drama?.default_role_style || '-' }}</span>
+                </el-descriptions-item>
+                <el-descriptions-item :label="$t('drama.defaultRoleRatio')">
+                   <span class="info-value">{{ drama?.default_role_ratio || '-' }}</span>
+                </el-descriptions-item>
+                <el-descriptions-item label="" /> 
+
+                <el-descriptions-item :label="$t('drama.defaultSceneStyle')" :span="2">
+                   <span class="info-value">{{ drama?.default_scene_style || '-' }}</span>
+                </el-descriptions-item>
+
+                <el-descriptions-item :label="$t('drama.defaultPropStyle')" :span="2">
+                   <span class="info-value">{{ drama?.default_prop_style || '-' }}</span>
+                </el-descriptions-item>
+                <el-descriptions-item :label="$t('drama.defaultPropRatio')">
+                   <span class="info-value">{{ drama?.default_prop_ratio || '-' }}</span>
+                </el-descriptions-item>
               </el-descriptions>
             </el-card>
           </el-tab-pane>
@@ -1432,7 +1463,7 @@ const handleExtractProps = async () => {
       if (checkCount > 10) clearInterval(checkInterval);
     }, 5000);
   } catch (error: any) {
-    ElMessage.error(error.message || t("common.failed"));
+    ElMessage.error(error.message || "提取失败");
   }
 };
 
