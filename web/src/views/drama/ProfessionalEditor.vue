@@ -3093,6 +3093,16 @@ const generateFrameImage = async () => {
       });
     }
 
+    // 3. 添加当前镜头使用的道具图片
+    const storyboardProps = currentStoryboardProps.value;
+    if (storyboardProps && storyboardProps.length > 0) {
+      storyboardProps.forEach((prop: any) => {
+        if (prop.image_url) {
+          referenceImages.push(prop.image_url);
+        }
+      });
+    }
+
     const result = await imageAPI.generateImage({
       drama_id: dramaId.toString(),
       prompt: currentFramePrompt.value,
