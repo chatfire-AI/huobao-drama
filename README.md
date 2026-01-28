@@ -25,7 +25,7 @@ Huobao Drama is an AI-powered short drama production platform that automates the
 - **🤖 AI-Driven**: Parse scripts using large language models to extract characters, scenes, and storyboards
 - **🎨 Intelligent Creation**: AI-generated character portraits and scene backgrounds
 - **📹 Video Generation**: Automatic storyboard video generation using text-to-video and image-to-video models
-- **🔄 Complete Workflow**: End-to-end production workflow from idea to final video
+- **🔄 Complete Workflow**: End-to-end production workflow from idea to final video。
 
 ### 🛠️ Technical Architecture
 
