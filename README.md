@@ -235,6 +235,14 @@ Database tables are automatically created on first startup (using GORM AutoMigra
 
 ## 📦 Deployment
 
+### ☁️ Cloud One-Click Deployment (Recommended 3080Ti)
+
+👉 [优云智算，一键部署](https://www.compshare.cn/images/CaWEHpAA8t1H?referral_code=8hUJOaWz3YzG64FI2OlCiB&ytag=GPU_YY_YX_GitHub_huobaoai)
+
+> ⚠️ **Note**: Please save your data to local storage promptly when using cloud deployment
+
+---
+
 ### 🐳 Docker Deployment (Recommended)
 
 #### Method 1: Docker Compose (Recommended)

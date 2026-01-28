@@ -235,6 +235,14 @@ go run main.go
 
 ## 📦 デプロイ
 
+### ☁️ クラウドワンクリックデプロイ（推奨 3080Ti）
+
+👉 [优云智算，一键部署](https://www.compshare.cn/images/CaWEHpAA8t1H?referral_code=8hUJOaWz3YzG64FI2OlCiB&ytag=GPU_YY_YX_GitHub_huobaoai)
+
+> ⚠️ **注意**：クラウドデプロイを使用する場合は、データを速やかにローカルストレージに保存してください
+
+---
+
 ### 🐳 Docker デプロイ（推奨）
 
 #### 方法 1: Docker Compose（推奨）
