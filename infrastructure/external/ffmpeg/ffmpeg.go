@@ -109,8 +109,26 @@ func (f *FFmpeg) downloadVideo(url, destPath string) (string, error) {
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		// 这是本地文件路径，检查文件是否存在
 		if _, err := os.Stat(url); err == nil {
-			f.log.Infow("Using local video file", "path", url)
-			return url, nil
+			f.log.Infow("Copying local video file to temp", "source", url, "dest", destPath)
+			// 复制本地文件到临时目录，避免删除原始文件
+			sourceFile, err := os.Open(url)
+			if err != nil {
+				return "", fmt.Errorf("failed to open source file: %w", err)
+			}
+			defer sourceFile.Close()
+
+			destFile, err := os.Create(destPath)
+			if err != nil {
+				return "", fmt.Errorf("failed to create dest file: %w", err)
+			}
+			defer destFile.Close()
+
+			_, err = io.Copy(destFile, sourceFile)
+			if err != nil {
+				return "", fmt.Errorf("failed to copy file: %w", err)
+			}
+
+			return destPath, nil
 		} else {
 			return "", fmt.Errorf("local file not found: %s", url)
 		}
