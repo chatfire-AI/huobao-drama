@@ -87,12 +87,12 @@ type MinimaxQueryResponse struct {
 // MinimaxFileResponse 获取文件信息的响应
 type MinimaxFileResponse struct {
 	File struct {
-		FileID      string `json:"file_id"`
-		Bytes       int    `json:"bytes"`
-		CreatedAt   int64  `json:"created_at"`
-		Filename    string `json:"filename"`
-		Purpose     string `json:"purpose"`
-		DownloadURL string `json:"download_url"`
+		FileID      interface{} `json:"file_id"` // 可能是 string 或 number
+		Bytes       int         `json:"bytes"`
+		CreatedAt   int64       `json:"created_at"`
+		Filename    string      `json:"filename"`
+		Purpose     string      `json:"purpose"`
+		DownloadURL string      `json:"download_url"`
 	} `json:"file"`
 	BaseResp struct {
 		StatusCode int    `json:"status_code"`
