@@ -87,12 +87,12 @@ type MinimaxQueryResponse struct {
 // MinimaxFileResponse 获取文件信息的响应
 type MinimaxFileResponse struct {
 	File struct {
-		FileID      string `json:"file_id"`
-		Bytes       int    `json:"bytes"`
-		CreatedAt   int64  `json:"created_at"`
-		Filename    string `json:"filename"`
-		Purpose     string `json:"purpose"`
-		DownloadURL string `json:"download_url"`
+		FileID      json.Number `json:"file_id"`
+		Bytes       int         `json:"bytes"`
+		CreatedAt   int64       `json:"created_at"`
+		Filename    string      `json:"filename"`
+		Purpose     string      `json:"purpose"`
+		DownloadURL string      `json:"download_url"`
 	} `json:"file"`
 	BaseResp struct {
 		StatusCode int    `json:"status_code"`
@@ -248,7 +248,7 @@ func (c *MinimaxClient) GetTaskStatus(taskID string) (*VideoResult, error) {
 
 	// 如果状态是 Success 且有 file_id，则获取文件下载地址
 	if queryResult.Status == "Success" && queryResult.FileID != "" {
-		downloadURL, err := c.getFileDownloadURL(queryResult.FileID)
+		downloadURL, err := c.getFileDownloadURL(queryResult.TaskID, queryResult.FileID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get download URL: %w", err)
 		}
@@ -262,10 +262,9 @@ func (c *MinimaxClient) GetTaskStatus(taskID string) (*VideoResult, error) {
 	return videoResult, nil
 }
 
-// getFileDownloadURL 步骤3：根据 file_id 获取文件下载地址
-func (c *MinimaxClient) getFileDownloadURL(fileID string) (string, error) {
-	// 注意：BaseURL 应该已包含 /v1
-	endpoint := fmt.Sprintf("%s/files/retrieve?file_id=%s", c.BaseURL, fileID)
+// getFileDownloadURL 步骤3：根据 task_id 和 file_id 获取文件下载地址
+func (c *MinimaxClient) getFileDownloadURL(taskID, fileID string) (string, error) {
+	endpoint := fmt.Sprintf("%s/files/retrieve?task_id=%s&file_id=%s", c.BaseURL, taskID, fileID)
 	req, err := http.NewRequest("GET", endpoint, nil)
 	if err != nil {
 		return "", fmt.Errorf("create request: %w", err)
