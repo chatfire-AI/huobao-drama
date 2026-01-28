@@ -111,6 +111,91 @@ visual_references:
         value: "1920x1080"
       - label: "2560x1440"
         value: "2560x1440"
+    character_attributes:
+      genders:
+        - 男性
+        - 女性
+        - 其他
+      ages:
+        - 儿童
+        - 少年
+        - 青年
+        - 中年
+        - 老年
+      body_types:
+        - 纤瘦
+        - 丰满
+        - 圆润
+        - 健壮
+        - 肌肉型
+        - 宽肩窄腰
+        - 矮胖
+        - 敦实
+        - 梨型身材
+        - 孕妇
+        - 佝偻
+        - 巨型身材
+      hairstyles:
+        - 短发
+        - 超短发/寸头
+        - 中长发
+        - 长发
+        - 长发及腰
+        - 直发
+        - 卷发
+        - 波浪卷
+        - 蓬松爆炸头
+        - 齐刘海
+        - 斜刘海
+        - 无刘海
+        - 马尾
+        - 双马尾/麻花辫
+        - 丸子头/花苞头
+        - 盘发
+        - 编发
+      facial_features:
+        - 疤痕
+        - 泪痣
+        - 雀斑
+        - 胡须
+        - 眼镜
+        - 浓妆
+        - 淡妆
+        - 黑眼圈
+        - 皱纹
+      clothing_styles:
+        - 中式汉服(唐制/宋制/明制)
+        - 旗袍
+        - 马褂
+        - 襦裙/长衫
+        - 洛丽塔裙(甜美/哥特)
+        - 维多利亚风格(束腰/蓬裙/蕾丝)
+        - 古希腊长袍
+        - 罗马托加长袍
+        - 日式和服
+        - 韩国传统服饰
+        - 民族风苗绣服饰
+        - 彝族服饰
+        - 印第安服饰
+        - 休闲T恤
+        - 牛仔裤
+        - 卫衣/运动套装
+        - 棒球服
+        - 西装套装
+        - 晚礼服
+        - 职业套装
+        - 潮流嘻哈风
+        - 朋克风
+        - 赛博朋克风
+      accessories:
+        - 腰带
+        - 项链
+        - 耳环
+        - 帽子
+        - 手套
+        - 围巾
+        - 发饰
+        - 面具
   en:
     shot_types:
       - Extreme Long Shot
@@ -221,3 +306,89 @@ visual_references:
         value: "1920x1080"
       - label: "2560x1440"
         value: "2560x1440"
+    character_attributes:
+      genders:
+        - Male
+        - Female
+        - Other
+      ages:
+        - Child
+        - Teenager
+        - Young Adult
+        - Adult
+        - Middle-aged
+        - Elderly
+      body_types:
+        - Slender
+        - Plump
+        - Round
+        - Athletic
+        - Muscular
+        - Broad shoulders narrow waist
+        - Stocky
+        - Stout
+        - Pear-shaped
+        - Pregnant
+        - Stooped
+        - Giant
+      hairstyles:
+        - Short hair
+        - Buzz cut
+        - Medium hair
+        - Long hair
+        - Waist-length hair
+        - Straight hair
+        - Curly hair
+        - Wavy hair
+        - Afro
+        - Blunt bangs
+        - Side bangs
+        - No bangs
+        - Ponytail
+        - Twin tails/Braids
+        - Bun
+        - Updo
+        - Braided
+      facial_features:
+        - Scar
+        - Mole
+        - Freckles
+        - Beard
+        - Glasses
+        - Heavy makeup
+        - Light makeup
+        - Dark circles
+        - Wrinkles
+      clothing_styles:
+        - Chinese Hanfu
+        - Cheongsam
+        - Magua
+        - Ruqun/Changshan
+        - Lolita
+        - Victorian
+        - Ancient Greek Chiton
+        - Roman Toga
+        - Japanese Kimono
+        - Korean Hanbok
+        - Ethnic Miao Embroidery
+        - Yi Costume
+        - Native American
+        - T-shirt
+        - Jeans
+        - Hoodie/Sportswear
+        - Baseball Jacket
+        - Suit
+        - Evening Gown
+        - Business Suit
+        - Hip Hop
+        - Punk
+        - Cyberpunk
+      accessories:
+        - Belt
+        - Necklace
+        - Earrings
+        - Hat
+        - Gloves
+        - Scarf
+        - Hair accessory
+        - Mask

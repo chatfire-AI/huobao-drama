@@ -419,7 +419,10 @@ func (p *PromptI18n) GetCharacterExtractionPrompt(style, imageRatio string) stri
 	if imageRatio == "" {
 		imageRatio = p.config.Style.DefaultImageRatio
 	}
+
+	var attrs config.CharacterAttributes
 	if p.IsEnglish() {
+		attrs = p.config.Visual.En.CharacterAttributes
 		return fmt.Sprintf(`You are a professional character analyst, skilled at extracting and analyzing character information from scripts.
 
 Your task is to extract and organize detailed character settings for all characters appearing in the script based on the provided script content.
@@ -427,20 +430,39 @@ Your task is to extract and organize detailed character settings for all charact
 Requirements:
 1. Extract all characters with names (ignore unnamed passersby or background characters)
 2. For each character, extract:
-   - name: Character name
-   - role: Character role (main/supporting/minor)
-   - appearance: Physical appearance description (150-300 words)
-   - personality: Personality traits (100-200 words)
-   - description: Background story and character relationships (100-200 words)
+   - name: Character string name
+   - role: Character string role (main/supporting/minor)
+   - appearance: Physical appearance json(gender, age, body_type, facial_features, hairstyle, clothing_style, accessories) description, 
+   - personality: Personality traits string (100-200 words)
+   - description: Background story and character relationships string (100-200 words)
 3. Appearance must be detailed enough for AI image generation, including: gender, age, body type, facial features, hairstyle, clothing style, etc. but do not include any scene, background, environment information
 4. Main characters require more detailed descriptions, supporting characters can be simplified
 - **Style Requirement**: %s
 - **Image Ratio**: %s
+5. Character Attribute Enums:
+   - gender: string (%s)
+   - age: string (%s)
+   - body_type: string (%s)
+   - facial_features: string (%s)
+   - hairstyle: string (%s)
+   - clothing_style: string (%s)
+   - accessories: string (%s)
+
 Output Format:
 **CRITICAL: Return ONLY a valid JSON array. Do NOT include any markdown code blocks, explanations, or other text. Start directly with [ and end with ].**
-Each element is a character object containing the above fields.`, style, imageRatio)
+Each element is a character object containing the above fields.`,
+			style, imageRatio,
+			joinStrings(attrs.Genders),
+			joinStrings(attrs.Ages),
+			joinStrings(attrs.BodyTypes),
+			joinStrings(attrs.FacialFeatures),
+			joinStrings(attrs.Hairstyles),
+			joinStrings(attrs.ClothingStyles),
+			joinStrings(attrs.Accessories),
+		)
 	}
 
+	attrs = p.config.Visual.Zh.CharacterAttributes
 	return fmt.Sprintf(`你是一个专业的角色分析师，擅长从剧本中提取和分析角色信息。
 
 你的任务是根据提供的剧本内容，提取并整理剧中出现的所有角色的详细设定。
@@ -448,18 +470,35 @@ Each element is a character object containing the above fields.`, style, imageRa
 要求：
 1. 提取所有有名字的角色（忽略无名路人或背景角色）
 2. 对每个角色，提取以下信息：
-   - name: 角色名字
-   - role: 角色类型（main/supporting/minor）
-   - appearance: 外貌描述（150-300字）
-   - personality: 性格特点（100-200字）
-   - description: 背景故事和角色关系（100-200字）
-3. 外貌描述要足够详细，适合AI生成图片，包括：性别、年龄、体型、面部特征、发型、服装风格等,但不要包含任何场景、背景、环境等信息
+   - name: string 角色名字
+   - role: string 角色类型（main/supporting/minor）
+   - appearance: json(gender,age,body_type,facial_features,hairstyle,clothing_style,accessories) 外貌描述
+   - personality: string 性格特点（100-200字）
+   - description: string 背景故事和角色关系（100-200字）
+3. 外貌描述要足够详细，适合AI生成图片，包括：体型、发型、服饰、配饰、性别、年龄、面部特征、服装风格等,但不要包含任何场景、背景、环境等信息
 4. 主要角色需要更详细的描述，次要角色可以简化
 - **风格要求**：%s
 - **图片比例**：%s
+5. 外貌描述枚举值：
+   - gender: string (%s)
+   - age: string (%s)
+   - body_type: string (%s)
+   - facial_features: string (%s)
+   - hairstyle: string (%s)
+   - clothing_style: string (%s)
+   - accessories: string (%s)
 输出格式：
 **重要：必须只返回纯JSON数组，不要包含任何markdown代码块、说明文字或其他内容。直接以 [ 开头，以 ] 结尾。**
-每个元素是一个角色对象，包含上述字段。`, style, imageRatio)
+每个元素是一个角色对象，包含上述字段。`,
+		style, imageRatio,
+		joinStrings(attrs.Genders),
+		joinStrings(attrs.Ages),
+		joinStrings(attrs.BodyTypes),
+		joinStrings(attrs.FacialFeatures),
+		joinStrings(attrs.Hairstyles),
+		joinStrings(attrs.ClothingStyles),
+		joinStrings(attrs.Accessories),
+	)
 }
 
 // GetPropExtractionPrompt 获取道具提取提示词

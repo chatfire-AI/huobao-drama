@@ -22,12 +22,23 @@ type VisualConfig struct {
 }
 
 type VisualDetail struct {
-	ShotTypes     []string    `mapstructure:"shot_types"`
-	Angles        []string    `mapstructure:"angles"`
-	Movements     []string    `mapstructure:"movements"`
-	VisualEffects []string    `mapstructure:"visual_effects"`
-	Ratios        RatioConfig `mapstructure:"ratios"`
-	ImageSizes    []Option    `mapstructure:"image_sizes"`
+	ShotTypes           []string            `mapstructure:"shot_types"`
+	Angles              []string            `mapstructure:"angles"`
+	Movements           []string            `mapstructure:"movements"`
+	VisualEffects       []string            `mapstructure:"visual_effects"`
+	Ratios              RatioConfig         `mapstructure:"ratios"`
+	ImageSizes          []Option            `mapstructure:"image_sizes"`
+	CharacterAttributes CharacterAttributes `mapstructure:"character_attributes"`
+}
+
+type CharacterAttributes struct {
+	Genders        []string `mapstructure:"genders"`
+	Ages           []string `mapstructure:"ages"`
+	BodyTypes      []string `mapstructure:"body_types"`
+	Hairstyles     []string `mapstructure:"hairstyles"`
+	FacialFeatures []string `mapstructure:"facial_features"`
+	ClothingStyles []string `mapstructure:"clothing_styles"`
+	Accessories    []string `mapstructure:"accessories"`
 }
 
 type RatioConfig struct {
