@@ -745,5 +745,29 @@ export default {
     operationFailed: 'Operation failed',
     loadingFailed: 'Loading failed',
     networkError: 'Network error'
+  },
+  clip: {
+    title: 'Video Clip Editor',
+    mediaLibrary: 'Media Library',
+    importVideo: 'Import Video',
+    importAudio: 'Import Audio',
+    videos: 'Video Assets',
+    audios: 'Audio Assets',
+    noVideos: 'No video assets',
+    noAudios: 'No audio assets',
+    properties: 'Properties',
+    clipName: 'Clip Name',
+    startTime: 'Start Time (s)',
+    endTime: 'End Time (s)',
+    duration: 'Duration',
+    volume: 'Volume',
+    selectClip: 'Select a clip to view properties',
+    previewPlaceholder: 'Drag assets to tracks to start editing',
+    videoTrack: 'Video Track',
+    audioTrack: 'Audio Track',
+    addAudioTrack: 'Add Audio Track',
+    export: 'Export Video',
+    zoomIn: 'Zoom In',
+    zoomOut: 'Zoom Out'
   }
 }

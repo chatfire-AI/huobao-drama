@@ -66,6 +66,11 @@ const routes: RouteRecordRaw[] = [
     path: '/settings/ai-config',
     name: 'AIConfig',
     component: () => import('../views/settings/AIConfig.vue')
+  },
+  {
+    path: '/clip/editor',
+    name: 'VideoClipEditor',
+    component: () => import('../views/clip/VideoClipEditor.vue')
   }
 ]
 

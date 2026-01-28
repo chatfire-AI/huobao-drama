@@ -687,5 +687,29 @@ export default {
     operationFailed: '操作失败',
     loadingFailed: '加载失败',
     networkError: '网络错误'
+  },
+  clip: {
+    title: '视频剪辑编辑器',
+    mediaLibrary: '素材库',
+    importVideo: '导入视频',
+    importAudio: '导入音频',
+    videos: '视频素材',
+    audios: '音频素材',
+    noVideos: '暂无视频素材',
+    noAudios: '暂无音频素材',
+    properties: '属性',
+    clipName: '片段名称',
+    startTime: '开始时间(秒)',
+    endTime: '结束时间(秒)',
+    duration: '时长',
+    volume: '音量',
+    selectClip: '选择一个片段以查看属性',
+    previewPlaceholder: '将素材拖入轨道开始编辑',
+    videoTrack: '视频轨道',
+    audioTrack: '音频轨道',
+    addAudioTrack: '添加音频轨道',
+    export: '导出视频',
+    zoomIn: '放大',
+    zoomOut: '缩小'
   }
 }
