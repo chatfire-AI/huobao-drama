@@ -1192,6 +1192,7 @@ const openAddCharacterDialog = () => {
     personality: "",
     description: "",
     image_url: "",
+    local_path: "",
   };
   addCharacterDialogVisible.value = true;
 };
@@ -1393,6 +1394,7 @@ const openAddSceneDialog = () => {
     description: "",
     prompt: "",
     image_url: "",
+    local_path: "",
   };
   addSceneDialogVisible.value = true;
 };
