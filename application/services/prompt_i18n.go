@@ -555,9 +555,7 @@ JSON数组，每个对象包含：
 
 // GetPoseExtractionPrompt 获取姿态提取提示词
 func (p *PromptI18n) GetPoseExtractionPrompt(style, imageRatio string) string {
-	if style == "" {
-		style = p.config.Style.DefaultStyle + ", " + p.config.Style.DefaultPropStyle
-	}
+	style = "pure action skeleton, no background, no character, no props"
 	if imageRatio == "" {
 		imageRatio = p.config.Style.DefaultPropRatio
 		if imageRatio == "" {
@@ -576,6 +574,7 @@ func (p *PromptI18n) GetPoseExtractionPrompt(style, imageRatio string) string {
 2. Focus on physical actions, body language, and specific stances.
 3. "image_prompt" field is for AI image generation, must describe the pose, angle, and action in detail.
 4. "type" should be generally categorized like Action, Emotion, Static, Interaction.
+5. **Focus on** pure action skeleton, no background, no character, no props.
 - **Style Requirement**: %s
 - **Image Ratio**: %s
 
@@ -584,7 +583,7 @@ JSON array, each object containing:
 - name: Pose Name (e.g., "Fighting Stance", "Kneeling in Prayer")
 - type: Type (e.g., Action/Static)
 - description: Visual description of the pose
-- image_prompt: English image generation prompt (Focus on the character's pose, isolated if possible, detailed)
+- image_prompt: English image generation prompt (Focus on the character's pose, isolated if possible, detailed, cinematic lighting, high quality)
 
 Please return JSON array directly.`, style, imageRatio)
 	}
@@ -599,6 +598,7 @@ Please return JSON array directly.`, style, imageRatio)
 2. 侧重于肢体动作、身体语言和特定的站位。
 3. "image_prompt"字段是用于AI生成图片的英文提示词，必须详细描述姿态、角度和动作。
 4. "type"字段请大致分类，如：动作、情绪、静态、互动。
+5. **重点**提取纯动捕点线图，不带背景，不带角色，不带道具。
 - **风格要求**：%s
 - **图片比例**：%s
 
@@ -607,7 +607,7 @@ JSON数组，每个对象包含：
 - name: 姿态名称 (如："战斗姿态"、"跪地祈祷")
 - type: 类型 (如：动作/静态)
 - description: 姿态的中文视觉描述
-- image_prompt: 英文图片生成提示词 (Focus on the character's pose, isolated if possible, detailed)
+- image_prompt: 英文图片生成提示词 (提取纯动捕点线图，不带背景，不带角色，不带道具)
 
 请直接返回JSON数组。`, style, imageRatio)
 }
