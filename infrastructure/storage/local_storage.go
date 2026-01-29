@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
@@ -118,7 +119,7 @@ func (s *LocalStorage) DownloadFromURLWithPath(url, category string) (*DownloadR
 	// 返回详细信息
 	relativePath := filepath.Join(category, filename)
 	localURL := fmt.Sprintf("%s/%s/%s", s.baseURL, category, filename)
-	
+
 	return &DownloadResult{
 		URL:          localURL,
 		RelativePath: relativePath,
@@ -164,4 +165,65 @@ func getFileExtension(url, contentType string) string {
 	default:
 		return ".bin"
 	}
+}
+
+// SaveBase64Image saves a base64 encoded image to local storage
+func (s *LocalStorage) SaveBase64Image(base64Data, category string) (*DownloadResult, error) {
+	// Parse base64 string
+	parts := strings.Split(base64Data, ",")
+	if len(parts) > 2 {
+		return nil, fmt.Errorf("invalid base64 format")
+	}
+
+	header := ""
+	data := base64Data
+	if len(parts) == 2 {
+		header = parts[0]
+		data = parts[1]
+	}
+
+	// Detect extension from header if available
+	ext := ".png" // Default
+	if strings.Contains(header, "image/jpeg") {
+		ext = ".jpg"
+	} else if strings.Contains(header, "image/png") {
+		ext = ".png"
+	} else if strings.Contains(header, "image/gif") {
+		ext = ".gif"
+	} else if strings.Contains(header, "image/webp") {
+		ext = ".webp"
+	}
+
+	// Decode
+	decoded, err := base64.StdEncoding.DecodeString(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode base64: %w", err)
+	}
+
+	// Create directory
+	dir := filepath.Join(s.basePath, category)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create category directory: %w", err)
+	}
+
+	// Generate filename
+	timestamp := time.Now().Format("20060102_150405")
+	uniqueID := uuid.New().String()[:8]
+	filename := fmt.Sprintf("%s_%s%s", timestamp, uniqueID, ext)
+	filePath := filepath.Join(dir, filename)
+
+	// Save file
+	if err := os.WriteFile(filePath, decoded, 0644); err != nil {
+		return nil, fmt.Errorf("failed to write file: %w", err)
+	}
+
+	// Return result
+	relativePath := filepath.Join(category, filename)
+	localURL := fmt.Sprintf("%s/%s/%s", s.baseURL, category, filename)
+
+	return &DownloadResult{
+		URL:          localURL,
+		RelativePath: relativePath,
+		AbsolutePath: filePath,
+	}, nil
 }

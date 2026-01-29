@@ -321,24 +321,37 @@ func (s *ImageGenerationService) completeImageGeneration(imageGenID uint, result
 
 	// 下载图片到本地存储并保存相对路径到数据库
 	var localPath *string
-	if s.localStorage != nil && result.ImageURL != "" &&
-		(strings.HasPrefix(result.ImageURL, "http://") || strings.HasPrefix(result.ImageURL, "https://")) {
-		downloadResult, err := s.localStorage.DownloadFromURLWithPath(result.ImageURL, "images")
-		if err != nil {
-			errStr := err.Error()
-			if len(errStr) > 200 {
-				errStr = errStr[:200] + "..."
+	if s.localStorage != nil && result.ImageURL != "" {
+		if strings.HasPrefix(result.ImageURL, "data:") {
+			// 处理 Base64 图片
+			saveResult, err := s.localStorage.SaveBase64Image(result.ImageURL, "images")
+			if err != nil {
+				s.log.Errorw("Failed to save base64 image", "error", err, "id", imageGenID)
+			} else {
+				localPath = &saveResult.RelativePath
+				// 更新 ImageURL 为本地文件服务的 URL以便前端访问
+				result.ImageURL = saveResult.URL
+				s.log.Infow("Base64 image saved to local storage", "id", imageGenID, "local_path", saveResult.RelativePath)
 			}
-			s.log.Warnw("Failed to download image to local storage",
-				"error", errStr,
-				"id", imageGenID,
-				"original_url", truncateImageURL(result.ImageURL))
-		} else {
-			localPath = &downloadResult.RelativePath
-			s.log.Infow("Image downloaded to local storage",
-				"id", imageGenID,
-				"original_url", truncateImageURL(result.ImageURL),
-				"local_path", downloadResult.RelativePath)
+		} else if strings.HasPrefix(result.ImageURL, "http://") || strings.HasPrefix(result.ImageURL, "https://") {
+			// 处理 URL 图片
+			downloadResult, err := s.localStorage.DownloadFromURLWithPath(result.ImageURL, "images")
+			if err != nil {
+				errStr := err.Error()
+				if len(errStr) > 200 {
+					errStr = errStr[:200] + "..."
+				}
+				s.log.Warnw("Failed to download image to local storage",
+					"error", errStr,
+					"id", imageGenID,
+					"original_url", truncateImageURL(result.ImageURL))
+			} else {
+				localPath = &downloadResult.RelativePath
+				s.log.Infow("Image downloaded to local storage",
+					"id", imageGenID,
+					"original_url", truncateImageURL(result.ImageURL),
+					"local_path", downloadResult.RelativePath)
+			}
 		}
 	}
 
