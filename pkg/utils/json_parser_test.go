@@ -9,38 +9,38 @@ import (
 // This is the fix for issue #28: AI sometimes returns JSON with extra closing braces
 func TestAttemptJSONRepairExcessBraces(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		wantErr  bool
+		name    string
+		input   string
+		wantErr bool
 	}{
 		{
-			name: "normal JSON",
-			input: `{"backgrounds": [{"location": "test", "prompt": "hello"}]}`,
+			name:    "normal JSON",
+			input:   `{"backgrounds": [{"location": "test", "prompt": "hello"}]}`,
 			wantErr: false,
 		},
 		{
-			name: "extra closing brace - issue #28 case",
-			input: `{"backgrounds": [{"location": "test", "prompt": "hello"}]}}`,
+			name:    "extra closing brace - issue #28 case",
+			input:   `{"backgrounds": [{"location": "test", "prompt": "hello"}]}}`,
 			wantErr: false,
 		},
 		{
-			name: "extra closing bracket",
-			input: `{"backgrounds": [{"location": "test", "prompt": "hello"}]]}`,
+			name:    "extra closing bracket",
+			input:   `{"backgrounds": [{"location": "test", "prompt": "hello"}]]}`,
 			wantErr: false,
 		},
 		{
-			name: "multiple extra closing braces",
-			input: `{"backgrounds": [{"location": "test", "prompt": "hello"}]}}}`,
+			name:    "multiple extra closing braces",
+			input:   `{"backgrounds": [{"location": "test", "prompt": "hello"}]}}}`,
 			wantErr: false,
 		},
 		{
-			name: "missing closing brace",
-			input: `{"backgrounds": [{"location": "test", "prompt": "hello"}]`,
+			name:    "missing closing brace",
+			input:   `{"backgrounds": [{"location": "test", "prompt": "hello"}]`,
 			wantErr: false,
 		},
 		{
-			name: "missing closing bracket",
-			input: `{"backgrounds": [{"location": "test", "prompt": "hello"}`,
+			name:    "missing closing bracket",
+			input:   `{"backgrounds": [{"location": "test", "prompt": "hello"}`,
 			wantErr: false,
 		},
 	}
@@ -80,9 +80,9 @@ func TestAttemptJSONRepairExcessBraces(t *testing.T) {
 // TestAttemptJSONRepairFunction tests the attemptJSONRepair function directly
 func TestAttemptJSONRepairFunction(t *testing.T) {
 	tests := []struct {
-		name   string
-		input  string
-		valid  bool
+		name  string
+		input string
+		valid bool
 	}{
 		{
 			name:  "fix extra closing brace",

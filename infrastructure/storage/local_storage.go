@@ -118,7 +118,7 @@ func (s *LocalStorage) DownloadFromURLWithPath(url, category string) (*DownloadR
 	// 返回详细信息
 	relativePath := filepath.Join(category, filename)
 	localURL := fmt.Sprintf("%s/%s/%s", s.baseURL, category, filename)
-	
+
 	return &DownloadResult{
 		URL:          localURL,
 		RelativePath: relativePath,

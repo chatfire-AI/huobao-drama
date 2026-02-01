@@ -97,18 +97,18 @@ func (s *DataMigrationService) MigrateLocalPaths() error {
 
 // MigrationStats 迁移统计信息
 type MigrationStats struct {
-	AssetsSuccess               int
-	AssetsFailed                int
-	CharacterLibrariesSuccess   int
-	CharacterLibrariesFailed    int
-	CharactersSuccess           int
-	CharactersFailed            int
-	ImageGenerationsSuccess     int
-	ImageGenerationsFailed      int
-	ScenesSuccess               int
-	ScenesFailed                int
-	VideosSuccess               int
-	VideosFailed                int
+	AssetsSuccess             int
+	AssetsFailed              int
+	CharacterLibrariesSuccess int
+	CharacterLibrariesFailed  int
+	CharactersSuccess         int
+	CharactersFailed          int
+	ImageGenerationsSuccess   int
+	ImageGenerationsFailed    int
+	ScenesSuccess             int
+	ScenesFailed              int
+	VideosSuccess             int
+	VideosFailed              int
 }
 
 // ensureStorageDirectories 确保存储目录存在
@@ -468,27 +468,27 @@ func (s *DataMigrationService) extractFileExtension(url string) string {
 	if idx := strings.Index(url, "?"); idx != -1 {
 		url = url[:idx]
 	}
-	
+
 	// 去掉 fragment
 	if idx := strings.Index(url, "#"); idx != -1 {
 		url = url[:idx]
 	}
-	
+
 	// 获取文件扩展名
 	ext := filepath.Ext(url)
 	if ext == "" {
 		// 如果没有扩展名，默认返回 .jpg
 		return ".jpg"
 	}
-	
+
 	// 转换为小写
 	ext = strings.ToLower(ext)
-	
+
 	// 验证扩展名是否合理（限制长度）
 	if len(ext) > 10 {
 		return ".jpg"
 	}
-	
+
 	return ext
 }
 
