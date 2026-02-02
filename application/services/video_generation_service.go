@@ -49,13 +49,13 @@ type GenerateVideoRequest struct {
 	ReferenceMode string `json:"reference_mode"`
 
 	// 单图模式
-	ImageURL      string  `json:"image_url"`
+	ImageURL       string  `json:"image_url"`
 	ImageLocalPath *string `json:"image_local_path"` // 单图模式的本地路径
 
 	// 首尾帧模式
-	FirstFrameURL      *string `json:"first_frame_url"`
+	FirstFrameURL       *string `json:"first_frame_url"`
 	FirstFrameLocalPath *string `json:"first_frame_local_path"` // 首帧本地路径
-	LastFrameURL       *string `json:"last_frame_url"`
+	LastFrameURL        *string `json:"last_frame_url"`
 	LastFrameLocalPath  *string `json:"last_frame_local_path"` // 尾帧本地路径
 
 	// 多图模式
@@ -719,7 +719,7 @@ func (s *VideoGenerationService) convertImageToBase64(imageURL string) (string, 
 	// 尝试从本地存储读取
 	if s.localStorage != nil {
 		var relativePath string
-		
+
 		// 1. 检查是否是本地URL（包含 /static/）
 		if strings.Contains(imageURL, "/static/") {
 			// 提取相对路径，例如从 "http://localhost:5678/static/images/xxx.jpg" 提取 "images/xxx.jpg"
@@ -731,11 +731,11 @@ func (s *VideoGenerationService) convertImageToBase64(imageURL string) (string, 
 			// 2. 如果不是 HTTP/HTTPS URL，视为相对路径（如 "images/xxx.jpg"）
 			relativePath = imageURL
 		}
-		
+
 		// 如果识别出相对路径，尝试读取本地文件
 		if relativePath != "" {
 			absPath := s.localStorage.GetAbsolutePath(relativePath)
-			
+
 			// 使用工具函数转换为base64
 			base64Str, err := utils.ImageToBase64(absPath)
 			if err == nil {
