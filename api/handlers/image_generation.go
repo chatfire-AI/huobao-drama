@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/drama-generator/backend/application/services"
+	"github.com/drama-generator/backend/domain/models"
 	"github.com/drama-generator/backend/infrastructure/storage"
 	"github.com/drama-generator/backend/pkg/config"
 	"github.com/drama-generator/backend/pkg/logger"
@@ -17,6 +18,7 @@ type ImageGenerationHandler struct {
 	taskService  *services.TaskService
 	log          *logger.Logger
 	config       *config.Config
+	db           *gorm.DB
 }
 
 func NewImageGenerationHandler(db *gorm.DB, cfg *config.Config, log *logger.Logger, transferService *services.ResourceTransferService, localStorage *storage.LocalStorage) *ImageGenerationHandler {
@@ -25,6 +27,7 @@ func NewImageGenerationHandler(db *gorm.DB, cfg *config.Config, log *logger.Logg
 		taskService:  services.NewTaskService(db, log),
 		log:          log,
 		config:       cfg,
+		db:           db,
 	}
 }
 
@@ -87,9 +90,12 @@ func (h *ImageGenerationHandler) ExtractBackgroundsForEpisode(c *gin.Context) {
 		req.Model = ""
 		req.Style = ""
 	}
-	// 如果style为空，使用硬编码默认风格
+	// 如果style为空，从episode获取drama的style
 	if req.Style == "" {
-		req.Style = "Modern Japanese anime style"
+		var episode models.Episode
+		if err := h.db.Preload("Drama").First(&episode, episodeID).Error; err == nil {
+			req.Style = episode.Drama.Style
+		}
 	}
 
 	// 直接调用服务层的异步方法，该方法会创建任务并返回任务ID

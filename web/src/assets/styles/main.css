@@ -783,10 +783,14 @@ body {
 }
 
 /* 图片样式 */
-.el-image-viewer__close,
+.el-image-viewer__close {
+  background-color: var(--text-muted);
+  /* border: 1px solid var(--border-primary); */
+}
+
 .el-image-viewer__actions {
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-primary);
+  background-color: #0f172a;
+  /* border: 1px solid var(--border-primary); */
 }
 
 /* ========================================

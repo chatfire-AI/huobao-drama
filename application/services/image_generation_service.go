@@ -279,6 +279,14 @@ func (s *ImageGenerationService) ProcessImageGeneration(imageGenID uint) {
 	}
 
 	prompt += ", imageRatio:" + imageRatio
+
+	// 如果有参考图，在提示词末尾添加参考图一致性说明
+	if len(referenceImages) > 0 {
+		prompt += "\n\n**重要：**\n**必须严格**遵守参考图内的内容元素，保持场景和角色的**一致性**"
+		s.log.Infow("Added reference image consistency instruction to prompt",
+			"id", imageGenID,
+			"reference_count", len(referenceImages))
+	}
 	result, err := client.GenerateImage(prompt, opts...)
 	if err != nil {
 		s.log.Errorw("Image generation API call failed", "error", err, "id", imageGenID, "prompt", imageGen.Prompt)

@@ -334,7 +334,10 @@ func (s *CharacterLibraryService) GenerateCharacterImage(characterID string, ima
 		prompt = character.Name
 	}
 
-	prompt += ", Modern Japanese anime style"
+	// 使用已经加载的 drama 的 style 信息
+	if drama.Style != "" && drama.Style != "realistic" {
+		prompt += ", " + drama.Style
+	}
 	// 调用图片生成服务
 	dramaIDStr := fmt.Sprintf("%d", character.DramaID)
 	imageType := "character"
@@ -525,7 +528,13 @@ func (s *CharacterLibraryService) processCharacterExtraction(taskID string, epis
 		script = *episode.ScriptContent
 	}
 
-	prompt := s.promptI18n.GetCharacterExtractionPrompt()
+	// 获取 drama 的 style 信息
+	var drama models.Drama
+	if err := s.db.First(&drama, episode.DramaID).Error; err != nil {
+		s.log.Warnw("Failed to load drama", "error", err, "drama_id", episode.DramaID)
+	}
+
+	prompt := s.promptI18n.GetCharacterExtractionPrompt(drama.Style)
 	userPrompt := fmt.Sprintf("【剧本内容】\n%s", script)
 
 	response, err := s.aiService.GenerateText(userPrompt, prompt, ai.WithMaxTokens(3000))

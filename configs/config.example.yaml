@@ -27,12 +27,3 @@ ai:
   default_text_provider: "openai"
   default_image_provider: "openai"
   default_video_provider: "doubao"
-style:
-  default_style: '{"style_config":{"style_base":["Japanese anime style","Post-apocalyptic isekai narrative aesthetic","soft painterly cel-shading","official animation screenshot","high-production key animation frame","consistent visual tone across all elements"],"lighting":["muted ambient light with warm golden highlights","soft diffused shadows","volumetric lighting to emphasize character-background contrast","color palette: muted grays/blood reds for background, clean whites/soft neutrals for character"],"texture":["smooth cel animation texture","subtle gradient shading","minimal film grain","consistent color harmony between character and environment"],"composition":["dynamic contrast between relaxed foreground character and chaotic blurred post-apocalyptic background","shallow depth of field","layered visual hierarchy to highlight protagonist"],"style_references":["in the visual style of Frieren: Beyond Journey''s End","relaxed character aesthetic inspired by Mob Psycho 100","professional anime production quality"],"consistency_controls":["stable character design proportions","no facial deformation","uniform shading style across all elements","maintained color palette consistency","preserved clean ''everyday'' vibe of protagonist against grim setting"]}}'
-  default_role_style: "Modern Japanese anime style, cel-shaded. The layout features a large full-body main illustration and three-view orthographic references (Front, Side, Back) neatly arranged on a single horizontal white canvas, high quality, detailed, anime style, character design, character remains standing, no any background, no scenery, focus on character"
-  default_scene_style: "Modern Japanese anime style, cel-shaded. The layout features a large main anime background scene illustration and three-view orthographic references (Front, Side, Back) of the scene neatly arranged on a single horizontal white canvas. "
-  default_prop_style: "Modern Japanese anime style, cel-shaded. The layout features a large full-body main illustration and three-view orthographic references (Front, Side, Back) of the scene neatly arranged on a single horizontal white canvas. "
-  default_image_ratio: "16:9"
-  default_video_ratio: "16:9"
-  default_prop_ratio: "1:1"
-  default_image_size: "1024x1024"

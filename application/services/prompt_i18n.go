@@ -145,10 +145,6 @@ func (p *PromptI18n) GetStoryboardSystemPrompt() string {
 
 // GetSceneExtractionPrompt 获取场景提取提示词
 func (p *PromptI18n) GetSceneExtractionPrompt(style string) string {
-	// 如果未指定风格，使用硬编码默认值
-	if style == "" {
-		style = "Modern Japanese anime style"
-	}
 	// 默认图片比例
 	imageRatio := "16:9"
 
@@ -201,8 +197,7 @@ Each element containing:
 }
 
 // GetFirstFramePrompt 获取首帧提示词
-func (p *PromptI18n) GetFirstFramePrompt() string {
-	style := "Modern Japanese anime style"
+func (p *PromptI18n) GetFirstFramePrompt(style string) string {
 	imageRatio := "16:9"
 	if p.IsEnglish() {
 		return fmt.Sprintf(`You are a professional image generation prompt expert. Please generate prompts suitable for AI image generation based on the provided shot information.
@@ -242,8 +237,7 @@ Return a JSON object containing:
 }
 
 // GetKeyFramePrompt 获取关键帧提示词
-func (p *PromptI18n) GetKeyFramePrompt() string {
-	style := "Modern Japanese anime style"
+func (p *PromptI18n) GetKeyFramePrompt(style string) string {
 	imageRatio := "16:9"
 	if p.IsEnglish() {
 		return fmt.Sprintf(`You are a professional image generation prompt expert. Please generate prompts suitable for AI image generation based on the provided shot information.
@@ -283,8 +277,7 @@ Return a JSON object containing:
 }
 
 // GetActionSequenceFramePrompt 获取动作序列提示词
-func (p *PromptI18n) GetActionSequenceFramePrompt() string {
-	style := "Modern Japanese anime style"
+func (p *PromptI18n) GetActionSequenceFramePrompt(style string) string {
 	imageRatio := "16:9"
 	if p.IsEnglish() {
 		return fmt.Sprintf(`**Role:** You are an expert in visual storytelling and image generation prompting. You need to generate a single prompt that describes a 3x3 grid action sequence.
@@ -369,8 +362,7 @@ You must return a **JSON object** with the following structure:
 }
 
 // GetLastFramePrompt 获取尾帧提示词
-func (p *PromptI18n) GetLastFramePrompt() string {
-	style := "Modern Japanese anime style"
+func (p *PromptI18n) GetLastFramePrompt(style string) string {
 	imageRatio := "16:9"
 	if p.IsEnglish() {
 		return fmt.Sprintf(`You are a professional image generation prompt expert. Please generate prompts suitable for AI image generation based on the provided shot information.
@@ -453,8 +445,7 @@ Return a JSON object containing:
 }
 
 // GetCharacterExtractionPrompt 获取角色提取提示词
-func (p *PromptI18n) GetCharacterExtractionPrompt() string {
-	style := "Modern Japanese anime style"
+func (p *PromptI18n) GetCharacterExtractionPrompt(style string) string {
 	imageRatio := "16:9"
 	if p.IsEnglish() {
 		return fmt.Sprintf(`You are a professional character analyst, skilled at extracting and analyzing character information from scripts.
@@ -500,8 +491,7 @@ Each element is a character object containing the above fields.`, style, imageRa
 }
 
 // GetPropExtractionPrompt 获取道具提取提示词
-func (p *PromptI18n) GetPropExtractionPrompt() string {
-	style := "Modern Japanese anime style"
+func (p *PromptI18n) GetPropExtractionPrompt(style string) string {
 	imageRatio := "1:1"
 
 	if p.IsEnglish() {
@@ -600,8 +590,6 @@ Output Format:
 
 // FormatUserPrompt 格式化用户提示词的通用文本
 func (p *PromptI18n) FormatUserPrompt(key string, args ...interface{}) string {
-	style := "Modern Japanese anime style"
-	imageRatio := "16:9"
 	templates := map[string]map[string]string{
 		"en": {
 
@@ -633,7 +621,7 @@ func (p *PromptI18n) FormatUserPrompt(key string, args ...interface{}) string {
 			"shot_type_label":        "Shot type: %s",
 			"angle_label":            "Angle: %s",
 			"movement_label":         "Movement: %s",
-			"drama_info_template":    "Title: %s\nSummary: %s\nGenre: %s" + "\nStyle: " + style + "\nImage ratio: " + imageRatio,
+			"drama_info_template":    "Title: %s\nSummary: %s\nGenre: %s",
 		},
 		"zh": {
 			"outline_request":        "请为以下主题创作短剧大纲：\n\n主题：%s",
@@ -664,7 +652,7 @@ func (p *PromptI18n) FormatUserPrompt(key string, args ...interface{}) string {
 			"shot_type_label":        "景别: %s",
 			"angle_label":            "角度: %s",
 			"movement_label":         "运镜: %s",
-			"drama_info_template":    "剧名：%s\n简介：%s\n类型：%s" + "\n风格: " + style + "\n图片比例: " + imageRatio,
+			"drama_info_template":    "剧名：%s\n简介：%s\n类型：%s",
 		},
 	}
 
