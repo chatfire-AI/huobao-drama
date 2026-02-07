@@ -47,9 +47,9 @@ tmp/
 temp/
 
 # Data (database and uploaded files)
-data/drama_generator.db
-data/storage/videos/*
-!data/storage/videos/.gitkeep
+data/*.db
+data/storage/*
+!data/storage/.gitkeep
 
 # Frontend build output
 web/dist/
@@ -63,6 +63,3 @@ configs/config.yaml
 # Docker publish documentation (optional)
 DOCKER_PUBLISH.md
 build.sh
-/data/storage/
-/web/package-lock.json
-.DS_Store
