@@ -216,7 +216,21 @@ const visualOptions = ref<Partial<VisualOptions>>({})
 
 // Style generation state
 const generatingStyle = ref(false)
-const styleConfigStr = ref('')
+const styleConfigStr = computed({
+  get: () => {
+    if (form.default_style === undefined || form.default_style === null) return ''
+    if (typeof form.default_style === 'string') return form.default_style
+    return JSON.stringify(form.default_style, null, 2)
+  },
+  set: (val: string) => {
+    if (!val) {
+      form.default_style = undefined
+      return
+    }
+    form.default_style = val
+  }
+})
+// styleConfigStr和form.default_style应该绑定
 
 const isEdit = computed(() => !!props.dramaId)
 
@@ -254,8 +268,7 @@ const handleGenerateStyle = async () => {
   try {
     const res = await generationAPI.generateStyle(form.description)
     if (res.default_style) {
-        form.default_style = JSON.stringify(res.default_style, null, 2)
-        styleConfigStr.value = JSON.stringify(res.default_style, null, 2)
+        form.default_style = res.default_style
         ElMessage.success(t('drama.styleGen.success'))
     }
   } catch (error: any) {
@@ -287,7 +300,6 @@ const resetForm = () => {
   form.title = ''
   form.description = ''
   form.default_style = undefined
-  styleConfigStr.value = ''
   form.default_image_ratio = '16:9'
   form.default_video_ratio = '16:9'
   form.default_role_style = ''
@@ -311,15 +323,7 @@ const handleOpen = async () => {
       form.description = drama.description || ''
       
       // Update default_style logic
-      if (drama.default_style) {
-          form.default_style = drama.default_style
-          styleConfigStr.value = typeof drama.default_style === 'object' 
-             ? JSON.stringify(drama.default_style, null, 2) 
-             : drama.default_style
-      } else {
-          form.default_style = undefined
-          styleConfigStr.value = ''
-      }
+      form.default_style = drama.default_style || undefined
       
       form.default_image_ratio = drama.default_image_ratio || '16:9'
       form.default_video_ratio = drama.default_video_ratio || '16:9'

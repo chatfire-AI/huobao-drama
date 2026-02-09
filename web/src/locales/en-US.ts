@@ -508,6 +508,7 @@ export default {
     followShot: 'Follow Shot',
     sideView: 'Side View',
     time: 'Time',
+    timePlaceholder: 'Enter time, e.g., 2:00 PM',
     timeSetting: 'Time Setting',
     actionDescription: 'Action Description',
     detailedAction: 'Detailed action description',
@@ -523,6 +524,7 @@ export default {
     deleteAsset: 'Delete Asset',
     confirmDelete: 'Confirm Delete',
     tip: 'Tip',
+    addScene: 'Add Scene',
     edit: 'Edit'
   },
   tooltip: {

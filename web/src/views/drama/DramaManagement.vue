@@ -332,6 +332,19 @@
           <el-tab-pane :label="$t('drama.management.sceneList')" name="scenes">
             <div class="tab-header">
               <h2>{{ $t("drama.management.sceneList") }}</h2>
+              <div style="display: flex; gap: 10px">
+                <el-button
+                  :icon="Document"
+                  @click="openExtractSceneDialog"
+                  >{{ $t("prop.extract") }}</el-button
+                >
+                <el-button
+                  type="primary"
+                  :icon="Plus"
+                  @click="openAddSceneDialog"
+                  >{{ $t("workflow.addScene") }}</el-button
+                >
+              </div>
             </div>
 
             <el-row :gutter="16" style="margin-top: 16px">
@@ -341,7 +354,7 @@
                     <img
                       v-if="scene.local_path || scene.image_url"
                       :src="getImageUrl(scene)"
-                      :alt="scene.name"
+                      :alt="scene.location"
                     />
                     <div v-else class="scene-placeholder">
                       <el-icon :size="48"><Picture /></el-icon>
@@ -349,8 +362,21 @@
                   </div>
 
                   <div class="scene-info">
-                    <h4>{{ scene.name }}</h4>
-                    <p class="desc">{{ scene.description }}</p>
+                    <div class="scene-header-info">
+                      <h4>{{ scene.location }}</h4>
+                      <el-tag v-if="scene.time" size="small" type="info" class="scene-time-tag">
+                        {{ scene.time }}
+                      </el-tag>
+                      <el-tag v-if="scene.storyboard_count" size="small" type="success" class="scene-count-tag">
+                        {{ scene.storyboard_count }} Shots
+                      </el-tag>
+                    </div>
+                    <p class="desc" v-if="scene.description">{{ scene.description }}</p>
+                    <div class="scene-prompt-preview" v-if="scene.prompt">
+                      <el-tooltip :content="scene.prompt" placement="top">
+                        <span class="prompt-text">{{ scene.prompt }}</span>
+                      </el-tooltip>
+                    </div>
                   </div>
 
                   <div class="scene-actions">
@@ -649,6 +675,12 @@
             <el-input
               v-model="newScene.location"
               :placeholder="$t('common.name')"
+            />
+          </el-form-item>
+          <el-form-item :label="$t('workflow.time')">
+            <el-input
+              v-model="newScene.time"
+              :placeholder="$t('workflow.timePlaceholder')"
             />
           </el-form-item>
           <el-form-item :label="$t('common.description')">
@@ -1021,6 +1053,7 @@ const newProp = ref({
 
 const newScene = ref({
   location: "",
+  time: "",
   description: "",
   prompt: "",
   image_url: "",
@@ -1291,7 +1324,7 @@ const handleExtractScenes = async () => {
     // 自动刷新几次
     let checkCount = 0;
     const checkInterval = setInterval(() => {
-      loadScenes();
+      loadDramaData();
       checkCount++;
       if (checkCount > 10) clearInterval(checkInterval);
     }, 5000);
@@ -1391,6 +1424,7 @@ const openAddSceneDialog = () => {
   editingScene.value = null;
   newScene.value = {
     location: "",
+    time: "",
     description: "",
     prompt: "",
     image_url: "",
@@ -1410,6 +1444,7 @@ const saveScene = async () => {
       // Update existing scene
       await dramaAPI.updateScene(editingScene.value.id, {
         location: newScene.value.location,
+        time: newScene.value.time,
         description: newScene.value.description,
         prompt: newScene.value.prompt,
         image_url: newScene.value.image_url,
@@ -1454,8 +1489,9 @@ const saveScene = async () => {
     } else {
       // Create new scene
       await dramaAPI.createScene({
-        drama_id: drama.value!.id,
+        drama_id: Number(drama.value!.id),
         location: newScene.value.location,
+        time: newScene.value.time,
         prompt: newScene.value.prompt,
         description: newScene.value.description,
         image_url: newScene.value.image_url,
@@ -1465,7 +1501,7 @@ const saveScene = async () => {
 
     ElMessage.success(editingScene.value ? "场景更新成功" : "场景添加成功");
     addSceneDialogVisible.value = false;
-    await loadScenes();
+    await loadDramaData();
   } catch (error: any) {
     ElMessage.error(error.message || "操作失败");
   }
@@ -1474,7 +1510,8 @@ const saveScene = async () => {
 const editScene = (scene: any) => {
   editingScene.value = scene;
   newScene.value = {
-    location: scene.location || scene.name || "",
+    location: scene.location || "",
+    time: scene.time || "",
     description: scene.description || "",
     prompt: scene.prompt || "",
     image_url: scene.image_url || "",
@@ -1532,7 +1569,7 @@ const saveProp = async () => {
 
   try {
     const propData = {
-      drama_id: drama.value!.id,
+      drama_id: Number(drama.value!.id),
       name: newProp.value.name,
       description: newProp.value.description,
       prompt: newProp.value.prompt,
@@ -1694,7 +1731,7 @@ const savePose = async () => {
 
   try {
     const poseData = {
-      drama_id: drama.value!.id,
+      drama_id: Number(drama.value!.id),
       name: newPose.value.name,
       description: newPose.value.description,
       image_url: newPose.value.image_url,
@@ -1791,16 +1828,11 @@ onMounted(() => {
   transition: background var(--transition-normal);
 }
 
+
 @media (min-width: 768px) {
-  .page-container {
-    /* padding: var(--space-3) var(--space-4); */
-  }
 }
 
 @media (min-width: 1024px) {
-  .page-container {
-    /* padding: var(--space-4) var(--space-5); */
-  }
 }
 
 .content-wrapper {
@@ -1941,13 +1973,48 @@ onMounted(() => {
 .desc {
   font-size: 0.8125rem;
   color: var(--text-muted);
-  margin: var(--space-2) 0;
+  margin: var(--space-1) 0;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
+}
+
+.scene-header-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.scene-header-info h4 {
+  margin: 0 !important;
+}
+
+.scene-time-tag,
+.scene-count-tag {
+  border-radius: var(--radius-sm);
+}
+
+.scene-prompt-preview {
+  margin-top: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+}
+
+.prompt-text {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .character-actions,

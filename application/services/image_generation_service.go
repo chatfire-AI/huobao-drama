@@ -1366,7 +1366,8 @@ func (s *ImageGenerationService) loadImageAsBase64(localPath string) (string, er
 		"full_path", fullPath,
 		"mime_type", mimeType,
 		"size_bytes", len(fileData),
-		"base64_length", len(base64Data))
+		// "base64_length", len(base64Data)
+	)
 
 	return dataURI, nil
 }

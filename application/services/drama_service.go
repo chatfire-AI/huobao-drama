@@ -229,6 +229,13 @@ func (s *DramaService) GetDrama(dramaID string) (*models.Drama, error) {
 
 	// 整合所有剧集的场景到Drama级别的Scenes字段
 	sceneMap := make(map[uint]*models.Scene) // 用于去重
+
+	// 先加入已加载的剧本级场景
+	for i := range drama.Scenes {
+		sceneMap[drama.Scenes[i].ID] = &drama.Scenes[i]
+	}
+
+	// 加入剧集级场景
 	for i := range drama.Episodes {
 		for j := range drama.Episodes[i].Scenes {
 			scene := &drama.Episodes[i].Scenes[j]
@@ -236,7 +243,7 @@ func (s *DramaService) GetDrama(dramaID string) (*models.Drama, error) {
 		}
 	}
 
-	// 将整合的场景添加到drama.Scenes
+	// 重新构建 drama.Scenes
 	drama.Scenes = make([]models.Scene, 0, len(sceneMap))
 	for _, scene := range sceneMap {
 		drama.Scenes = append(drama.Scenes, *scene)
