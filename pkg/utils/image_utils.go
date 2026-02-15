@@ -31,10 +31,10 @@ func ImageToBase64(imagePath string) (string, error) {
 
 	// 转换为 base64
 	base64Str := base64.StdEncoding.EncodeToString(data)
-	
+
 	// 检测 MIME 类型
 	mimeType := detectImageMimeType(data)
-	
+
 	// 返回 data URI 格式
 	return fmt.Sprintf("data:%s;base64,%s", mimeType, base64Str), nil
 }
