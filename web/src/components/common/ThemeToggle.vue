@@ -3,11 +3,11 @@
   <!-- 主题切换按钮，用于切换浅色/深色模式 -->
   <button
     class="theme-toggle"
-    :aria-label="isDark ? '切换到浅色模式' : '切换到深色模式'"
+    :aria-label="uiStore.isDark ? t('settings.switchToLight') : t('settings.switchToDark')"
     @click="toggleTheme"
   >
     <transition name="icon-fade" mode="out-in">
-      <el-icon v-if="isDark" key="moon" :size="18">
+      <el-icon v-if="uiStore.isDark" key="moon" :size="18">
         <Moon />
       </el-icon>
       <el-icon v-else key="sun" :size="18">
@@ -18,41 +18,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
 import { Moon, Sunny } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
+import { useUIStore } from '@/stores/ui'
 
-/**
- * ThemeToggle - Dark/Light mode toggle button
- * 主题切换按钮 - 深色/浅色模式切换
- */
-const isDark = ref(false)
+const { t } = useI18n()
+const uiStore = useUIStore()
 
-// Initialize theme from localStorage or system preference
-// 从 localStorage 或系统偏好初始化主题
-onMounted(() => {
-  const savedTheme = localStorage.getItem('theme')
-  if (savedTheme) {
-    isDark.value = savedTheme === 'dark'
-  } else {
-    isDark.value = window.matchMedia('(prefers-color-scheme: dark)').matches
-  }
-  applyTheme()
-})
-
-// Toggle between dark and light mode / 切换深色和浅色模式
 const toggleTheme = () => {
-  isDark.value = !isDark.value
-  applyTheme()
-  localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
-}
-
-// Apply theme to document / 应用主题到文档
-const applyTheme = () => {
-  if (isDark.value) {
-    document.documentElement.classList.add('dark')
-  } else {
-    document.documentElement.classList.remove('dark')
-  }
+  uiStore.applyTheme(uiStore.isDark ? 'light' : 'dark')
 }
 </script>
 

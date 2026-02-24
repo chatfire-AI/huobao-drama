@@ -13,8 +13,8 @@ export interface Drama {
   duration?: number
   status: DramaStatus
   thumbnail?: string
-  tags?: any
-  metadata?: any
+  tags?: string[]
+  metadata?: Record<string, unknown>
   created_at: string
   updated_at: string
   characters?: Character[]
@@ -35,7 +35,7 @@ export interface Character {
   personality?: string
   voice_style?: string
   background?: string
-  reference_images?: any
+  reference_images?: string[]
   seed_value?: string
   sort_order?: number
   image_url?: string
@@ -66,7 +66,7 @@ export interface Episode {
   storyboards?: Storyboard[]
   scenes?: Scene[]
   characters?: Character[]
-  shots?: any[]
+  shots?: Record<string, unknown>[]
   created_at: string
   updated_at: string
 }
@@ -85,15 +85,32 @@ export interface Storyboard {
   atmosphere?: string
   image_prompt?: string
   video_prompt?: string
-  characters?: any
+  characters?: (string | Character)[]
   image_url?: string
   video_url?: string
   composed_image?: string
+  composed_url?: string
+  background_id?: string
+  background_url?: string
+  background?: Scene
+  local_path?: string
+  image_generation_status?: string
+  image_generation_error?: string
+  error_msg?: string
+  status?: string
+  character_ids?: number[]
+  prop_ids?: number[]
+  props?: any[]
   scene_id?: string
   scene?: Scene
+  shot_type?: string
+  movement?: string
+  angle?: string
+  result?: string
+  sound_effect?: string
+  bgm_prompt?: string
   created_at: string
   updated_at: string
-  [key: string]: any
 }
 
 export interface Scene {

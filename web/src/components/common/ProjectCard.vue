@@ -1,30 +1,19 @@
 <template>
-  <!-- Project card component - Compact design with hover actions -->
-  <!-- 项目卡片组件 - 紧凑设计，悬停显示操作 -->
-  <article 
-    class="project-card"
-    @click="$emit('click')"
-    tabindex="0"
-    @keydown.enter="$emit('click')"
-  >
-    <!-- Gradient header with icon / 渐变头部区域 -->
-    <div class="card-header">
-      <el-icon class="header-icon"><Film /></el-icon>
-      <!-- Hover actions / 悬停操作区 -->
-      <div class="hover-actions" @click.stop>
-        <slot name="actions"></slot>
-      </div>
-    </div>
-
-    <!-- Card content / 卡片内容 -->
+  <!-- Project card component - Compact design with always-visible actions -->
+  <!-- 项目卡片组件 - 紧凑设计，操作始终可见 -->
+  <article class="project-card" @click="$emit('click')" tabindex="0" @keydown.enter="$emit('click')">
+    <div class="card-accent"></div>
     <div class="card-body">
-      <h3 class="card-title">{{ title }}</h3>
+      <div class="card-top">
+        <h3 class="card-title">{{ title }}</h3>
+        <div class="card-actions" @click.stop>
+          <slot name="actions"></slot>
+        </div>
+      </div>
       <p v-if="description" class="card-description">{{ description }}</p>
-      
-      <!-- Footer section / 底部区域 -->
       <div class="card-footer">
         <span class="meta-time">{{ formattedDate }}</span>
-        <span class="episode-label">共 {{ episodeCount }} 集</span>
+        <span class="episode-label">{{ $t('drama.episodeCount', { count: episodeCount }) }}</span>
       </div>
     </div>
   </article>
@@ -32,7 +21,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Film } from '@element-plus/icons-vue'
 
 /**
  * ProjectCard - Reusable project/drama card component
@@ -73,15 +61,15 @@ const formattedDate = computed(() => {
   flex-direction: column;
   background: var(--bg-card);
   border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   cursor: pointer;
   transition: all var(--transition-normal);
-  width: 200px;
 }
 
 .project-card:hover {
   border-color: var(--accent);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .project-card:focus-visible {
@@ -89,35 +77,29 @@ const formattedDate = computed(() => {
   outline-offset: 2px;
 }
 
-/* Card Header / 卡片头部 */
-.card-header {
-  position: relative;
-  height: 120px;
-  background: linear-gradient(135deg, var(--accent) 0%, #06b6d4 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.header-icon {
-  font-size: 28px;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-/* Hover Actions / 悬停操作区 */
-.hover-actions {
+/* Accent Bar / 左侧色条 */
+.card-accent {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--accent);
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+/* Top Section / 顶部区域 */
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+/* Actions / 操作区 */
+.card-actions {
   display: flex;
   gap: 4px;
-  opacity: 0;
-  transition: opacity var(--transition-fast);
-  z-index: 10;
-}
-
-.project-card:hover .hover-actions {
-  opacity: 1;
+  flex-shrink: 0;
 }
 
 /* Body Section / 内容区域 */
@@ -125,13 +107,13 @@ const formattedDate = computed(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 12px;
-  gap: 10px;
+  padding: 16px;
+  gap: 8px;
 }
 
 .card-title {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary);
   overflow: hidden;
@@ -141,7 +123,7 @@ const formattedDate = computed(() => {
 
 .card-description {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;

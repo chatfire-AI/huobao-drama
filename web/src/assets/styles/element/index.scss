@@ -1,17 +1,2 @@
-/*just override what you need*/
-@forward 'element-plus/theme-chalk/src/dark/var.scss' with (
-  $bg-color: (
-    'page': #0a0a0a,
-    '': #141414,
-    'overlay': #1d1e1f,
-  ),
-  $fill-color: (
-    '': #262727,
-    'light': #1d1e1f,
-    'lighter': #141414,
-    'extra-light': #191919,
-    'dark': #3a3a3a,
-    'darker': #4a4a4a,
-    'blank': #1a1a1a,
-  )
-);
+/* Element Plus dark mode overrides are consolidated in main.css (.dark selector) */
+@forward 'element-plus/theme-chalk/src/dark/var.scss';

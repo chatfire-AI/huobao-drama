@@ -20,7 +20,8 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/dramas/:id/episode/:episodeNumber',
     name: 'EpisodeWorkflowNew',
-    component: () => import('../views/drama/EpisodeWorkflow.vue')
+    component: () => import('../views/drama/EpisodeWorkflow.vue'),
+    meta: { fullscreen: true }
   },
   {
     path: '/dramas/:id/characters',
@@ -60,12 +61,19 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/dramas/:dramaId/episode/:episodeNumber/professional',
     name: 'ProfessionalEditor',
-    component: () => import('../views/drama/ProfessionalEditor.vue')
+    component: () => import('../views/drama/ProfessionalEditor.vue'),
+    meta: { fullscreen: true }
   },
   {
     path: '/settings/ai-config',
     name: 'AIConfig',
     component: () => import('../views/settings/AIConfig.vue')
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('../views/NotFound.vue'),
+    meta: { fullscreen: true }
   }
 ]
 
@@ -75,5 +83,9 @@ const router = createRouter({
 })
 
 // 开源版本 - 无需认证
+
+router.beforeEach((to) => {
+  document.title = to.name ? `${String(to.name)} - Huobao Drama` : 'Huobao Drama'
+})
 
 export default router

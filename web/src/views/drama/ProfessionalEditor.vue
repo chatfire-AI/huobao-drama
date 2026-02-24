@@ -3,8 +3,6 @@
     <!-- 顶部工具栏 -->
     <AppHeader
       :fixed="false"
-      :show-logo="false"
-      @config-updated="loadVideoModels"
     >
       <template #left>
         <el-button text @click="goBack" class="back-btn">
@@ -75,7 +73,7 @@
         <VideoTimelineEditor
           ref="timelineEditorRef"
           v-if="storyboards.length > 0"
-          :scenes="storyboards"
+          :scenes="(storyboards as any[])"
           :episode-id="episodeId.toString()"
           :drama-id="dramaId.toString()"
           :assets="videoAssets"
@@ -123,8 +121,8 @@
                   />
                   <div class="scene-info">
                     <div>
-                      {{ currentStoryboard.background.location }} ·
-                      {{ currentStoryboard.background.time }}
+                      {{ currentStoryboard.background?.location }} ·
+                      {{ currentStoryboard.background?.time }}
                     </div>
                     <div class="scene-id">
                       {{ $t("editor.sceneId") }}:
@@ -1968,7 +1966,7 @@
             <el-button
               v-if="previewVideo.video_url"
               size="small"
-              @click="window.open(previewVideo.video_url, '_blank')"
+              @click="openInNewTab(previewVideo.video_url)"
             >
               {{ $t("professionalEditor.downloadVideo") }}
             </el-button>
@@ -1991,9 +1989,9 @@
     <!-- 宫格图片编辑器组件 -->
     <GridImageEditor
       v-model="showGridEditor"
-      :storyboard-id="currentStoryboard?.id || 0"
-      :drama-id="dramaId"
-      :all-images="allGeneratedImages"
+      :storyboard-id="Number(currentStoryboard?.id) || 0"
+      :drama-id="Number(dramaId)"
+      :all-images="(allGeneratedImages as any[])"
       @success="handleGridImageSuccess"
     />
 
@@ -2073,7 +2071,7 @@ const { t: $t } = useI18n();
 
 const dramaId = Number(route.params.dramaId);
 const episodeNumber = Number(route.params.episodeNumber);
-const episodeId = ref<number>(0);
+const episodeId = ref<string | number>(0);
 
 const drama = ref<Drama | null>(null);
 const episode = ref<Episode | null>(null);
@@ -2361,7 +2359,7 @@ const loadVideoAssets = async () => {
   try {
     const result = await assetAPI.listAssets({
       drama_id: dramaId.toString(),
-      episode_id: episodeId.value,
+      episode_id: Number(episodeId.value) || undefined,
       type: "video",
       page: 1,
       page_size: 100,
@@ -2418,7 +2416,7 @@ const availableReferenceModes = computed(() => {
 
 // 帧提示词存储key生成函数
 const getPromptStorageKey = (
-  storyboardId: number | undefined,
+  storyboardId: string | number | undefined,
   frameType: FrameType,
 ) => {
   if (!storyboardId) return null;
@@ -2468,7 +2466,7 @@ const loadPreviousStoryboardLastFrame = async () => {
   }
   try {
     const result = await imageAPI.listImages({
-      storyboard_id: previousStoryboard.value.id,
+      storyboard_id: Number(previousStoryboard.value.id),
       frame_type: "last",
       page: 1,
       page_size: 10,
@@ -2672,7 +2670,7 @@ const currentStoryboardCharacters = computed(() => {
     // 如果是ID数组，从characters中查找匹配的角色
     if (typeof firstItem === "number") {
       return characters.value.filter((c) =>
-        currentStoryboard.value.characters.includes(c.id),
+        currentStoryboard.value!.characters!.includes(c.id as any),
       );
     }
   }
@@ -2739,11 +2737,11 @@ const isCharacterInCurrentShot = (charId: number) => {
     currentStoryboard.value.characters.length > 0
   ) {
     const firstItem = currentStoryboard.value.characters[0];
-    if (typeof firstItem === "object" && firstItem.id) {
-      return currentStoryboard.value.characters.some((c) => c.id === charId);
+    if (typeof firstItem === "object" && (firstItem as any).id) {
+      return currentStoryboard.value.characters.some((c: any) => c.id === charId);
     }
     if (typeof firstItem === "number") {
-      return currentStoryboard.value.characters.includes(charId);
+      return (currentStoryboard.value.characters as any[]).includes(charId);
     }
   }
 
@@ -2768,7 +2766,7 @@ const saveStoryboardField = async (fieldName: string) => {
   if (!currentStoryboard.value) return;
   try {
     const updateData: any = {};
-    updateData[fieldName] = currentStoryboard.value[fieldName];
+    updateData[fieldName] = (currentStoryboard.value as any)[fieldName];
 
     await dramaAPI.updateStoryboard(
       currentStoryboard.value.id.toString(),
@@ -2803,7 +2801,7 @@ const extractFramePrompt = async () => {
       params.panel_count = panelCount.value;
     }
 
-    const { task_id } = await generateFramePrompt(storyboardId, params);
+    const { task_id } = await generateFramePrompt(Number(storyboardId), params);
 
     // 轮询任务状态（独立函数，不依赖组件当前状态）
     const pollTask = async () => {
@@ -2819,7 +2817,7 @@ const extractFramePrompt = async () => {
               throw new Error("解析任务结果失败");
             }
           }
-          return result.response;
+          return (result as any).response;
         } else if (task.status === "failed") {
           throw new Error(task.message || task.error || "生成失败");
         }
@@ -2828,7 +2826,7 @@ const extractFramePrompt = async () => {
       }
     };
 
-    const result = await pollTask();
+    const result: any = await pollTask();
 
     // 根据返回结果构建提示词字符串
     let extractedPrompt = "";
@@ -2876,7 +2874,7 @@ const extractFramePrompt = async () => {
 
 // 检查是否正在生成提示词
 const isGeneratingPrompt = (
-  storyboardId: number | undefined,
+  storyboardId: string | number | undefined,
   frameType: string,
 ) => {
   if (!storyboardId) return false;
@@ -2902,7 +2900,7 @@ const loadStoryboardImages = async (
   loadingImages.value = true;
   try {
     const params: any = {
-      storyboard_id: storyboardId,
+      storyboard_id: Number(storyboardId),
       page: 1,
       page_size: 50,
     };
@@ -2948,7 +2946,7 @@ const startPolling = () => {
 
     try {
       const params: any = {
-        storyboard_id: currentStoryboard.value.id,
+        storyboard_id: Number(currentStoryboard.value.id),
         page: 1,
         page_size: 50,
       };
@@ -3016,7 +3014,7 @@ const generateFrameImage = async () => {
     const result = await imageAPI.generateImage({
       drama_id: dramaId.toString(),
       prompt: currentFramePrompt.value,
-      storyboard_id: currentStoryboard.value.id,
+      storyboard_id: Number(currentStoryboard.value.id),
       image_type: "storyboard",
       frame_type: selectedFrameType.value,
       reference_images:
@@ -3095,11 +3093,6 @@ const addVideoToAssets = async (video: VideoGeneration) => {
 
     // 如果是替换操作，更新时间线中使用该分镜的所有视频片段
     if (isReplacing && video.storyboard_id && video.video_url) {
-      console.log("=== 视频替换，准备更新时间线 ===");
-      console.log("timelineEditorRef.value:", timelineEditorRef.value);
-      console.log("video.storyboard_id:", video.storyboard_id);
-      console.log("video.video_url:", video.video_url);
-
       if (timelineEditorRef.value) {
         timelineEditorRef.value.updateClipsByStoryboardId(
           video.storyboard_id,
@@ -3266,7 +3259,7 @@ const previewImage = (url: string) => {
 const selectedImageObjects = computed(() => {
   return selectedImagesForVideo.value
     .map((id) => videoReferenceImages.value.find((img) => img.id === id))
-    .filter((img) => img && img.image_url);
+    .filter((img): img is ImageGeneration => !!(img && img.image_url));
 });
 
 // 首尾帧模式：获取首帧图片
@@ -3358,7 +3351,7 @@ const generateVideo = async () => {
     // 构建请求参数
     const requestParams: any = {
       drama_id: dramaId.toString(),
-      storyboard_id: currentStoryboard.value.id,
+      storyboard_id: Number(currentStoryboard.value.id),
       prompt:
         currentStoryboard.value.video_prompt ||
         currentStoryboard.value.action ||
@@ -3441,10 +3434,10 @@ const generateVideo = async () => {
 };
 
 // 加载分镜的视频参考图片（所有帧类型）
-const loadVideoReferenceImages = async (storyboardId: number) => {
+const loadVideoReferenceImages = async (storyboardId: string | number) => {
   try {
     const result = await imageAPI.listImages({
-      storyboard_id: storyboardId,
+      storyboard_id: Number(storyboardId),
       page: 1,
       page_size: 100,
     });
@@ -3455,7 +3448,7 @@ const loadVideoReferenceImages = async (storyboardId: number) => {
 };
 
 // 加载分镜的视频列表
-const loadStoryboardVideos = async (storyboardId: number) => {
+const loadStoryboardVideos = async (storyboardId: string | number) => {
   loadingVideos.value = true;
   try {
     const result = await videoAPI.listVideos({
@@ -3516,7 +3509,7 @@ const startVideoPolling = () => {
           const storyboardsRes = await dramaAPI.getStoryboards(
             episodeId.value.toString(),
           );
-          storyboards.value = storyboardsRes?.storyboards || [];
+          storyboards.value = (storyboardsRes as any)?.storyboards || [];
         } catch (error) {
           console.error("重新加载分镜列表失败:", error);
         }
@@ -3556,7 +3549,7 @@ const toggleCharacterInShot = async (charId: number) => {
 
   // 检查是否已存在
   const existIndex = currentStoryboard.value.characters.findIndex((c) =>
-    typeof c === "object" ? c.id === charId : c === charId,
+    typeof c === "object" ? c.id === charId : Number(c) === charId,
   );
 
   if (existIndex > -1) {
@@ -3570,7 +3563,7 @@ const toggleCharacterInShot = async (charId: number) => {
   // 保存到后端
   try {
     const characterIds = currentStoryboard.value.characters.map((c) =>
-      typeof c === "object" ? c.id : c,
+      typeof c === "object" ? c.id : Number(c),
     );
 
     await dramaAPI.updateStoryboard(currentStoryboard.value.id.toString(), {
@@ -3609,7 +3602,7 @@ const removeCharacterFromShot = async (charId: number) => {
 
   // 检查是否已存在
   const existIndex = currentStoryboard.value.characters.findIndex((c) =>
-    typeof c === "object" ? c.id === charId : c === charId,
+    typeof c === "object" ? c.id === charId : Number(c) === charId,
   );
 
   if (existIndex > -1) {
@@ -3620,7 +3613,7 @@ const removeCharacterFromShot = async (charId: number) => {
   // 保存到后端
   try {
     const characterIds = currentStoryboard.value.characters.map((c) =>
-      typeof c === "object" ? c.id : c,
+      typeof c === "object" ? c.id : Number(c),
     );
 
     await dramaAPI.updateStoryboard(currentStoryboard.value.id.toString(), {
@@ -3658,7 +3651,7 @@ const loadData = async () => {
     const storyboardsRes = await dramaAPI.getStoryboards(ep.id.toString());
 
     // API返回格式: {storyboards: [...], total: number}
-    storyboards.value = storyboardsRes?.storyboards || [];
+    storyboards.value = (storyboardsRes as any)?.storyboards || [];
 
     // 默认选中第一个分镜
     if (storyboards.value.length > 0 && !currentStoryboardId.value) {
@@ -3687,7 +3680,7 @@ const selectScene = async (sceneId: number) => {
   try {
     // TODO: 调用API更新分镜的scene_id
     await dramaAPI.updateStoryboard(currentStoryboard.value.id.toString(), {
-      scene_id: sceneId,
+      scene_id: String(sceneId),
     });
 
     // 重新加载数据
@@ -3719,6 +3712,10 @@ const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+};
+
+const openInNewTab = (url?: string) => {
+  if (url) window.open(url, '_blank');
 };
 
 const zoomIn = () => {
@@ -3781,8 +3778,8 @@ const uploadImage = () => {
       if (imageUrl && currentStoryboard.value) {
         // 创建图片生成记录（关联到当前镜头和帧类型）
         await imageAPI.uploadImage({
-          storyboard_id: currentStoryboard.value.id,
-          drama_id: parseInt(dramaId),
+          storyboard_id: Number(currentStoryboard.value.id),
+          drama_id: Number(dramaId),
           frame_type: selectedFrameType.value || "first",
           image_url: imageUrl,
           prompt: currentFramePrompt.value || "用户上传图片",
@@ -3837,7 +3834,7 @@ const loadAllGeneratedImages = async () => {
 
   try {
     const result = await imageAPI.listImages({
-      storyboard_id: currentStoryboard.value.id,
+      storyboard_id: Number(currentStoryboard.value.id),
       page: 1,
       page_size: 100,
     });
@@ -3886,7 +3883,7 @@ const handleCropSave = async (images: { blob: Blob; frameType: string }[]) => {
 
       // 调用上传接口
       await imageAPI.uploadImage({
-        storyboard_id: currentStoryboard.value.id,
+        storyboard_id: Number(currentStoryboard.value.id),
         drama_id: Number(dramaId),
         frame_type: img.frameType,
         image_url: imageUrl,
@@ -3926,7 +3923,7 @@ const handleAddStoryboard = async () => {
         : 1;
 
     await dramaAPI.createStoryboard({
-      episode_id: parseInt(episodeId.value),
+      episode_id: Number(episodeId.value),
       storyboard_number: nextShotNumber,
       title: `镜头 ${nextShotNumber}`,
       description: "新镜头描述",
@@ -3935,7 +3932,7 @@ const handleAddStoryboard = async () => {
       duration: 5,
       scene_id:
         storyboards.value.length > 0
-          ? storyboards.value[storyboards.value.length - 1].scene_id
+          ? Number(storyboards.value[storyboards.value.length - 1].scene_id)
           : undefined,
     });
 
@@ -3969,8 +3966,7 @@ const handleDeleteStoryboard = async (storyboard: any) => {
 
     // If deleted current storyboard, clear selection or select another
     if (currentStoryboardId.value === storyboard.id) {
-      currentStoryboardId.value = undefined;
-      currentStoryboard.value = undefined;
+      currentStoryboardId.value = null;
     }
 
     await loadData();

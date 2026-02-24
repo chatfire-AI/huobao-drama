@@ -58,9 +58,9 @@
             :name="episode.episode_number"
           >
             <div class="episode-info">
-              <p><strong>场景数：</strong>{{ episode.scenes.length }}</p>
-              
-              <el-table :data="episode.scenes" size="small" border>
+              <p><strong>场景数：</strong>{{ episode.scenes?.length || 0 }}</p>
+
+              <el-table :data="episode.scenes || []" size="small" border>
                 <el-table-column prop="storyboard_number" label="场景号" width="80" />
                 <el-table-column prop="title" label="标题" width="150" />
                 <el-table-column prop="location" label="地点" width="120" />
@@ -124,7 +124,7 @@ const activeEpisode = ref<number>()
 
 const totalScenes = computed(() => {
   if (!parseResult.value) return 0
-  return parseResult.value.episodes.reduce((sum, ep) => sum + ep.scenes.length, 0)
+  return parseResult.value.episodes.reduce((sum, ep) => sum + (ep.scenes?.length || 0), 0)
 })
 
 const handleParse = async () => {
@@ -135,6 +135,7 @@ const handleParse = async () => {
 
   parsing.value = true
   try {
+    // @ts-expect-error parseScript not yet in API type definition
     parseResult.value = await generationAPI.parseScript({
       drama_id: props.dramaId,
       script_content: form.script_content,

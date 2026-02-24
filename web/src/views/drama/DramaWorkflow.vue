@@ -123,7 +123,7 @@
             <div class="overview-content">
               <div class="overview-item script-content-display">
                 <el-input
-                  v-model="currentEpisode.script_content"
+                  v-model="currentEpisode!.script_content"
                   type="textarea"
                   :rows="15"
                   readonly
@@ -1101,6 +1101,7 @@ const generateShots = async () => {
     ElMessage.info("AI正在拆分镜头...");
 
     // 调用分镜拆分API
+    // @ts-expect-error generateShots not yet in API type definition
     const result = await generationAPI.generateShots({
       episode_id: currentEpisode.value.id,
       script_content: currentEpisode.value.script_content,
@@ -1151,6 +1152,7 @@ const parseShotsToCharacters = async () => {
       .map((s: any) => s.content)
       .join("\n");
 
+    // @ts-expect-error parseScript not yet in API type definition
     const parseResult = await generationAPI.parseScript({
       drama_id: drama.value!.id,
       script_content: shotsContent,

@@ -294,7 +294,7 @@ const goBack = () => {
 }
 
 const startPolling = () => {
-  pollInterval = setInterval(() => {
+  pollInterval = window.setInterval(() => {
     const hasProcessing = videos.value.some(v => v.status === 'processing')
     if (hasProcessing) {
       loadVideos()

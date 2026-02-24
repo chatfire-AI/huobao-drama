@@ -400,7 +400,7 @@ import {
   Headset,
   Microphone,
 } from '@element-plus/icons-vue'
-import { videoMerger, type MergeProgress } from '@/utils/videoMerger'
+import { videoMerger, type MergeProgress, type VideoClip } from '@/utils/videoMerger'
 import { trimAndMergeVideos } from '@/utils/ffmpeg'
 import { getVideoUrl } from '@/utils/image'
 
@@ -843,7 +843,7 @@ const timeRulerTicks = computed(() => {
 })
 
 // 片段样式计算
-const getClipStyle = (clip: TimelineClip) => {
+const getClipStyle = (clip: TimelineClip | AudioClip) => {
   return {
     left: 100 + clip.position * pixelsPerSecond.value + 'px',
     width: clip.duration * pixelsPerSecond.value + 'px',
@@ -1048,12 +1048,6 @@ const getTransitionLabel = (clip: TimelineClip) => {
 }
 
 const openTransitionDialog = (clip: TimelineClip) => {
-  console.log('🎬 打开转场设置对话框:', {
-    clip_id: clip.id,
-    storyboard_id: clip.storyboard_id,
-    order: clip.order,
-    current_transition: clip.transition,
-  })
   editingTransitionClipId.value = clip.id
   editingTransition.value = {
     type: clip.transition?.type || 'fade',
@@ -1069,12 +1063,6 @@ const applyTransition = () => {
       type: editingTransition.value.type,
       duration: editingTransition.value.duration,
     }
-    console.log('✅ 转场效果已设置:', {
-      clip_id: clip.id,
-      storyboard_id: clip.storyboard_id,
-      order: clip.order,
-      transition: clip.transition,
-    })
     ElMessage.success('转场效果已设置')
   } else {
     console.error('❌ 未找到目标片段:', editingTransitionClipId.value)
@@ -1160,14 +1148,6 @@ const extractAllAudio = async () => {
         console.error(`音频片段 ${index} 时长无效:`, audioDuration)
         throw new Error(`音频片段 ${index + 1} 时长无效`)
       }
-
-      console.log(`音频片段 ${index}:`, {
-        video_duration: clip.duration,
-        audio_duration: audioDuration,
-        video_position: clip.position,
-        video_url: clip.video_url,
-        audio_url: extractedAudio.audio_url,
-      })
 
       const audioClip: AudioClip = {
         id: `audio_${Date.now()}_${index}`,
@@ -1446,7 +1426,7 @@ const handleResizeMove = (event: MouseEvent, clip: TimelineClip) => {
     }
   } else {
     // 调整结束时间
-    const scene = props.scenes.find((s) => s.id === clip.scene_id)
+    const scene = props.scenes.find((s) => s.storyboard_id === clip.storyboard_id)
     const maxDuration = scene?.duration || 10
     const maxEndTime = clip.start_time + maxDuration
 
@@ -1798,7 +1778,7 @@ const handleExport = async () => {
 
     // 初始化FFmpeg
     await videoMerger.initialize((progress) => {
-      mergeProgress.value = progress
+      mergeProgressDetail.value = progress
     })
 
     // 准备视频片段数据（包含转场信息）
@@ -1807,7 +1787,7 @@ const handleExport = async () => {
       startTime: clip.start_time,
       endTime: clip.end_time,
       duration: clip.end_time - clip.start_time,
-      transition: clip.transition,
+      transition: clip.transition as VideoClip['transition'],
     }))
 
     // 执行合并
@@ -1922,11 +1902,6 @@ const submitTimelineForMerge = async () => {
     const timelineData = {
       episode_id: props.episodeId,
       clips: timelineClips.value.map((clip, index) => {
-        console.log(`📹 片段 ${index}:`, {
-          storyboard_id: clip.storyboard_id,
-          asset_id: clip.asset_id,
-          transition: clip.transition,
-        })
         return {
           storyboard_id: String(clip.storyboard_id),
           asset_id: clip.asset_id, // 包含素材库ID
@@ -1938,7 +1913,6 @@ const submitTimelineForMerge = async () => {
         }
       }),
     }
-    console.log('📤 提交时间线数据:', JSON.stringify(timelineData, null, 2))
 
     // 调用后端API
     const { dramaAPI } = await import('@/api/drama')
@@ -1967,30 +1941,18 @@ const submitTimelineForMerge = async () => {
 
 // 暴露方法供父组件调用
 const updateClipsByStoryboardId = (storyboardId: string | number, newVideoUrl: string) => {
-  console.log('=== updateClipsByStoryboardId 调用 ===')
-  console.log('目标 storyboard_id:', storyboardId, '类型:', typeof storyboardId)
-  console.log('新视频 URL:', newVideoUrl)
-  console.log('当前时间线片段数量:', timelineClips.value.length)
-
   let updated = false
   const targetId = String(storyboardId) // 统一转换为字符串进行比较
 
   timelineClips.value.forEach((clip, index) => {
-    console.log(`片段 ${index}: storyboard_id=${clip.storyboard_id} (类型: ${typeof clip.storyboard_id})`)
     if (String(clip.storyboard_id) === targetId) {
-      console.log(`✅ 匹配成功！更新片段 ${index} 的视频URL`)
-      console.log('  旧URL:', clip.video_url)
-      console.log('  新URL:', newVideoUrl)
       clip.video_url = newVideoUrl
       updated = true
     }
   })
 
   if (updated) {
-    console.log('✅ 时间线视频已更新')
     ElMessage.success('时间线中的视频已自动更新')
-  } else {
-    console.log('⚠️ 没有找到匹配的时间线片段')
   }
 }
 

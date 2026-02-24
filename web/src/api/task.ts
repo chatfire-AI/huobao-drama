@@ -6,7 +6,7 @@ export interface AsyncTask {
     status: 'pending' | 'processing' | 'completed' | 'failed'
     progress: number
     message: string
-    result?: any
+    result?: Record<string, unknown>
     error?: string
     created_at: string
 }

@@ -1,7 +1,7 @@
 import { ref, computed, reactive } from 'vue'
 import { defineStore } from 'pinia'
 import { dramaAPI } from '@/api/drama'
-import type { Episode, Character, Scene } from '@/types/drama'
+import type { Episode, Character, Scene, Storyboard } from '@/types/drama'
 
 interface EpisodeCache {
   data: Episode
@@ -22,7 +22,7 @@ interface EpisodeOperations {
 
 interface SetOperationParams {
   type: 'character' | 'scene' | 'storyboard'
-  data: any
+  data: Partial<Character> | Partial<Scene> | Partial<Storyboard>
 }
 
 interface DeleteOperationParams {
@@ -74,15 +74,15 @@ export const useEpisodeStore = defineStore('episode', () => {
         
         switch (type) {
           case 'character':
-            await dramaAPI.saveCharacters(cache.data.drama_id, [data], episodeId)
+            await dramaAPI.saveCharacters(cache.data.drama_id, [data as Partial<Character>], episodeId)
             await fetchEpisode(episodeId, true)
             break
           case 'scene':
-            await dramaAPI.updateScene(data.id, data)
+            await dramaAPI.updateScene(String(data.id), data as Partial<Scene>)
             await fetchEpisode(episodeId, true)
             break
           case 'storyboard':
-            await dramaAPI.updateStoryboard(data.id, data)
+            await dramaAPI.updateStoryboard(String(data.id), data as Partial<Storyboard>)
             await fetchEpisode(episodeId, true)
             break
         }
@@ -131,7 +131,7 @@ export const useEpisodeStore = defineStore('episode', () => {
             if (character) {
               promises.push(
                 dramaAPI.generateSceneImage({
-                  scene_id: character.id.toString(),
+                  scene_id: character.id,
                   prompt: character.appearance || character.description || character.name,
                   model: undefined
                 })
@@ -144,7 +144,7 @@ export const useEpisodeStore = defineStore('episode', () => {
           options.sceneIds.forEach(sceneId => {
             promises.push(
               dramaAPI.generateSceneImage({
-                scene_id: sceneId,
+                scene_id: Number(sceneId),
                 model: undefined
               })
             )
@@ -208,10 +208,10 @@ export const useEpisodeStore = defineStore('episode', () => {
         cache.data = episode
         cache.lastFetch = now
       } else {
-        cache.error = '未找到章节数据'
+        cache.error = 'Episode not found'
       }
     } catch (error: any) {
-      cache.error = error.message || '加载章节数据失败'
+      cache.error = error.message || 'Failed to load episode data'
       console.error('Failed to fetch episode:', error)
     } finally {
       cache.loading = false

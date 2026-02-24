@@ -229,7 +229,7 @@ class VideoMerger {
 
     // 读取输出文件
     const data = await this.ffmpeg.readFile('output.mp4')
-    const blob = new Blob([data], { type: 'video/mp4' })
+    const blob = new Blob([data as BlobPart], { type: 'video/mp4' })
 
     // 清理临时文件
     for (const file of inputFiles) {

@@ -672,7 +672,7 @@ const handleProviderChange = () => {
   }
 
   if (!isEdit.value) {
-    form.name = generateConfigName(form.provider, form.service_type);
+    form.name = generateConfigName(form.provider ?? '', form.service_type);
   }
 };
 

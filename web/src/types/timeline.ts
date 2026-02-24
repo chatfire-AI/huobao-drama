@@ -37,7 +37,7 @@ export interface TimelineClip {
   track_id: number
   asset_id?: number
   asset?: Asset
-  scene_id?: number
+  scene_id?: string
   name: string
   start_time: number
   end_time: number
@@ -114,7 +114,7 @@ export interface UpdateTrackRequest {
 export interface CreateClipRequest {
   track_id: number
   asset_id?: number
-  scene_id?: number
+  scene_id?: string
   name?: string
   start_time: number
   duration: number

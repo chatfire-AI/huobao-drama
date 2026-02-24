@@ -107,7 +107,7 @@ defineProps<{
 defineEmits<{
   edit: [config: AIServiceConfig]
   delete: [config: AIServiceConfig]
-  toggleActive: [config: AIServiceConfig]
+  'toggle-active': [config: AIServiceConfig]
   test: [config: AIServiceConfig]
 }>()
 

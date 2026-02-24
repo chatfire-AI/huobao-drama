@@ -11,7 +11,7 @@ interface CustomAxiosInstance extends Omit<AxiosInstance, 'get' | 'post' | 'put'
 }
 
 const request = axios.create({
-  baseURL: '/api/v1',
+  baseURL: import.meta.env.VITE_API_PREFIX || '/api/v1',
   timeout: 600000, // 10分钟超时，匹配后端AI生成接口
   headers: {
     'Content-Type': 'application/json'

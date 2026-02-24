@@ -1,31 +1,15 @@
 <template>
   <!-- Drama List Page - Refactored with modern minimalist design -->
   <!-- 短剧列表页面 - 使用现代简约设计重构 -->
-  <div class="page-container">
-    <div class="content-wrapper animate-fade-in">
-      <!-- App Header / 应用头部 -->
-      <AppHeader :fixed="false">
-        <template #left>
-          <div class="page-title">
-            <h1>{{ $t("drama.title") }}</h1>
-            <span class="subtitle">{{
-              $t("drama.totalProjects", { count: total })
-            }}</span>
-          </div>
-        </template>
-        <template #right>
-          <el-button
-            type="primary"
-            @click="handleCreate"
-            class="header-btn primary"
-          >
-            <el-icon>
-              <Plus />
-            </el-icon>
-            <span class="btn-text">{{ $t("drama.createNew") }}</span>
-          </el-button>
-        </template>
-      </AppHeader>
+  <div class="animate-fade-in">
+    <PageHeader :title="$t('drama.title')" :subtitle="$t('drama.totalProjects', { count: total })">
+      <template #actions>
+        <el-button type="primary" @click="handleCreate" class="header-btn primary">
+          <el-icon><Plus /></el-icon>
+          <span class="btn-text">{{ $t('drama.createNew') }}</span>
+        </el-button>
+      </template>
+    </PageHeader>
 
       <!-- Project Grid / 项目网格 -->
       <div
@@ -154,50 +138,23 @@
       </el-dialog>
 
       <!-- Create Drama Dialog / 创建短剧弹窗 -->
-      <CreateDramaDialog v-model="createDialogVisible" @created="loadDramas" />
-    </div>
+      <CreateDramaDialog v-model="createDialogVisible" @created="resetAndLoad" />
 
-    <!-- Sticky Pagination / 吸底分页器 -->
-    <div v-if="total > 0" class="pagination-sticky">
-      <div class="pagination-inner">
-        <div class="pagination-info">
-          <span class="pagination-total">{{
-            $t("drama.totalProjects", { count: total })
-          }}</span>
-        </div>
-        <div class="pagination-controls">
-          <el-pagination
-            v-model:current-page="queryParams.page"
-            v-model:page-size="queryParams.page_size"
-            :total="total"
-            :page-sizes="[12, 24, 36, 48]"
-            :pager-count="5"
-            layout="prev, pager, next"
-            @size-change="loadDramas"
-            @current-change="loadDramas"
-          />
-        </div>
-        <div class="pagination-size">
-          <span class="size-label">{{ $t("common.perPage") }}</span>
-          <el-select
-            v-model="queryParams.page_size"
-            size="small"
-            class="size-select"
-            @change="loadDramas"
-          >
-            <el-option :value="12" label="12" />
-            <el-option :value="24" label="24" />
-            <el-option :value="36" label="36" />
-            <el-option :value="48" label="48" />
-          </el-select>
-        </div>
+    <!-- Infinite scroll sentinel / 无限滚动哨兵 -->
+    <div ref="sentinelRef" class="scroll-sentinel">
+      <div v-if="loadingMore" class="loading-more">
+        <el-icon class="is-loading"><Loading /></el-icon>
+        <span>{{ $t('common.loading') }}</span>
+      </div>
+      <div v-else-if="noMore && dramas.length > 0" class="no-more">
+        <span>{{ $t('common.noData') }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import {
@@ -208,11 +165,12 @@ import {
   View,
   Delete,
   InfoFilled,
+  Loading,
 } from "@element-plus/icons-vue";
 import { dramaAPI } from "@/api/drama";
 import type { Drama, DramaListQuery } from "@/types/drama";
 import {
-  AppHeader,
+  PageHeader,
   ProjectCard,
   ActionButton,
   CreateDramaDialog,
@@ -221,13 +179,18 @@ import {
 
 const router = useRouter();
 const loading = ref(false);
+const loadingMore = ref(false);
 const dramas = ref<Drama[]>([]);
 const total = ref(0);
+const sentinelRef = ref<HTMLElement | null>(null);
+let observer: IntersectionObserver | null = null;
 
 const queryParams = ref<DramaListQuery>({
   page: 1,
-  page_size: 12,
+  page_size: 24,
 });
+
+const noMore = computed(() => dramas.value.length >= total.value);
 
 // Create dialog state / 创建弹窗状态
 const createDialogVisible = ref(false);
@@ -237,13 +200,33 @@ const loadDramas = async () => {
   loading.value = true;
   try {
     const res = await dramaAPI.list(queryParams.value);
-    dramas.value = res.items || [];
+    if (queryParams.value.page === 1) {
+      dramas.value = res.items || [];
+    } else {
+      dramas.value.push(...(res.items || []));
+    }
     total.value = res.pagination?.total || 0;
   } catch (error: any) {
     ElMessage.error(error.message || "加载失败");
   } finally {
     loading.value = false;
+    loadingMore.value = false;
   }
+};
+
+// Load next page / 加载下一页
+const loadMore = () => {
+  if (loadingMore.value || loading.value || noMore.value) return;
+  loadingMore.value = true;
+  queryParams.value.page = (queryParams.value.page || 1) + 1;
+  loadDramas();
+};
+
+// Reset and reload / 重置并重新加载
+const resetAndLoad = () => {
+  queryParams.value.page = 1;
+  dramas.value = [];
+  loadDramas();
 };
 
 // Navigation handlers / 导航处理
@@ -296,7 +279,7 @@ const saveEdit = async () => {
     });
     ElMessage.success("保存成功");
     editDialogVisible.value = false;
-    loadDramas();
+    resetAndLoad();
   } catch (error: any) {
     ElMessage.error(error.message || "保存失败");
   } finally {
@@ -309,7 +292,7 @@ const deleteDrama = async (id: string) => {
   try {
     await dramaAPI.delete(id);
     ElMessage.success("删除成功");
-    loadDramas();
+    resetAndLoad();
   } catch (error: any) {
     ElMessage.error(error.message || "删除失败");
   }
@@ -317,6 +300,18 @@ const deleteDrama = async (id: string) => {
 
 onMounted(() => {
   loadDramas();
+  // Set up infinite scroll observer
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) loadMore();
+    },
+    { rootMargin: '200px' }
+  );
+  if (sentinelRef.value) observer.observe(sentinelRef.value);
+});
+
+onBeforeUnmount(() => {
+  observer?.disconnect();
 });
 </script>
 
@@ -324,51 +319,6 @@ onMounted(() => {
 /* ========================================
    Page Layout / 页面布局 - 紧凑边距
    ======================================== */
-.page-container {
-  min-height: 100vh;
-  background: var(--bg-primary);
-  /* padding: var(--space-2) var(--space-3); */
-  transition: background var(--transition-normal);
-}
-
-@media (min-width: 768px) {
-  .page-container {
-    /* padding: var(--space-3) var(--space-4); */
-  }
-}
-
-@media (min-width: 1024px) {
-  .page-container {
-    /* padding: var(--space-4) var(--space-5); */
-  }
-}
-
-.content-wrapper {
-  margin: 0 auto;
-  width: 100%;
-}
-
-/* ========================================
-   Page Title / 页面标题
-   ======================================== */
-.page-title {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.page-title h1 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.3;
-}
-
-.page-title .subtitle {
-  font-size: 0.8125rem;
-  color: var(--text-muted);
-}
 
 /* ========================================
    Header Buttons / 头部按钮
@@ -404,39 +354,10 @@ onMounted(() => {
    ======================================== */
 .projects-grid {
   padding: 12px;
-  display: flex;
-  flex-wrap: wrap;
-  /* grid-template-columns: repeat(2, 1fr); */
-  gap: var(--space-2);
-  margin-bottom: var(--space-4);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
   min-height: 300px;
-  padding-bottom: 4rem;
-}
-
-@media (min-width: 640px) {
-  .projects-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-2);
-  }
-}
-
-@media (min-width: 900px) {
-  .projects-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--space-3);
-  }
-}
-
-@media (min-width: 1200px) {
-  .projects-grid {
-    grid-template-columns: repeat(5, 1fr);
-  }
-}
-
-@media (min-width: 1500px) {
-  .projects-grid {
-    grid-template-columns: repeat(6, 1fr);
-  }
 }
 
 .projects-grid.is-empty {
@@ -446,88 +367,27 @@ onMounted(() => {
 }
 
 /* ========================================
-   Sticky Pagination / 吸底分页器
+   Scroll Sentinel / 无限滚动
    ======================================== */
-.pagination-sticky {
-  /* padding: 12px; */
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(16px);
-  border-top: 1px solid var(--border-primary);
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.dark .pagination-sticky {
-  background: rgba(10, 15, 26, 0.9);
-  border-top: 1px solid var(--border-primary);
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.pagination-inner {
+.scroll-sentinel {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  margin: 0 auto;
-  padding: var(--space-3) var(--space-4);
-  gap: var(--space-4);
+  justify-content: center;
+  padding: var(--space-6) 0;
+  min-height: 1px;
 }
 
-@media (min-width: 768px) {
-  .pagination-inner {
-    padding: var(--space-3) var(--space-6);
-  }
-}
-
-.pagination-info {
-  display: none;
-}
-
-@media (min-width: 768px) {
-  .pagination-info {
-    display: block;
-  }
-}
-
-.pagination-total {
-  font-size: 0.8125rem;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.pagination-controls {
-  display: flex;
-}
-
-.pagination-size {
+.loading-more {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-}
-
-.size-label {
-  font-size: 0.8125rem;
   color: var(--text-muted);
-  display: none;
+  font-size: 0.875rem;
 }
 
-@media (min-width: 768px) {
-  .size-label {
-    display: block;
-  }
-}
-
-.size-select {
-  width: 4.5rem;
-}
-
-.size-select :deep(.el-input__wrapper) {
-  height: 2rem;
-  border-radius: var(--radius-md);
-  background: var(--bg-card);
+.no-more {
+  color: var(--text-muted);
+  font-size: 0.8125rem;
 }
 
 /* ========================================

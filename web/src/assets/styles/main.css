@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* ========================================
    CSS Variables for Theme / 主题 CSS 变量
@@ -8,29 +6,29 @@
    ======================================== */
 :root {
   /* Background colors / 背景色 */
-  --bg-primary: #f8fafc;
+  --bg-primary: #f9fafb;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
-  --bg-card-hover: #f1f5f9;
+  --bg-card-hover: #f3f4f6;
   --bg-elevated: #ffffff;
-  --bg-overlay: rgba(15, 23, 42, 0.5);
+  --bg-overlay: rgba(17, 24, 39, 0.5);
 
   /* Text colors / 文字色 */
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
   --text-inverse: #ffffff;
 
   /* Border colors / 边框色 */
-  --border-primary: #e2e8f0;
-  --border-secondary: #cbd5e1;
-  --border-focus: #0ea5e9;
+  --border-primary: #e5e7eb;
+  --border-secondary: #d1d5db;
+  --border-focus: #3b82f6;
 
-  /* Primary accent / 主强调色 */
-  --accent: #0ea5e9;
-  --accent-hover: #0284c7;
-  --accent-light: #e0f2fe;
-  --accent-dark: #0369a1;
+  /* Primary accent — warm blue / 主强调色 */
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --accent-light: #eff6ff;
+  --accent-dark: #1d4ed8;
 
   /* Status colors / 状态色 */
   --success: #10b981;
@@ -42,15 +40,15 @@
   --info: #3b82f6;
   --info-light: #dbeafe;
 
-  /* Shadows / 阴影 - refined for depth */
+  /* Shadows / 阴影 - softer */
   --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.03);
-  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.05);
-  --shadow-glow: 0 0 20px rgba(14, 165, 233, 0.15);
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
-  --shadow-card-hover: 0 8px 16px -4px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.03);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.03);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.06), 0 4px 6px -4px rgb(0 0 0 / 0.03);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.04);
+  --shadow-glow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 3px 0 rgb(0 0 0 / 0.03);
+  --shadow-card-hover: 0 4px 12px -2px rgb(0 0 0 / 0.08), 0 2px 6px -2px rgb(0 0 0 / 0.04);
 
   /* Transition / 过渡 */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -79,34 +77,29 @@
   --space-12: 3rem;
 }
 
-/* Dark mode theme / 深色模式主题 - 参考深色UI设计 */
+/* Dark mode theme / 深色模式主题 */
 .dark {
-  /* Background - 深邃的蓝黑色调 */
-  --bg-primary: #0c1015;
-  --bg-secondary: #12181f;
-  --bg-card: #181f28;
-  --bg-card-hover: #1e2730;
-  --bg-elevated: #1a2129;
-  --bg-overlay: rgba(0, 0, 0, 0.8);
+  --bg-primary: #111827;
+  --bg-secondary: #1f2937;
+  --bg-card: #1f2937;
+  --bg-card-hover: #374151;
+  --bg-elevated: #374151;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
 
-  /* Text - 清晰的层次对比 */
-  --text-primary: #e8edf3;
-  --text-secondary: #8b9bb0;
-  --text-muted: #5a6a7e;
-  --text-inverse: #0c1015;
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --text-inverse: #111827;
 
-  /* Border - 微妙的边框 */
-  --border-primary: #252d38;
-  --border-secondary: #323d4d;
-  --border-focus: #22d3ee;
+  --border-primary: #374151;
+  --border-secondary: #4b5563;
+  --border-focus: #60a5fa;
 
-  /* Accent - 青色强调色 */
-  --accent: #22d3ee;
-  --accent-hover: #06b6d4;
-  --accent-light: rgba(34, 211, 238, 0.12);
-  --accent-dark: #67e8f9;
+  --accent: #60a5fa;
+  --accent-hover: #3b82f6;
+  --accent-light: rgba(59, 130, 246, 0.15);
+  --accent-dark: #2563eb;
 
-  /* Status colors / 状态色 */
   --success: #34d399;
   --success-light: rgba(52, 211, 153, 0.12);
   --warning: #fbbf24;
@@ -116,25 +109,32 @@
   --info: #60a5fa;
   --info-light: rgba(96, 165, 250, 0.12);
 
-  /* Shadows - 更深的阴影 */
   --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.4);
   --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.5);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.6), 0 2px 4px -2px rgb(0 0 0 / 0.5);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.7), 0 4px 6px -4px rgb(0 0 0 / 0.6);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.8), 0 8px 10px -6px rgb(0 0 0 / 0.7);
-  --shadow-glow: 0 0 20px rgba(34, 211, 238, 0.25);
+  --shadow-glow: 0 0 0 3px rgba(96, 165, 250, 0.2);
   --shadow-card: 0 2px 4px 0 rgb(0 0 0 / 0.3);
-  --shadow-card-hover: 0 8px 20px -4px rgb(0 0 0 / 0.5), 0 0 0 1px rgba(34, 211, 238, 0.15);
+  --shadow-card-hover: 0 8px 20px -4px rgb(0 0 0 / 0.5), 0 0 0 1px rgba(96, 165, 250, 0.15);
 
-  --el-fill-color-blank: #181f28;
-  --el-border-color: #4d4d4d;
-  --el-border-color-light: #2a333d;
-  --el-fill-color-light: #2a333d;
-  --el-bg-color-overlay: #181f28;
-  --el-text-color-regular: #e8edf3;
-  --el-descriptions-table-border: #4d4d4d;
-  --el-border-color-lighter: #4d4d4d;
-  --el-text-color-primary: #e8edf3;
+  /* Element Plus dark overrides */
+  --el-bg-color-page: #111827;
+  --el-bg-color: #1f2937;
+  --el-bg-color-overlay: #1f2937;
+  --el-fill-color: #374151;
+  --el-fill-color-light: #374151;
+  --el-fill-color-lighter: #1f2937;
+  --el-fill-color-extra-light: #1f2937;
+  --el-fill-color-dark: #4b5563;
+  --el-fill-color-darker: #6b7280;
+  --el-fill-color-blank: #1f2937;
+  --el-border-color: #4b5563;
+  --el-border-color-light: #374151;
+  --el-border-color-lighter: #4b5563;
+  --el-text-color-primary: #f9fafb;
+  --el-text-color-regular: #f9fafb;
+  --el-descriptions-table-border: #4b5563;
 }
 
 /* ========================================
@@ -150,15 +150,10 @@ html,
 body {
   width: 100%;
   height: 100%;
-  font-family:
-    'Inter',
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    'Helvetica Neue',
-    Arial,
-    sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   transition:
@@ -216,13 +211,13 @@ body {
   --el-button-border-color: var(--accent);
   --el-button-hover-bg-color: var(--accent-hover);
   --el-button-hover-border-color: var(--accent-hover);
-  background: linear-gradient(135deg, var(--accent) 0%, #0284c7 100%);
-  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
+  background: linear-gradient(135deg, var(--accent) 0%, #1d4ed8 100%);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
 }
 
 .el-button--primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.35);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
 }
 
 .el-button--primary:active {
@@ -1171,7 +1166,7 @@ body {
    Typography Utilities / 排版工具
    ======================================== */
 .text-gradient {
-  background: linear-gradient(135deg, var(--accent) 0%, #06b6d4 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, #1d4ed8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

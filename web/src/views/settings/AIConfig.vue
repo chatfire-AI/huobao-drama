@@ -1,13 +1,10 @@
 <template>
-  <div class="page-container">
-    <div class="content-wrapper animate-fade-in">
-      <!-- Page Header / 页面头部 -->
-      <PageHeader
-        :title="$t('aiConfig.title')"
-        :subtitle="$t('aiConfig.subtitle') || '管理 AI 服务配置'"
-        :show-back="true"
-        :back-text="$t('common.back')"
-      >
+  <div class="animate-fade-in">
+    <!-- Page Header / 页面头部 -->
+    <PageHeader
+      :title="$t('aiConfig.title')"
+      :subtitle="$t('aiConfig.subtitle') || '管理 AI 服务配置'"
+    >
         <template #actions>
           <el-button type="primary" @click="showCreateDialog">
             <el-icon><Plus /></el-icon>
@@ -167,20 +164,18 @@
           </el-button>
         </template>
       </el-dialog>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from "vue";
-import { useRouter } from "vue-router";
 import {
   ElMessage,
   ElMessageBox,
   type FormInstance,
   type FormRules,
 } from "element-plus";
-import { Plus, ArrowLeft } from "@element-plus/icons-vue";
+import { Plus } from "@element-plus/icons-vue";
 import { aiAPI } from "@/api/ai";
 import { PageHeader } from "@/components/common";
 import type {
@@ -190,8 +185,6 @@ import type {
   UpdateAIConfigRequest,
 } from "@/types/ai";
 import ConfigList from "./components/ConfigList.vue";
-
-const router = useRouter();
 
 const activeTab = ref<AIServiceType>("text");
 const loading = ref(false);
@@ -324,7 +317,8 @@ const availableModels = computed(() => {
   // 提取所有模型，去重
   const models = new Set<string>();
   activeConfigsForProvider.forEach((config) => {
-    config.model.forEach((m) => models.add(m));
+    const modelList = Array.isArray(config.model) ? config.model : [config.model];
+    modelList.forEach((m: string) => models.add(m));
   });
 
   return Array.from(models);
@@ -587,7 +581,7 @@ const handleProviderChange = () => {
 
   // 仅在新建配置时自动更新名称
   if (!isEdit.value) {
-    form.name = generateConfigName(form.provider, form.service_type);
+    form.name = generateConfigName(form.provider || '', form.service_type);
   }
 };
 
@@ -621,43 +615,12 @@ const resetForm = () => {
   formRef.value?.resetFields();
 };
 
-const goBack = () => {
-  router.back();
-};
-
 onMounted(() => {
   loadConfigs();
 });
 </script>
 
 <style scoped>
-/* ========================================
-   Page Layout / 页面布局 - 紧凑边距
-   ======================================== */
-.page-container {
-  min-height: 100vh;
-  background: var(--bg-primary);
-  padding: var(--space-2) var(--space-3);
-  transition: background var(--transition-normal);
-}
-
-@media (min-width: 768px) {
-  .page-container {
-    padding: var(--space-3) var(--space-4);
-  }
-}
-
-@media (min-width: 1024px) {
-  .page-container {
-    padding: var(--space-4) var(--space-5);
-  }
-}
-
-.content-wrapper {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
 /* ========================================
    Tabs / 标签页 - 紧凑内边距
    ======================================== */
@@ -710,71 +673,5 @@ onMounted(() => {
 :deep(.el-dialog__footer) {
   padding: 1rem 1.5rem;
   border-top: 1px solid var(--border-primary);
-}
-
-/* ========================================
-   Dark Mode / 深色模式
-   ======================================== */
-.dark .tabs-wrapper {
-  background: var(--bg-card);
-}
-
-.dark :deep(.el-dialog) {
-  background: var(--bg-card);
-}
-
-.dark :deep(.el-dialog__header) {
-  background: var(--bg-card);
-}
-
-.dark :deep(.el-dialog__body) {
-  background: var(--bg-card);
-}
-
-.dark :deep(.el-form-item__label) {
-  color: var(--text-primary);
-}
-
-.dark :deep(.el-input__wrapper) {
-  background: var(--bg-secondary);
-  box-shadow: 0 0 0 1px var(--border-primary) inset;
-}
-
-.dark :deep(.el-input__inner) {
-  color: var(--text-primary);
-}
-
-.dark :deep(.el-input__inner::placeholder) {
-  color: var(--text-muted);
-}
-
-.dark :deep(.el-select .el-input__wrapper) {
-  background: var(--bg-secondary);
-}
-
-.dark :deep(.el-textarea__inner) {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  box-shadow: 0 0 0 1px var(--border-primary) inset;
-}
-
-.dark :deep(.el-input-number) {
-  background: var(--bg-secondary);
-}
-
-.dark :deep(.el-switch__core) {
-  background: var(--bg-secondary);
-  border-color: var(--border-primary);
-}
-
-.dark :deep(.el-button--default) {
-  background: var(--bg-secondary);
-  border-color: var(--border-primary);
-  color: var(--text-primary);
-}
-
-.dark :deep(.el-button--default:hover) {
-  background: var(--bg-card-hover);
-  border-color: var(--border-secondary);
 }
 </style>

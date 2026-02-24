@@ -261,8 +261,6 @@ const truncateText = (text: string, length: number) => {
 }
 
 const handleGenerate = async () => {
-  console.log('handleGenerate called')
-  
   if (!formRef.value) {
     console.error('formRef is null')
     ElMessage.error('表单初始化失败，请刷新页面重试')
@@ -271,19 +269,15 @@ const handleGenerate = async () => {
 
   try {
     const valid = await formRef.value.validate()
-    console.log('Form validation result:', valid)
-    
+
     if (!valid) {
-      console.log('Form validation failed')
       return
     }
 
     generating.value = true
-    console.log('Starting video generation...', form)
-    
+
     try {
       if (form.image_gen_id) {
-        console.log('Generating from image:', form.image_gen_id)
         await videoAPI.generateFromImage(form.image_gen_id)
       } else {
         const params: GenerateVideoRequest = {
@@ -308,7 +302,6 @@ const handleGenerate = async () => {
         if (form.style) params.style = form.style
         if (form.seed && form.seed > 0) params.seed = form.seed
 
-        console.log('Generating video with params:', params)
         await videoAPI.generateVideo(params)
       }
       

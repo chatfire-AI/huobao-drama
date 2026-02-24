@@ -1,26 +1,25 @@
 <template>
-  <div class="storyboard-edit-container">
-    <el-page-header @back="goBack" :title="$t('common.back')">
-      <template #content>
-        <h2>{{ $t('storyboard.edit') }}</h2>
-      </template>
-    </el-page-header>
-    <p>{{ $t('storyboard.inDevelopment') }}</p>
+  <div class="stub-page">
+    <AppHeader :title="$t('common.back')" show-back />
+    <div class="stub-page__content">
+      <el-empty :description="'This page is under development'">
+        <el-button type="primary" @click="$router.back()">
+          {{ $t('common.back') }}
+        </el-button>
+      </el-empty>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
-
-const goBack = () => {
-  router.back()
-}
+import AppHeader from '@/components/common/AppHeader.vue'
 </script>
 
 <style scoped>
-.storyboard-edit-container {
-  padding: 20px;
+.stub-page__content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 60px);
 }
 </style>

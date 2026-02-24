@@ -36,4 +36,5 @@ export interface ParsedEpisode {
   chapter_end?: number
   start_marker?: string
   end_marker?: string
+  scenes?: any[]
 }

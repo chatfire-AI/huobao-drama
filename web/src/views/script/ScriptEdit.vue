@@ -1,26 +1,25 @@
 <template>
-  <div class="script-edit-container">
-    <el-page-header @back="goBack" title="返回">
-      <template #content>
-        <h2>剧本编辑</h2>
-      </template>
-    </el-page-header>
-    <p>功能开发中...</p>
+  <div class="stub-page">
+    <AppHeader :title="$t('common.back')" show-back />
+    <div class="stub-page__content">
+      <el-empty :description="'This page is under development'">
+        <el-button type="primary" @click="$router.back()">
+          {{ $t('common.back') }}
+        </el-button>
+      </el-empty>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
-
-const goBack = () => {
-  router.back()
-}
+import AppHeader from '@/components/common/AppHeader.vue'
 </script>
 
 <style scoped>
-.script-edit-container {
-  padding: 20px;
+.stub-page__content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 60px);
 }
 </style>

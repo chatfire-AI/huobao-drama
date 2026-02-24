@@ -445,6 +445,8 @@ interface Storyboard {
   dialogue?: string
   duration?: number
   background_url?: string
+  background_id?: string | number
+  composed_url?: string
   video_url?: string
   scene_id?: string | number
   title?: string
@@ -568,8 +570,6 @@ const autoSelectCharacters = () => {
 
 // 测试函数：不使用防抖，立即触发
 const handleShotUpdateImmediate = async () => {
-  console.log('=== handleShotUpdate 被触发 ===')
-  
   if (!currentShot.value) {
     console.warn('handleShotUpdate: currentShot.value is null')
     return
@@ -598,13 +598,8 @@ const handleShotUpdateImmediate = async () => {
     if (currentShot.value.bgm_prompt !== undefined) updateData.bgm_prompt = currentShot.value.bgm_prompt
     if (currentShot.value.sound_effect !== undefined) updateData.sound_effect = currentShot.value.sound_effect
     
-    console.log('调用更新接口:', {
-      storyboard_id: currentShot.value.id,
-      updateData
-    })
-    
     await dramaAPI.updateStoryboard(currentShot.value.id.toString(), updateData)
-    
+
     emit('update:storyboard', currentShot.value)
     ElMessage.success('分镜更新成功')
   } catch (error: any) {
@@ -642,11 +637,6 @@ const handleShotUpdate = debounce(async () => {
     if (currentShot.value.bgm_prompt !== undefined) updateData.bgm_prompt = currentShot.value.bgm_prompt
     if (currentShot.value.sound_effect !== undefined) updateData.sound_effect = currentShot.value.sound_effect
     
-    console.log('调用更新接口:', {
-      storyboard_id: currentShot.value.id,
-      updateData
-    })
-    
     await dramaAPI.updateStoryboard(currentShot.value.id.toString(), updateData)
     
     emit('update:storyboard', currentShot.value)
@@ -659,7 +649,6 @@ const handleShotUpdate = debounce(async () => {
 
 // 使用立即触发版本进行测试
 const testUpdate = () => {
-  console.log('testUpdate 被调用')
   handleShotUpdateImmediate()
 }
 
@@ -757,8 +746,9 @@ const handleGenerateVideo = async () => {
     ElMessage.info('正在生成视频...')
     
     await videoAPI.generateVideo({
-      scene_id: parseInt(currentShot.value.id),
-      prompt: currentShot.value.action
+      scene_id: String(currentShot.value.id),
+      drama_id: props.dramaId || '',
+      prompt: currentShot.value.action ?? ''
     })
     
     ElMessage.success('视频生成任务已创建，请稍后查看')
@@ -788,7 +778,7 @@ const handleComposeScene = async () => {
     return
   }
   
-  if (selectedCharacters.length === 0) {
+  if (selectedCharacters.value.length === 0) {
     ElMessage.warning('请先选择场景角色')
     return
   }
@@ -852,7 +842,7 @@ const loadBackgrounds = async () => {
   
   try {
     const result = await dramaAPI.getBackgrounds(props.episodeId)
-    backgroundsCache.value = result.data || result || []
+    backgroundsCache.value = (result || []) as unknown as Background[]
     // 加载完背景数据后，重新加载当前背景描述
     loadBackgroundPrompt()
   } catch (error) {
@@ -869,7 +859,7 @@ onMounted(async () => {
   if (props.dramaId) {
     try {
       const result = await dramaAPI.getCharacters(props.dramaId)
-      availableCharacters.value = result.data || result || []
+      availableCharacters.value = result || []
       // 加载完角色后，自动选择当前镜头相关的角色
       autoSelectCharacters()
     } catch (error) {

@@ -10,48 +10,48 @@ export default {
       colors: {
         // Primary brand colors / 主品牌色
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
         },
-        // Neutral colors for backgrounds / 中性色背景
+        // Neutral colors for backgrounds / 中性色背景 (references CSS variables from main.css)
         surface: {
-          light: '#ffffff',
-          DEFAULT: '#f8fafc',
-          dark: '#0f172a',
+          light: 'var(--bg-secondary)',
+          DEFAULT: 'var(--bg-primary)',
+          dark: 'var(--bg-primary)',
         },
         // Card backgrounds / 卡片背景
         card: {
-          light: '#ffffff',
-          dark: '#1e293b',
+          light: 'var(--bg-card)',
+          dark: 'var(--bg-card)',
         },
         // Border colors / 边框色
         border: {
-          light: '#e2e8f0',
-          dark: '#334155',
+          light: 'var(--border-primary)',
+          dark: 'var(--border-secondary)',
         },
         // Text colors / 文字色
         content: {
-          primary: '#0f172a',
-          secondary: '#64748b',
-          muted: '#94a3b8',
-          'primary-dark': '#f1f5f9',
-          'secondary-dark': '#94a3b8',
-          'muted-dark': '#64748b',
+          primary: 'var(--text-primary)',
+          secondary: 'var(--text-secondary)',
+          muted: 'var(--text-muted)',
+          'primary-dark': 'var(--text-primary)',
+          'secondary-dark': 'var(--text-secondary)',
+          'muted-dark': 'var(--text-muted)',
         },
       },
       boxShadow: {
-        'card': '0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05)',
-        'card-hover': '0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05)',
-        'card-dark': '0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3)',
-        'card-hover-dark': '0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3)',
+        'card': 'var(--shadow-card)',
+        'card-hover': 'var(--shadow-card-hover)',
+        'card-dark': 'var(--shadow-card)',
+        'card-hover-dark': 'var(--shadow-card-hover)',
       },
       borderRadius: {
         'xl': '0.875rem',

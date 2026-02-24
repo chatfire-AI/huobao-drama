@@ -177,7 +177,7 @@ const generateImage = async (character: Character) => {
   generatingIds.value.push(character.id);
   try {
     const result = await characterLibraryAPI.generateCharacterImage(
-      character.id as string,
+      character.id.toString(),
     );
 
     // 更新角色图片

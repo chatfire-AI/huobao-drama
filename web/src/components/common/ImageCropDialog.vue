@@ -194,10 +194,7 @@ watch(
   () => props.modelValue,
   (val) => {
     if (val) {
-      nextTick(() => {
-        console.log('Dialog opened, canvas ref:', cropperCanvasRef.value)
-        console.log('Image ref:', cropperImageRef.value)
-      })
+      // dialog opened
     }
   },
 )
@@ -224,7 +221,7 @@ const cropImage = async () => {
     }
 
     // 转换为 Blob
-    canvas.toBlob((blob) => {
+    canvas.toBlob((blob: Blob | null) => {
       if (!blob) return
 
       const url = URL.createObjectURL(blob)
@@ -233,7 +230,6 @@ const cropImage = async () => {
         blob,
         frameType: undefined,
       })
-      console.log('Image cropped successfully')
     })
   } catch (error) {
     console.error('Error cropping image:', error)
@@ -244,7 +240,6 @@ const resetCrop = () => {
   if (cropperImageRef.value && cropperImageRef.value.$resetTransform) {
     cropperImageRef.value.$resetTransform()
     zoomLevel.value = 100
-    console.log('Crop reset')
   }
 }
 

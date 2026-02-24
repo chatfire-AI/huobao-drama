@@ -85,9 +85,9 @@ const iconSize = computed(() => {
   width: 5rem;
   height: 5rem;
   margin-bottom: var(--space-4);
-  background: linear-gradient(135deg, var(--accent) 0%, #06b6d4 100%);
+  background: var(--bg-card-hover);
   border-radius: 50%;
-  color: white;
+  color: var(--text-muted);
 }
 
 .empty-icon.has-animation {
@@ -96,10 +96,10 @@ const iconSize = computed(() => {
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.1);
   }
   50% {
-    box-shadow: 0 0 40px rgba(14, 165, 233, 0.5);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
   }
 }
 

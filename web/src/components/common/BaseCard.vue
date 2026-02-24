@@ -79,7 +79,7 @@ defineEmits<{
   display: flex;
   flex-direction: column;
   background: var(--bg-card);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   transition: all var(--transition-normal);
   overflow: hidden;
 }
@@ -136,7 +136,6 @@ defineEmits<{
   align-items: center;
   justify-content: space-between;
   padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--border-primary);
 }
 
 .header-content {
@@ -203,8 +202,4 @@ defineEmits<{
   background: var(--bg-secondary);
 }
 
-/* Dark mode adjustments / 深色模式调整 */
-.dark .card-footer {
-  background: var(--bg-secondary);
-}
 </style>

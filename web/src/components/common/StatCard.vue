@@ -15,18 +15,11 @@
       </div>
       <span v-if="description" class="stat-description">{{ description }}</span>
     </div>
-    <div v-if="trend !== undefined" :class="['stat-trend', trendDirection]">
-      <el-icon :size="14">
-        <component :is="trendIcon" />
-      </el-icon>
-      <span>{{ Math.abs(trend) }}%</span>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, type Component } from 'vue'
-import { TrendCharts, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
 
 /**
  * StatCard - Display statistics with trend indicator
@@ -41,7 +34,6 @@ const props = withDefaults(defineProps<{
   valueColor?: string
   suffix?: string
   description?: string
-  trend?: number
   variant?: 'default' | 'compact'
 }>(), {
   iconColor: 'var(--accent)',
@@ -62,17 +54,6 @@ const formattedValue = computed(() => {
   return props.value.toString()
 })
 
-// Trend direction / 趋势方向
-const trendDirection = computed(() => {
-  if (props.trend === undefined) return ''
-  return props.trend >= 0 ? 'up' : 'down'
-})
-
-// Trend icon / 趋势图标
-const trendIcon = computed(() => {
-  if (props.trend === undefined) return TrendCharts
-  return props.trend >= 0 ? ArrowUp : ArrowDown
-})
 </script>
 
 <style scoped>
@@ -157,24 +138,4 @@ const trendIcon = computed(() => {
   margin-top: var(--space-1);
 }
 
-/* Trend / 趋势 */
-.stat-trend {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--radius-md);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.stat-trend.up {
-  background: var(--success-light);
-  color: var(--success);
-}
-
-.stat-trend.down {
-  background: var(--error-light);
-  color: var(--error);
-}
 </style>

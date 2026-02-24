@@ -1,56 +1,52 @@
 <template>
   <!-- Drama Create Page / 创建短剧页面 -->
-  <div class="page-container">
-    <div class="content-wrapper animate-fade-in">
-      <!-- Header / 头部 -->
-      <AppHeader :fixed="false" :show-logo="false">
-        <template #left>
-          <el-button text @click="goBack" class="back-btn">
-            <el-icon><ArrowLeft /></el-icon>
-            <span>返回</span>
-          </el-button>
-          <div class="page-title">
-            <h1>创建新项目</h1>
-            <span class="subtitle">填写基本信息来创建你的短剧项目</span>
-          </div>
-        </template>
-      </AppHeader>
+  <div class="drama-create animate-fade-in">
+    <PageHeader
+      :title="$t('drama.createNew')"
+      :subtitle="$t('drama.createDesc')"
+    >
+      <template #actions>
+        <el-button @click="goBack">
+          <el-icon><ArrowLeft /></el-icon>
+          {{ $t('common.back') }}
+        </el-button>
+      </template>
+    </PageHeader>
 
-      <!-- Form Card / 表单卡片 -->
-      <div class="form-card">
+    <!-- Form Card / 表单卡片 -->
+    <div class="form-card">
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-position="top"
+        class="create-form"
+        @submit.prevent="handleSubmit"
+      >
+        <el-form-item :label="$t('drama.projectName')" prop="title" required>
+          <el-input
+            v-model="form.title"
+            :placeholder="$t('drama.projectNamePlaceholder')"
+            size="large"
+            maxlength="100"
+            show-word-limit
+          />
+        </el-form-item>
 
-        <el-form 
-          ref="formRef" 
-          :model="form" 
-          :rules="rules" 
-          label-position="top"
-          class="create-form"
-          @submit.prevent="handleSubmit"
-        >
-          <el-form-item label="项目标题" prop="title" required>
-            <el-input 
-              v-model="form.title" 
-              placeholder="给你的短剧起个名字"
-              size="large"
-              maxlength="100"
-              show-word-limit
-            />
-          </el-form-item>
+        <el-form-item :label="$t('drama.projectDesc')" prop="description">
+          <el-input
+            v-model="form.description"
+            type="textarea"
+            :rows="5"
+            :placeholder="$t('drama.projectDescPlaceholder')"
+            maxlength="500"
+            show-word-limit
+            resize="none"
+          />
+        </el-form-item>
 
-          <el-form-item label="项目描述" prop="description">
-            <el-input 
-              v-model="form.description" 
-              type="textarea" 
-              :rows="5"
-              placeholder="简要描述你的短剧内容、风格或创意（可选）"
-              maxlength="500"
-              show-word-limit
-              resize="none"
-            />
-          </el-form-item>
-
-          <div class="form-actions">
-            <el-button size="large" @click="goBack">取消</el-button>
+        <div class="form-actions">
+          <el-button size="large" @click="goBack">{{ $t('common.cancel') }}</el-button>
             <el-button 
               type="primary" 
               size="large"
@@ -58,24 +54,25 @@
               @click="handleSubmit"
             >
               <el-icon v-if="!loading"><Plus /></el-icon>
-              创建项目
+              {{ $t('drama.create') }}
             </el-button>
           </div>
         </el-form>
       </div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { ArrowLeft, Plus } from '@element-plus/icons-vue'
 import { dramaAPI } from '@/api/drama'
 import type { CreateDramaRequest } from '@/types/drama'
-import { AppHeader } from '@/components/common'
+import { PageHeader } from '@/components/common'
 
+const { t } = useI18n()
 const router = useRouter()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
@@ -87,8 +84,8 @@ const form = reactive<CreateDramaRequest>({
 
 const rules: FormRules = {
   title: [
-    { required: true, message: '请输入项目标题', trigger: 'blur' },
-    { min: 1, max: 100, message: '标题长度在 1 到 100 个字符', trigger: 'blur' }
+    { required: true, message: () => t('drama.validation.titleRequired'), trigger: 'blur' },
+    { min: 1, max: 100, message: () => t('drama.validation.titleLength'), trigger: 'blur' }
   ]
 }
 
@@ -101,10 +98,10 @@ const handleSubmit = async () => {
       loading.value = true
       try {
         const drama = await dramaAPI.create(form)
-        ElMessage.success('创建成功')
+        ElMessage.success(t('common.success'))
         router.push(`/dramas/${drama.id}`)
       } catch (error: any) {
-        ElMessage.error(error.message || '创建失败')
+        ElMessage.error(error.message || t('common.failed'))
       } finally {
         loading.value = false
       }
@@ -120,22 +117,9 @@ const goBack = () => {
 
 <style scoped>
 /* ========================================
-   Page Layout / 页面布局 - 紧凑边距
+   Page Layout / 页面布局
    ======================================== */
-.page-container {
-  min-height: 100vh;
-  background-color: var(--bg-primary);
-  padding: var(--space-2) var(--space-3);
-  transition: background-color var(--transition-normal);
-}
-
-@media (min-width: 768px) {
-  .page-container {
-    padding: var(--space-3) var(--space-4);
-  }
-}
-
-.content-wrapper {
+.drama-create {
   max-width: 640px;
   margin: 0 auto;
 }

@@ -229,10 +229,10 @@ const onDramaChange = (dramaId: string) => {
   }
 }
 
-const onSceneChange = (sceneId: number | undefined) => {
+const onSceneChange = (sceneId: number | string | undefined) => {
   if (!sceneId) return
-  
-  const scene = scenes.value.find(s => s.id === sceneId)
+
+  const scene = scenes.value.find(s => String(s.id) === String(sceneId))
   if (scene && scene.prompt) {
     form.prompt = scene.prompt
   }

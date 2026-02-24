@@ -9,10 +9,11 @@
     </div>
     
     <div class="editor-content">
-      <VideoTimelineEditor 
+      <VideoTimelineEditor
         v-if="scenes.length > 0"
-        :scenes="scenes" 
-        :episode-id="episodeId" 
+        :scenes="scenes"
+        :episode-id="episodeId"
+        :drama-id="dramaId"
       />
       <el-empty v-else :description="$t('timeline.noScenes')" />
     </div>
@@ -22,6 +23,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { dramaAPI } from '@/api/drama'
@@ -29,14 +31,16 @@ import VideoTimelineEditor from '@/components/editor/VideoTimelineEditor.vue'
 
 const route = useRoute()
 const router = useRouter()
+const { t: $t } = useI18n()
 
 const episodeId = route.params.id as string
+const dramaId = (route.params.dramaId as string) || ''
 const scenes = ref<any[]>([])
 
 const loadScenes = async () => {
   try {
     const res = await dramaAPI.getStoryboards(episodeId)
-    scenes.value = res.storyboards || []
+    scenes.value = (res as any).storyboards || []
   } catch (error: any) {
     ElMessage.error($t('timeline.loadFailed'))
   }
