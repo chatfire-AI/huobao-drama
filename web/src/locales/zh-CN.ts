@@ -118,7 +118,7 @@ export default {
       modelTip: '可直接输入模型名称或从列表选择，支持多个模型',
       baseUrl: 'Base URL',
       baseUrlPlaceholder: 'https://api.openai.com',
-      baseUrlTip: 'API 服务的基础地址，如 Chatfire: https://api.chatfire.site/v1，Gemini: https://generativelanguage.googleapis.com（无需 /v1）',
+      baseUrlTip: 'API 服务的基础地址，如 QianHai: https://api.qianhai.online/v1，Gemini: https://generativelanguage.googleapis.com（无需 /v1）',
       fullEndpoint: '完整调用路径',
       apiKey: 'API Key',
       apiKeyPlaceholder: 'sk-...',

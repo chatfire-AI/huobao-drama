@@ -100,7 +100,7 @@ export default {
       modelTip: 'Enter model name directly or select from list, supports multiple models',
       baseUrl: 'Base URL',
       baseUrlPlaceholder: 'https://api.openai.com',
-      baseUrlTip: 'API service base address, e.g., Chatfire: https://api.chatfire.site/v1, Gemini: https://generativelanguage.googleapis.com (no /v1 needed)',
+      baseUrlTip: 'API service base address, e.g., QianHai: https://api.qianhai.online/v1, Gemini: https://generativelanguage.googleapis.com (no /v1 needed)',
       fullEndpoint: 'Full endpoint path',
       apiKey: 'API Key',
       apiKeyPlaceholder: 'sk-...',

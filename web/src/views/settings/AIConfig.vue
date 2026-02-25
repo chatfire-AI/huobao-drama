@@ -232,8 +232,8 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       models: ["gpt-5.2", "gemini-3-flash-preview"],
     },
     {
-      id: "chatfire",
-      name: "Chatfire",
+      id: "qianhai",
+      name: "QianHai",
       models: [
         "gemini-3-flash-preview",
         "claude-sonnet-4-5-20250929",
@@ -253,8 +253,8 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       models: ["doubao-seedream-4-5-251128", "doubao-seedream-4-0-250828"],
     },
     {
-      id: "chatfire",
-      name: "Chatfire",
+      id: "qianhai",
+      name: "QianHai",
       models: ["doubao-seedream-4-5-251128", "nano-banana-pro"],
     },
     {
@@ -277,8 +277,8 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       ],
     },
     {
-      id: "chatfire",
-      name: "Chatfire",
+      id: "qianhai",
+      name: "QianHai",
       models: [
         "doubao-seedance-1-5-pro-251215",
         "doubao-seedance-1-0-lite-i2v-250428",
@@ -412,7 +412,7 @@ const generateConfigName = (
   serviceType: AIServiceType,
 ): string => {
   const providerNames: Record<string, string> = {
-    chatfire: "ChatFire",
+    qianhai: "QianHai",
     openai: "OpenAI",
     gemini: "Gemini",
     google: "Google",
@@ -438,12 +438,12 @@ const showCreateDialog = () => {
   editingId.value = undefined;
   resetForm();
   form.service_type = activeTab.value;
-  // 默认选择 chatfire
-  form.provider = "chatfire";
+  // 默认选择 qianhai
+  form.provider = "qianhai";
   // 设置默认 base_url
-  form.base_url = "https://api.chatfire.site/v1";
+  form.base_url = "https://api.qianhai.online/v1";
   // 自动生成随机配置名称
-  form.name = generateConfigName("chatfire", activeTab.value);
+  form.name = generateConfigName("qianhai", activeTab.value);
   dialogVisible.value = true;
 };
 
@@ -453,7 +453,7 @@ const handleEdit = (config: AIServiceConfig) => {
 
   Object.assign(form, {
     service_type: config.service_type,
-    provider: config.provider || "chatfire", // 直接使用配置中的 provider，默认为 chatfire
+    provider: config.provider || "qianhai", // 直接使用配置中的 provider，默认为 qianhai
     name: config.name,
     base_url: config.base_url,
     api_key: config.api_key,
@@ -579,10 +579,10 @@ const handleProviderChange = () => {
 
   // 根据厂商自动设置默认 base_url
   if (form.provider === "gemini" || form.provider === "google") {
-    form.base_url = "https://api.chatfire.site";
+    form.base_url = "https://api.qianhai.online";
   } else {
-    // openai, chatfire 等其他厂商
-    form.base_url = "https://api.chatfire.site/v1";
+    // openai, qianhai 等其他厂商
+    form.base_url = "https://api.qianhai.online/v1";
   }
 
   // 仅在新建配置时自动更新名称

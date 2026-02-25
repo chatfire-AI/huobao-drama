@@ -14,7 +14,7 @@
         <div class="header-actions">
           <el-button type="success" size="small" @click="showQuickSetupDialog">
             <el-icon><MagicStick /></el-icon>
-            <span>一键配置火宝</span>
+            <span>一键配置千海</span>
           </el-button>
           <el-button type="primary" size="small" @click="showCreateDialog">
             <el-icon><Plus /></el-icon>
@@ -83,10 +83,12 @@
             <strong>图片服务</strong>: {{ providerConfigs.image[1].models[0] }}
           </li>
           <li>
-            <strong>视频服务</strong>: {{ providerConfigs.video[1].models[0] }}
+            <strong>视频服务</strong>: {{ "sora-2" }}
           </li>
+
         </ul>
-        <p class="quick-setup-tip">Base URL: https://api.chatfire.site/v1</p>
+        <p class="quick-setup-tip">访问https://api.qianhai.online获取apikey</p>
+        <p class="quick-setup-tip">注意：sora-2模型的apikey需要手动调整为sora-vip分组</p>
       </div>
       <el-form label-width="80px">
         <el-form-item label="API Key" required>
@@ -94,14 +96,14 @@
             v-model="quickSetupApiKey"
             type="password"
             show-password
-            placeholder="请输入 ChatFire API Key"
+            placeholder="请输入 QianHai API Key"
           />
         </el-form-item>
       </el-form>
       <template #footer>
         <div class="quick-setup-footer">
           <a
-            href="https://api.chatfire.site/login?inviteCode=C4453345"
+            href="https://api.qianhai.online/login?inviteCode=C4453345"
             target="_blank"
             class="register-link"
           >
@@ -218,7 +220,7 @@
       <template #footer>
         <div class="quick-setup-footer">
           <a
-            href="https://api.chatfire.site/login?inviteCode=C4453345"
+            href="https://api.qianhai.online/login?inviteCode=C4453345"
             target="_blank"
             class="register-link"
           >
@@ -322,8 +324,8 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       models: ["gpt-5.2", "gemini-3-flash-preview"],
     },
     {
-      id: "chatfire",
-      name: "Chatfire",
+      id: "qianhai",
+      name: "QianHai",
       models: [
         "gemini-3-flash-preview",
         "claude-sonnet-4-5-20250929",
@@ -343,8 +345,8 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       models: ["doubao-seedream-4-5-251128", "doubao-seedream-4-0-250828"],
     },
     {
-      id: "chatfire",
-      name: "Chatfire",
+      id: "qianhai",
+      name: "QianHai",
       models: ["nano-banana-pro", "doubao-seedream-4-5-251128"],
     },
     {
@@ -367,8 +369,8 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       ],
     },
     {
-      id: "chatfire",
-      name: "Chatfire",
+      id: "qianhai",
+      name: "QianHai",
       models: [
         "doubao-seedance-1-5-pro-251215",
         "doubao-seedance-1-0-lite-i2v-250428",
@@ -492,7 +494,7 @@ const generateConfigName = (
   serviceType: AIServiceType,
 ): string => {
   const providerNames: Record<string, string> = {
-    chatfire: "ChatFire",
+    qianhai: "QianHai",
     openai: "OpenAI",
     gemini: "Gemini",
     google: "Google",
@@ -518,9 +520,9 @@ const showCreateDialog = () => {
   editingId.value = undefined;
   resetForm();
   form.service_type = activeTab.value;
-  form.provider = "chatfire";
-  form.base_url = "https://api.chatfire.site/v1";
-  form.name = generateConfigName("chatfire", activeTab.value);
+  form.provider = "qianhai";
+  form.base_url = "https://api.qianhai.online/v1";
+  form.name = generateConfigName("qianhai", activeTab.value);
   // 图片模型配置默认 nano
   if (activeTab.value === "image") {
     form.model = ["nano-banana-pro"];
@@ -534,7 +536,7 @@ const handleEdit = (config: AIServiceConfig) => {
 
   Object.assign(form, {
     service_type: config.service_type,
-    provider: config.provider || "chatfire",
+    provider: config.provider || "qianhai",
     name: config.name,
     base_url: config.base_url,
     api_key: config.api_key,
@@ -667,8 +669,8 @@ const handleProviderChange = () => {
   } else if (form.provider === "openai") {
     form.base_url = "https://api.openai.com/v1";
   } else {
-    // chatfire 和其他厂商
-    form.base_url = "https://api.chatfire.site/v1";
+    // qianhai 和其他厂商
+    form.base_url = "https://api.qianhai.online/v1";
   }
 
   if (!isEdit.value) {
@@ -703,7 +705,7 @@ const handleQuickSetup = async () => {
   }
 
   quickSetupLoading.value = true;
-  const baseUrl = "https://api.chatfire.site/v1";
+  const baseUrl = "https://api.qianhai.online/v1";
   const apiKey = quickSetupApiKey.value.trim();
 
   try {
@@ -721,12 +723,12 @@ const handleQuickSetup = async () => {
     const existingTextConfig = textConfigs.find((c) => c.base_url === baseUrl);
     if (!existingTextConfig) {
       const textProvider = providerConfigs.text.find(
-        (p) => p.id === "chatfire",
+        (p) => p.id === "qianhai",
       )!;
       await aiAPI.create({
         service_type: "text",
-        provider: "chatfire",
-        name: generateConfigName("chatfire", "text"),
+        provider: "qianhai",
+        name: generateConfigName("qianhai", "text"),
         base_url: baseUrl,
         api_key: apiKey,
         model: [textProvider.models[0]],
@@ -738,20 +740,18 @@ const handleQuickSetup = async () => {
     }
 
     // 创建图片配置（如果不存在）
+    const geminiBaseUrl = "https://api.qianhai.online";
     const existingImageConfig = imageConfigs.find(
-      (c) => c.base_url === baseUrl,
+      (c) => c.base_url === geminiBaseUrl,
     );
     if (!existingImageConfig) {
-      const imageProvider = providerConfigs.image.find(
-        (p) => p.id === "chatfire",
-      )!;
       await aiAPI.create({
         service_type: "image",
-        provider: "chatfire",
-        name: generateConfigName("chatfire", "image"),
-        base_url: baseUrl,
+        provider: "gemini",
+        name: generateConfigName("gemini", "image"),
+        base_url: geminiBaseUrl,
         api_key: apiKey,
-        model: [imageProvider.models[0]],
+        model: ["gemini-3-pro-image-preview"],
         priority: 0,
       });
       createdServices.push("图片");
@@ -760,20 +760,18 @@ const handleQuickSetup = async () => {
     }
 
     // 创建视频配置（如果不存在）
+    const openaiBaseUrl = "https://api.qianhai.online/v1";
     const existingVideoConfig = videoConfigs.find(
-      (c) => c.base_url === baseUrl,
+      (c) => c.base_url === openaiBaseUrl,
     );
     if (!existingVideoConfig) {
-      const videoProvider = providerConfigs.video.find(
-        (p) => p.id === "chatfire",
-      )!;
       await aiAPI.create({
         service_type: "video",
-        provider: "chatfire",
-        name: generateConfigName("chatfire", "video"),
-        base_url: baseUrl,
+        provider: "openai",
+        name: generateConfigName("openai", "video"),
+        base_url: openaiBaseUrl,
         api_key: apiKey,
-        model: [videoProvider.models[0]],
+        model: ["sora-2-all"],
         priority: 0,
       });
       createdServices.push("视频");
