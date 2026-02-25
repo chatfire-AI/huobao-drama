@@ -54,11 +54,11 @@ ollama serve
 
 ```bash
 # 进入容器测试
-docker exec -it huobao-drama sh
+docker exec -it QianHai-drama sh
 wget -O- http://host.docker.internal:11434/api/tags
 
 # 查看容器日志
-docker logs huobao-drama -f
+docker logs QianHai-drama -f
 ```
 
 ### 常见问题

@@ -1,7 +1,7 @@
 services:
-  huobao-drama:
-    # image: huobao-drama:latest
-    container_name: huobao-drama
+  QianHai-drama:
+    # image: QianHai-drama:latest
+    container_name: QianHai-drama
     build:
       context: .
       dockerfile: Dockerfile
@@ -18,7 +18,7 @@ services:
       - "5678:5678"
     volumes:
       # 持久化数据目录（使用命名卷，容器内以 root 运行）
-      - huobao-data:/app/data
+      - QianHai-data:/app/data
       # 挂载配置文件（可选，如需自定义配置请取消注释）
       # - ./configs/config.yaml:/app/configs/config.yaml:ro
       # 注意：如果使用本地目录挂载，需要确保目录权限正确
@@ -38,12 +38,12 @@ services:
       retries: 3
       start_period: 10s
     networks:
-      - huobao-network
+      - QianHai-network
 
 volumes:
-  huobao-data:
+  QianHai-data:
     driver: local
 
 networks:
-  huobao-network:
+  QianHai-network:
     driver: bridge

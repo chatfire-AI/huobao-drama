@@ -1,5 +1,5 @@
 app:
-  name: "Huobao Drama API"
+  name: "QianHai Drama API"
   version: "1.0.0"
   debug: true
   language: "zh" # 系统语言：zh(中文) 或 en(英文)
@@ -8,7 +8,7 @@ server:
   port: 5678
   host: "0.0.0.0"
   cors_origins:
-    - "http://localhost:3012"
+    - "http://localhost:6008"
   read_timeout: 600
   write_timeout: 600
 

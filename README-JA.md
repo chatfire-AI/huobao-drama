@@ -1,4 +1,4 @@
-# 🎬 Huobao Drama - AI ショートドラマ制作プラットフォーム
+# 🎬 QianHai Drama - AI ショートドラマ制作プラットフォーム
 
 <div align="center">
 
@@ -18,11 +18,11 @@
 
 ## 📖 概要
 
-Huobao Drama は、脚本生成、キャラクターデザイン、絵コンテ作成から動画合成までの全ワークフローを自動化する AI 駆動のショートドラマ制作プラットフォームです。
+QianHai Drama は、脚本生成、キャラクターデザイン、絵コンテ作成から動画合成までの全ワークフローを自動化する AI 駆動のショートドラマ制作プラットフォームです。
 
 火宝短剧商业版地址：[火宝短剧商业版](https://drama.chatfire.site/shortvideo)
 
-火宝小说生成：[火宝小说生成](https://marketing.chatfire.site/huobao-novel/)
+火宝小说生成：[火宝小说生成](https://marketing.chatfire.site/QianHai-novel/)
 
 ### 🎯 主要機能
 
@@ -141,7 +141,7 @@ vim configs/config.yaml
 
 ```yaml
 app:
-  name: "Huobao Drama API"
+  name: "QianHai Drama API"
   version: "1.0.0"
   debug: true # 開発環境ではtrue、本番環境ではfalseに設定
 
@@ -149,7 +149,7 @@ server:
   port: 5678
   host: "0.0.0.0"
   cors_origins:
-    - "http://localhost:3012"
+    - "http://localhost:6008"
   read_timeout: 600
   write_timeout: 600
 
@@ -184,8 +184,8 @@ ai:
 
 ```bash
 # プロジェクトをクローン
-git clone https://github.com/chatfire-AI/huobao-drama.git
-cd huobao-drama
+git clone https://github.com/chatfire-AI/QianHai-drama.git
+cd QianHai-drama
 
 # Go依存関係をインストール
 go mod download
@@ -211,7 +211,7 @@ cd web
 npm run dev
 ```
 
-- フロントエンド: `http://localhost:3012`
+- フロントエンド: `http://localhost:6008`
 - バックエンド API: `http://localhost:5678/api/v1`
 - フロントエンドは API リクエストを自動的にバックエンドにプロキシ
 
@@ -241,7 +241,7 @@ go run main.go
 
 ### ☁️ クラウドワンクリックデプロイ（推奨 3080Ti）
 
-👉 [优云智算，一键部署](https://www.compshare.cn/images/CaWEHpAA8t1H?referral_code=8hUJOaWz3YzG64FI2OlCiB&ytag=GPU_YY_YX_GitHub_huobaoai)
+👉 [优云智算，一键部署](https://www.compshare.cn/images/CaWEHpAA8t1H?referral_code=8hUJOaWz3YzG64FI2OlCiB&ytag=GPU_YY_YX_GitHub_QianHaiai)
 
 > ⚠️ **注意**：クラウドデプロイを使用する場合は、データを速やかにローカルストレージに保存してください
 
@@ -317,21 +317,21 @@ docker-compose down
 ```bash
 # Docker Hubから実行
 docker run -d \
-  --name huobao-drama \
+  --name QianHai-drama \
   -p 5678:5678 \
   -v $(pwd)/data:/app/data \
   --restart unless-stopped \
-  huobao/huobao-drama:latest
+  QianHai/QianHai-drama:latest
 
 # ログを表示
-docker logs -f huobao-drama
+docker logs -f QianHai-drama
 ```
 
 **ローカルビルド**（オプション）：
 
 ```bash
-docker build -t huobao-drama:latest .
-docker run -d --name huobao-drama -p 5678:5678 -v $(pwd)/data:/app/data huobao-drama:latest
+docker build -t QianHai-drama:latest .
+docker run -d --name QianHai-drama -p 5678:5678 -v $(pwd)/data:/app/data QianHai-drama:latest
 ```
 
 **Docker デプロイの利点：**
@@ -373,12 +373,12 @@ npm run build
 cd ..
 
 # 2. バックエンドをコンパイル
-go build -o huobao-drama .
+go build -o QianHai-drama .
 ```
 
 生成ファイル：
 
-- `huobao-drama` - バックエンド実行ファイル
+- `QianHai-drama` - バックエンド実行ファイル
 - `web/dist/` - フロントエンド静的ファイル（バックエンドに埋め込み）
 
 #### 2. デプロイファイルの準備
@@ -386,7 +386,7 @@ go build -o huobao-drama .
 サーバーにアップロードするファイル：
 
 ```
-huobao-drama            # バックエンド実行ファイル
+QianHai-drama            # バックエンド実行ファイル
 configs/config.yaml     # 設定ファイル
 data/                   # データディレクトリ（オプション、初回実行時に自動作成）
 ```
@@ -395,45 +395,45 @@ data/                   # データディレクトリ（オプション、初回
 
 ```bash
 # ファイルをサーバーにアップロード
-scp huobao-drama user@server:/opt/huobao-drama/
-scp configs/config.yaml user@server:/opt/huobao-drama/configs/
+scp QianHai-drama user@server:/opt/QianHai-drama/
+scp configs/config.yaml user@server:/opt/QianHai-drama/configs/
 
 # サーバーにSSH接続
 ssh user@server
 
 # 設定ファイルを編集
-cd /opt/huobao-drama
+cd /opt/QianHai-drama
 vim configs/config.yaml
 # modeをproductionに設定
 # ドメインとストレージパスを設定
 
 # データディレクトリを作成し権限を設定（重要！）
 # 注意: YOUR_USERを実際にサービスを実行するユーザー名に置き換え（例: www-data、ubuntu、deploy）
-sudo mkdir -p /opt/huobao-drama/data/storage
-sudo chown -R YOUR_USER:YOUR_USER /opt/huobao-drama/data
-sudo chmod -R 755 /opt/huobao-drama/data
+sudo mkdir -p /opt/QianHai-drama/data/storage
+sudo chown -R YOUR_USER:YOUR_USER /opt/QianHai-drama/data
+sudo chmod -R 755 /opt/QianHai-drama/data
 
 # 実行権限を付与
-chmod +x huobao-drama
+chmod +x QianHai-drama
 
 # サービスを起動
-./huobao-drama
+./QianHai-drama
 ```
 
 #### 4. systemd でサービス管理
 
-サービスファイル `/etc/systemd/system/huobao-drama.service` を作成：
+サービスファイル `/etc/systemd/system/QianHai-drama.service` を作成：
 
 ```ini
 [Unit]
-Description=Huobao Drama Service
+Description=QianHai Drama Service
 After=network.target
 
 [Service]
 Type=simple
 User=YOUR_USER
-WorkingDirectory=/opt/huobao-drama
-ExecStart=/opt/huobao-drama/huobao-drama
+WorkingDirectory=/opt/QianHai-drama
+ExecStart=/opt/QianHai-drama/QianHai-drama
 Restart=on-failure
 RestartSec=10
 
@@ -448,9 +448,9 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable huobao-drama
-sudo systemctl start huobao-drama
-sudo systemctl status huobao-drama
+sudo systemctl enable QianHai-drama
+sudo systemctl start QianHai-drama
+sudo systemctl status QianHai-drama
 ```
 
 **⚠️ よくある問題: SQLite 書き込み権限エラー**
@@ -459,19 +459,19 @@ sudo systemctl status huobao-drama
 
 ```bash
 # 1. サービスを実行中のユーザーを確認
-sudo systemctl status huobao-drama | grep "Main PID"
-ps aux | grep huobao-drama
+sudo systemctl status QianHai-drama | grep "Main PID"
+ps aux | grep QianHai-drama
 
 # 2. 権限を修正（YOUR_USERを実際のユーザー名に置き換え）
-sudo chown -R YOUR_USER:YOUR_USER /opt/huobao-drama/data
-sudo chmod -R 755 /opt/huobao-drama/data
+sudo chown -R YOUR_USER:YOUR_USER /opt/QianHai-drama/data
+sudo chmod -R 755 /opt/QianHai-drama/data
 
 # 3. 権限を確認
-ls -la /opt/huobao-drama/data
+ls -la /opt/QianHai-drama/data
 # サービスを実行するユーザーが所有者として表示されるはず
 
 # 4. サービスを再起動
-sudo systemctl restart huobao-drama
+sudo systemctl restart QianHai-drama
 ```
 
 **原因：**
@@ -502,7 +502,7 @@ server {
 
     # 静的ファイルへの直接アクセス
     location /static/ {
-        alias /opt/huobao-drama/data/storage/;
+        alias /opt/QianHai-drama/data/storage/;
     }
 }
 ```
@@ -641,7 +641,7 @@ Issue と Pull Request を歓迎します！
 - 🚀 **ステータス**: 起業中
 - 📧 **Email**: [18550175439@163.com](mailto:18550175439@163.com)
 - 💬 **WeChat**: dangbao1117 （個人 WeChat - 技術的な質問には対応しません）
-- 🐙 **GitHub**: [https://github.com/chatfire-AI/huobao-drama](https://github.com/chatfire-AI/huobao-drama)
+- 🐙 **GitHub**: [https://github.com/chatfire-AI/QianHai-drama](https://github.com/chatfire-AI/QianHai-drama)
 
 > _「AI に私たちのより創造的なことを手伝ってもらおう」_
 
@@ -660,8 +660,8 @@ Issue と Pull Request を歓迎します！
 
 ## Star 履歴
 
-[![Star History Chart](https://api.star-history.com/svg?repos=chatfire-AI/huobao-drama&type=date&legend=top-left)](https://www.star-history.com/#chatfire-AI/huobao-drama&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/svg?repos=chatfire-AI/QianHai-drama&type=date&legend=top-left)](https://www.star-history.com/#chatfire-AI/QianHai-drama&type=date&legend=top-left)
 
-Made with ❤️ by Huobao Team
+Made with ❤️ by QianHai Team
 
 </div>

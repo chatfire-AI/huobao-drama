@@ -1,4 +1,4 @@
-# 多阶段构建 Dockerfile for Huobao Drama
+# 多阶段构建 Dockerfile for QianHai Drama
 
 # ==================== 阶段1: 构建前端 ====================
 # 声明构建参数（支持镜像源配置）
@@ -73,7 +73,7 @@ COPY . .
 COPY --from=frontend-builder /app/web/dist ./web/dist
 
 # 构建后端可执行文件（纯 Go 编译，使用 modernc.org/sqlite）
-RUN CGO_ENABLED=0 go build -ldflags="-w -s" -o huobao-drama .
+RUN CGO_ENABLED=0 go build -ldflags="-w -s" -o QianHai-drama .
 
 # 构建迁移脚本可执行文件
 RUN CGO_ENABLED=0 go build -ldflags="-w -s" -o migrate cmd/migrate/main.go
@@ -108,7 +108,7 @@ ENV TZ=Asia/Shanghai
 WORKDIR /app
 
 # 从构建阶段复制可执行文件
-COPY --from=backend-builder /app/huobao-drama .
+COPY --from=backend-builder /app/QianHai-drama .
 COPY --from=backend-builder /app/migrate .
 
 # 复制前端构建产物
@@ -132,4 +132,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:5678/health || exit 1
 
 # 启动应用
-CMD ["./huobao-drama"]
+CMD ["./QianHai-drama"]

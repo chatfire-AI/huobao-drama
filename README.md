@@ -1,4 +1,4 @@
-# 🎬 Huobao Drama - AI Short Drama Production Platform
+# 🎬 QianHai Drama - AI Short Drama Production Platform
 
 <div align="center">
 
@@ -18,11 +18,11 @@
 
 ## 📖 About
 
-Huobao Drama is an AI-powered short drama production platform that automates the entire workflow from script generation, character design, storyboarding to video composition.
+QianHai Drama is an AI-powered short drama production platform that automates the entire workflow from script generation, character design, storyboarding to video composition.
 
 火宝短剧商业版地址：[火宝短剧商业版](https://drama.chatfire.site/shortvideo)
 
-火宝小说生成：[火宝小说生成](https://marketing.chatfire.site/huobao-novel/)
+火宝小说生成：[火宝小说生成](https://marketing.chatfire.site/QianHai-novel/)
 
 ### 🎯 Core Features
 
@@ -141,7 +141,7 @@ Configuration file format (`configs/config.yaml`):
 
 ```yaml
 app:
-  name: "Huobao Drama API"
+  name: "QianHai Drama API"
   version: "1.0.0"
   debug: true # Set to true for development, false for production
 
@@ -149,7 +149,7 @@ server:
   port: 5678
   host: "0.0.0.0"
   cors_origins:
-    - "http://localhost:3012"
+    - "http://localhost:6008"
   read_timeout: 600
   write_timeout: 600
 
@@ -184,8 +184,8 @@ ai:
 
 ```bash
 # Clone the project
-git clone https://github.com/chatfire-AI/huobao-drama.git
-cd huobao-drama
+git clone https://github.com/chatfire-AI/QianHai-drama.git
+cd QianHai-drama
 
 # Install Go dependencies
 go mod download
@@ -211,7 +211,7 @@ cd web
 npm run dev
 ```
 
-- Frontend: `http://localhost:3012`
+- Frontend: `http://localhost:6008`
 - Backend API: `http://localhost:5678/api/v1`
 - Frontend automatically proxies API requests to backend
 
@@ -241,7 +241,7 @@ Database tables are automatically created on first startup (using GORM AutoMigra
 
 ### ☁️ Cloud One-Click Deployment (Recommended 3080Ti)
 
-👉 [优云智算，一键部署](https://www.compshare.cn/images/CaWEHpAA8t1H?referral_code=8hUJOaWz3YzG64FI2OlCiB&ytag=GPU_YY_YX_GitHub_huobaoai)
+👉 [优云智算，一键部署](https://www.compshare.cn/images/CaWEHpAA8t1H?referral_code=8hUJOaWz3YzG64FI2OlCiB&ytag=GPU_YY_YX_GitHub_QianHaiai)
 
 > ⚠️ **Note**: Please save your data to local storage promptly when using cloud deployment
 
@@ -317,21 +317,21 @@ docker-compose down
 ```bash
 # Run from Docker Hub
 docker run -d \
-  --name huobao-drama \
+  --name QianHai-drama \
   -p 5678:5678 \
   -v $(pwd)/data:/app/data \
   --restart unless-stopped \
-  huobao/huobao-drama:latest
+  QianHai/QianHai-drama:latest
 
 # View logs
-docker logs -f huobao-drama
+docker logs -f QianHai-drama
 ```
 
 **Local Build** (optional):
 
 ```bash
-docker build -t huobao-drama:latest .
-docker run -d --name huobao-drama -p 5678:5678 -v $(pwd)/data:/app/data huobao-drama:latest
+docker build -t QianHai-drama:latest .
+docker run -d --name QianHai-drama -p 5678:5678 -v $(pwd)/data:/app/data QianHai-drama:latest
 ```
 
 **Docker Deployment Advantages:**
@@ -373,12 +373,12 @@ npm run build
 cd ..
 
 # 2. Compile backend
-go build -o huobao-drama .
+go build -o QianHai-drama .
 ```
 
 Generated files:
 
-- `huobao-drama` - Backend executable
+- `QianHai-drama` - Backend executable
 - `web/dist/` - Frontend static files (embedded in backend)
 
 #### 2. Prepare Deployment Files
@@ -386,7 +386,7 @@ Generated files:
 Files to upload to server:
 
 ```
-huobao-drama            # Backend executable
+QianHai-drama            # Backend executable
 configs/config.yaml     # Configuration file
 data/                   # Data directory (optional, auto-created on first run)
 ```
@@ -395,45 +395,45 @@ data/                   # Data directory (optional, auto-created on first run)
 
 ```bash
 # Upload files to server
-scp huobao-drama user@server:/opt/huobao-drama/
-scp configs/config.yaml user@server:/opt/huobao-drama/configs/
+scp QianHai-drama user@server:/opt/QianHai-drama/
+scp configs/config.yaml user@server:/opt/QianHai-drama/configs/
 
 # SSH to server
 ssh user@server
 
 # Modify configuration file
-cd /opt/huobao-drama
+cd /opt/QianHai-drama
 vim configs/config.yaml
 # Set mode to production
 # Configure domain and storage path
 
 # Create data directory and set permissions (Important!)
 # Note: Replace YOUR_USER with actual user running the service (e.g., www-data, ubuntu, deploy)
-sudo mkdir -p /opt/huobao-drama/data/storage
-sudo chown -R YOUR_USER:YOUR_USER /opt/huobao-drama/data
-sudo chmod -R 755 /opt/huobao-drama/data
+sudo mkdir -p /opt/QianHai-drama/data/storage
+sudo chown -R YOUR_USER:YOUR_USER /opt/QianHai-drama/data
+sudo chmod -R 755 /opt/QianHai-drama/data
 
 # Grant execute permission
-chmod +x huobao-drama
+chmod +x QianHai-drama
 
 # Start service
-./huobao-drama
+./QianHai-drama
 ```
 
 #### 4. Manage Service with systemd
 
-Create service file `/etc/systemd/system/huobao-drama.service`:
+Create service file `/etc/systemd/system/QianHai-drama.service`:
 
 ```ini
 [Unit]
-Description=Huobao Drama Service
+Description=QianHai Drama Service
 After=network.target
 
 [Service]
 Type=simple
 User=YOUR_USER
-WorkingDirectory=/opt/huobao-drama
-ExecStart=/opt/huobao-drama/huobao-drama
+WorkingDirectory=/opt/QianHai-drama
+ExecStart=/opt/QianHai-drama/QianHai-drama
 Restart=on-failure
 RestartSec=10
 
@@ -448,9 +448,9 @@ Start service:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable huobao-drama
-sudo systemctl start huobao-drama
-sudo systemctl status huobao-drama
+sudo systemctl enable QianHai-drama
+sudo systemctl start QianHai-drama
+sudo systemctl status QianHai-drama
 ```
 
 **⚠️ Common Issue: SQLite Write Permission Error**
@@ -459,19 +459,19 @@ If you encounter `attempt to write a readonly database` error:
 
 ```bash
 # 1. Check current user running the service
-sudo systemctl status huobao-drama | grep "Main PID"
-ps aux | grep huobao-drama
+sudo systemctl status QianHai-drama | grep "Main PID"
+ps aux | grep QianHai-drama
 
 # 2. Fix permissions (replace YOUR_USER with actual username)
-sudo chown -R YOUR_USER:YOUR_USER /opt/huobao-drama/data
-sudo chmod -R 755 /opt/huobao-drama/data
+sudo chown -R YOUR_USER:YOUR_USER /opt/QianHai-drama/data
+sudo chmod -R 755 /opt/QianHai-drama/data
 
 # 3. Verify permissions
-ls -la /opt/huobao-drama/data
+ls -la /opt/QianHai-drama/data
 # Should show owner as the user running the service
 
 # 4. Restart service
-sudo systemctl restart huobao-drama
+sudo systemctl restart QianHai-drama
 ```
 
 **Reason:**
@@ -502,7 +502,7 @@ server {
 
     # Direct access to static files
     location /static/ {
-        alias /opt/huobao-drama/data/storage/;
+        alias /opt/QianHai-drama/data/storage/;
     }
 }
 ```
@@ -635,12 +635,12 @@ Configure in 2 minutes: [API Aggregation Site](https://api.chatfire.site/models)
 
 ## 👨‍💻 About Us
 
-**AI Huobao - AI Studio Startup**
+**AI QianHai - AI Studio Startup**
 
 - 🏠 **Location**: Nanjing, China
 - 🚀 **Status**: Startup in Progress
 - 📧 **Email**: [18550175439@163.com](mailto:18550175439@163.com)
-- 🐙 **GitHub**: [https://github.com/chatfire-AI/huobao-drama](https://github.com/chatfire-AI/huobao-drama)
+- 🐙 **GitHub**: [https://github.com/chatfire-AI/QianHai-drama](https://github.com/chatfire-AI/QianHai-drama)
 
 > _"Let AI help us do more creative things"_
 
@@ -659,8 +659,8 @@ Configure in 2 minutes: [API Aggregation Site](https://api.chatfire.site/models)
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=chatfire-AI/huobao-drama&type=date&legend=top-left)](https://www.star-history.com/#chatfire-AI/huobao-drama&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/svg?repos=chatfire-AI/QianHai-drama&type=date&legend=top-left)](https://www.star-history.com/#chatfire-AI/QianHai-drama&type=date&legend=top-left)
 
-Made with ❤️ by Huobao Team
+Made with ❤️ by QianHai Team
 
 </div>

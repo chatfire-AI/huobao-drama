@@ -1,0 +1,27 @@
+your-domain.com {
+    # 前端代理（所有非 API 和静态文件的请求）
+    reverse_proxy localhost:6008 {
+        # 传递原始主机名
+        header_up Host {host}
+        # 传递真实 IP
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # API 代理
+    # handle_path /api/* {
+    #     reverse_proxy localhost:5678 {
+    #         header_up Host {host}
+    #         header_up X-Real-IP {remote_host}
+    #         header_up X-Forwarded-For {remote_host}
+    #         header_up X-Forwarded-Proto {scheme}
+    #     }
+    # }
+
+    # 静态文件
+    handle /static/* {
+        root * d:/traework/qianhai-drama/data/storage
+        file_server
+    }
+}

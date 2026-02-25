@@ -1,4 +1,4 @@
-# 🎬 Huobao Drama - AI 短剧生成平台
+# 🎬 QianHai Drama - AI 短剧生成平台
 
 <div align="center">
 
@@ -18,11 +18,11 @@
 
 ## 📖 项目简介
 
-Huobao Drama 是一个基于 AI 的短剧自动化生产平台，实现从剧本生成、角色设计、分镜制作到视频合成的全流程自动化。
+QianHai Drama 是一个基于 AI 的短剧自动化生产平台，实现从剧本生成、角色设计、分镜制作到视频合成的全流程自动化。
 
 火宝短剧商业版地址：[火宝短剧商业版](https://drama.chatfire.site/shortvideo)
 
-火宝小说生成：[火宝小说生成](https://marketing.chatfire.site/huobao-novel/)
+火宝小说生成：[火宝小说生成](https://marketing.chatfire.site/QianHai-novel/)
 
 ### 🎯 核心价值
 
@@ -141,7 +141,7 @@ vim configs/config.yaml
 
 ```yaml
 app:
-  name: "Huobao Drama API"
+  name: "QianHai Drama API"
   version: "1.0.0"
   debug: true # 开发环境设为true，生产环境设为false
 
@@ -149,7 +149,7 @@ server:
   port: 5678
   host: "0.0.0.0"
   cors_origins:
-    - "http://localhost:3012"
+    - "http://localhost:6008"
   read_timeout: 600
   write_timeout: 600
 
@@ -184,8 +184,8 @@ ai:
 
 ```bash
 # 克隆项目
-git clone https://github.com/chatfire-AI/huobao-drama.git
-cd huobao-drama
+git clone https://github.com/chatfire-AI/QianHai-drama.git
+cd QianHai-drama
 
 # 安装Go依赖
 go mod download
@@ -211,7 +211,7 @@ cd web
 npm run dev
 ```
 
-- 前端地址: `http://localhost:3012`
+- 前端地址: `http://localhost:6008`
 - 后端 API: `http://localhost:5678/api/v1`
 - 前端自动代理 API 请求到后端
 
@@ -241,7 +241,7 @@ go run main.go
 
 ### ☁️ 云端一键部署（推荐 3080Ti）
 
-👉 [优云智算，一键部署](https://www.compshare.cn/images/CaWEHpAA8t1H?referral_code=8hUJOaWz3YzG64FI2OlCiB&ytag=GPU_YY_YX_GitHub_huobaoai)
+👉 [优云智算，一键部署](https://www.compshare.cn/images/CaWEHpAA8t1H?referral_code=8hUJOaWz3YzG64FI2OlCiB&ytag=GPU_YY_YX_GitHub_QianHaiai)
 
 > ⚠️ **注意**：云端部署方案数据请及时存储到本地
 
@@ -317,21 +317,21 @@ docker-compose down
 ```bash
 # 从 Docker Hub 运行
 docker run -d \
-  --name huobao-drama \
+  --name QianHai-drama \
   -p 5678:5678 \
   -v $(pwd)/data:/app/data \
   --restart unless-stopped \
-  huobao/huobao-drama:latest
+  QianHai/QianHai-drama:latest
 
 # 查看日志
-docker logs -f huobao-drama
+docker logs -f QianHai-drama
 ```
 
 **本地构建**（可选）：
 
 ```bash
-docker build -t huobao-drama:latest .
-docker run -d --name huobao-drama -p 5678:5678 -v $(pwd)/data:/app/data huobao-drama:latest
+docker build -t QianHai-drama:latest .
+docker run -d --name QianHai-drama -p 5678:5678 -v $(pwd)/data:/app/data QianHai-drama:latest
 ```
 
 **Docker 部署优势：**
@@ -373,12 +373,12 @@ npm run build
 cd ..
 
 # 2. 编译后端
-go build -o huobao-drama .
+go build -o QianHai-drama .
 ```
 
 生成文件：
 
-- `huobao-drama` - 后端可执行文件
+- `QianHai-drama` - 后端可执行文件
 - `web/dist/` - 前端静态文件（已嵌入后端）
 
 #### 2. 准备部署文件
@@ -386,7 +386,7 @@ go build -o huobao-drama .
 需要上传到服务器的文件：
 
 ```
-huobao-drama            # 后端可执行文件
+QianHai-drama            # 后端可执行文件
 configs/config.yaml     # 配置文件
 data/                   # 数据目录（可选，首次运行自动创建）
 ```
@@ -395,45 +395,45 @@ data/                   # 数据目录（可选，首次运行自动创建）
 
 ```bash
 # 上传文件到服务器
-scp huobao-drama user@server:/opt/huobao-drama/
-scp configs/config.yaml user@server:/opt/huobao-drama/configs/
+scp QianHai-drama user@server:/opt/QianHai-drama/
+scp configs/config.yaml user@server:/opt/QianHai-drama/configs/
 
 # SSH登录服务器
 ssh user@server
 
 # 修改配置文件
-cd /opt/huobao-drama
+cd /opt/QianHai-drama
 vim configs/config.yaml
 # 设置mode为production
 # 配置域名和存储路径
 
 # 创建数据目录并设置权限（重要！）
 # 注意：将 YOUR_USER 替换为实际运行服务的用户名（如 www-data、ubuntu、deploy 等）
-sudo mkdir -p /opt/huobao-drama/data/storage
-sudo chown -R YOUR_USER:YOUR_USER /opt/huobao-drama/data
-sudo chmod -R 755 /opt/huobao-drama/data
+sudo mkdir -p /opt/QianHai-drama/data/storage
+sudo chown -R YOUR_USER:YOUR_USER /opt/QianHai-drama/data
+sudo chmod -R 755 /opt/QianHai-drama/data
 
 # 赋予执行权限
-chmod +x huobao-drama
+chmod +x QianHai-drama
 
 # 启动服务
-./huobao-drama
+./QianHai-drama
 ```
 
 #### 4. 使用 systemd 管理服务
 
-创建服务文件 `/etc/systemd/system/huobao-drama.service`:
+创建服务文件 `/etc/systemd/system/QianHai-drama.service`:
 
 ```ini
 [Unit]
-Description=Huobao Drama Service
+Description=QianHai Drama Service
 After=network.target
 
 [Service]
 Type=simple
 User=YOUR_USER
-WorkingDirectory=/opt/huobao-drama
-ExecStart=/opt/huobao-drama/huobao-drama
+WorkingDirectory=/opt/QianHai-drama
+ExecStart=/opt/QianHai-drama/QianHai-drama
 Restart=on-failure
 RestartSec=10
 
@@ -448,9 +448,9 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable huobao-drama
-sudo systemctl start huobao-drama
-sudo systemctl status huobao-drama
+sudo systemctl enable QianHai-drama
+sudo systemctl start QianHai-drama
+sudo systemctl status QianHai-drama
 ```
 
 **⚠️ 常见问题：SQLite 写权限错误**
@@ -459,19 +459,19 @@ sudo systemctl status huobao-drama
 
 ```bash
 # 1. 确认当前运行服务的用户
-sudo systemctl status huobao-drama | grep "Main PID"
-ps aux | grep huobao-drama
+sudo systemctl status QianHai-drama | grep "Main PID"
+ps aux | grep QianHai-drama
 
 # 2. 修复权限（将 YOUR_USER 替换为实际用户名）
-sudo chown -R YOUR_USER:YOUR_USER /opt/huobao-drama/data
-sudo chmod -R 755 /opt/huobao-drama/data
+sudo chown -R YOUR_USER:YOUR_USER /opt/QianHai-drama/data
+sudo chmod -R 755 /opt/QianHai-drama/data
 
 # 3. 验证权限
-ls -la /opt/huobao-drama/data
+ls -la /opt/QianHai-drama/data
 # 应该显示所有者为运行服务的用户
 
 # 4. 重启服务
-sudo systemctl restart huobao-drama
+sudo systemctl restart QianHai-drama
 ```
 
 **原因说明**：
@@ -502,7 +502,7 @@ server {
 
     # 静态文件直接访问
     location /static/ {
-        alias /opt/huobao-drama/data/storage/;
+        alias /opt/QianHai-drama/data/storage/;
     }
 }
 ```
@@ -640,7 +640,7 @@ A: GORM 会在首次启动时自动创建表，检查日志确认迁移是否成
 - 🏠 **位置**: 中国南京
 - 🚀 **状态**: 创业中
 - 📧 **Email**: [18550175439@163.com](mailto:18550175439@163.com)
-- 🐙 **GitHub**: [https://github.com/chatfire-AI/huobao-drama](https://github.com/chatfire-AI/huobao-drama)
+- 🐙 **GitHub**: [https://github.com/chatfire-AI/QianHai-drama](https://github.com/chatfire-AI/QianHai-drama)
 
 > _"让 AI 帮我们做更有创造力的事"_
 
@@ -659,7 +659,7 @@ A: GORM 会在首次启动时自动创建表，检查日志确认迁移是否成
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=chatfire-AI/huobao-drama&type=date&legend=top-left)](https://www.star-history.com/#chatfire-AI/huobao-drama&type=date&legend=top-left)
-Made with ❤️ by Huobao Team
+[![Star History Chart](https://api.star-history.com/svg?repos=chatfire-AI/QianHai-drama&type=date&legend=top-left)](https://www.star-history.com/#chatfire-AI/QianHai-drama&type=date&legend=top-left)
+Made with ❤️ by QianHai Team
 
 </div>
