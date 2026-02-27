@@ -73,16 +73,40 @@
                 <p style="margin: 8px 0">
                   {{ $t("drama.management.noEpisodesYet") }}
                 </p>
-                <el-button
-                  type="primary"
-                  :icon="Plus"
-                  @click="createNewEpisode"
-                  style="margin-top: 8px"
-                >
-                  {{ $t("drama.management.createFirstEpisode") }}
-                </el-button>
+                <div style="display: flex; gap: 10px; margin-top: 8px">
+                  <el-button
+                    type="primary"
+                    :icon="Plus"
+                    @click="createNewEpisode"
+                  >
+                    {{ $t("drama.management.createFirstEpisode") }}
+                  </el-button>
+                  <el-button
+                    :icon="Document"
+                    @click="novelImportDialogVisible = true"
+                  >
+                    {{ $t("drama.management.importFromNovel") }}
+                  </el-button>
+                </div>
               </template>
             </el-alert>
+
+            <!-- 从小说导入卡片 -->
+            <el-card
+              v-else
+              shadow="never"
+              class="import-card"
+              style="margin-top: 20px"
+            >
+              <div class="import-card-content" @click="novelImportDialogVisible = true">
+                <el-icon :size="40" class="import-icon"><Document /></el-icon>
+                <div class="import-text">
+                  <h4>{{ $t("drama.management.importFromNovel") }}</h4>
+                  <p>{{ $t("drama.management.importFromNovelDesc") }}</p>
+                </div>
+                <el-button type="primary">{{ $t("drama.management.selectFile") }}</el-button>
+              </div>
+            </el-card>
 
             <el-card shadow="never" class="project-info-card">
               <template #header>
@@ -122,12 +146,17 @@
           <el-tab-pane :label="$t('drama.management.episodes')" name="episodes">
             <div class="tab-header">
               <h2>{{ $t("drama.management.episodeList") }}</h2>
-              <el-button
-                type="primary"
-                :icon="Plus"
-                @click="createNewEpisode"
-                >{{ $t("drama.management.createNewEpisode") }}</el-button
-              >
+              <div class="header-actions">
+                <el-button
+                  type="primary"
+                  :icon="Plus"
+                  @click="createNewEpisode"
+                >{{ $t("drama.management.createNewEpisode") }}</el-button>
+                <el-button
+                  :icon="Document"
+                  @click="novelImportDialogVisible = true"
+                >{{ $t("drama.management.importFromNovel") }}</el-button>
+              </div>
             </div>
 
             <!-- 空状态引导 -->
@@ -763,6 +792,13 @@
           >
         </template>
       </el-dialog>
+
+      <!-- 小说导入对话框 -->
+      <NovelImportDialog
+        v-model="novelImportDialogVisible"
+        :drama-id="Number(drama?.id)"
+        @completed="handleNovelImportCompleted"
+      />
     </div>
   </div>
 </template>
@@ -788,6 +824,7 @@ import {
   StatCard,
   EmptyState,
   ImagePreview,
+  NovelImportDialog,
 } from "@/components/common";
 import { getImageUrl, hasImage } from "@/utils/image";
 
@@ -803,6 +840,7 @@ let pollingTimer: any = null; // Add polling timer definition
 const addCharacterDialogVisible = ref(false);
 const addSceneDialogVisible = ref(false);
 const addPropDialogVisible = ref(false);
+const novelImportDialogVisible = ref(false);
 const extractPropsDialogVisible = ref(false);
 const extractCharactersDialogVisible = ref(false);
 const extractScenesDialogVisible = ref(false);
@@ -927,6 +965,14 @@ const getEpisodeStatusText = (episode: any) => {
 const formatDate = (date?: string) => {
   if (!date) return "-";
   return new Date(date).toLocaleString("zh-CN");
+};
+
+// 小说导入完成
+const handleNovelImportCompleted = (_dramaId: number) => {
+  // 刷新项目数据
+  loadDramaData();
+  // 切换到章节管理Tab
+  activeTab.value = "episodes";
 };
 
 const createNewEpisode = () => {
@@ -1542,6 +1588,51 @@ onMounted(() => {
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: -0.01em;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* ========================================
+   Import Card / 导入卡片
+   ======================================== */
+.import-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.import-card:hover {
+  border-color: var(--el-color-primary);
+}
+
+.import-card-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px;
+}
+
+.import-icon {
+  color: var(--el-color-primary);
+  flex-shrink: 0;
+}
+
+.import-text {
+  flex: 1;
+}
+
+.import-text h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.import-text p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
 }
 
 /* ========================================

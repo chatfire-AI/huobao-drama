@@ -179,7 +179,32 @@ export default {
       propList: 'Prop List',
       noProps: 'No props yet',
       propStats: 'Prop Statistics',
-      propsCreated: 'Props Created'
+      propsCreated: 'Props Created',
+      // Novel import
+      importFromNovel: 'Import from Novel',
+      importFromNovelDesc: 'Upload novel file, auto parse to project episodes',
+      selectFile: 'Select File',
+      dropFileHere: 'Drop file here, or click to select',
+      clickToUpload: 'click to upload',
+      supportedFormats: 'Supported formats',
+      maxFileSize: 'Max file size',
+      startParsing: 'Start Parsing',
+      parsing: 'Parsing novel...',
+      stepUploadComplete: 'File upload completed',
+      stepAIAnalysis: 'AI analyzing',
+      stepExtractContent: 'Extracting episode content',
+      stepSaveToDb: 'Saving to database',
+      cancelParsing: 'Cancel Parsing',
+      parseCompleted: 'Parsing completed!',
+      foundEpisodes: 'Found',
+      viewEpisodes: 'View Episodes',
+      parseFailed: 'Parsing failed',
+      unknownError: 'Unknown error',
+      retry: 'Retry',
+      uploadFailed: 'Upload failed',
+      fileSizeLimit: 'File size cannot exceed 10MB',
+      taskCancelled: 'Task cancelled',
+      cancelFailed: 'Cancel failed'
     }
   },
   character: {

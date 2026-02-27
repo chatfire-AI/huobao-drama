@@ -95,5 +95,8 @@ func AutoMigrate(db *gorm.DB) error {
 
 		// 任务管理
 		&models.AsyncTask{},
+
+		// 小说解析
+		&models.NovelParseTask{},
 	)
 }

@@ -210,7 +210,32 @@ export default {
       propList: '道具列表',
       noProps: '还没有道具',
       propStats: '道具统计',
-      propsCreated: '已创建道具'
+      propsCreated: '已创建道具',
+      // 小说导入
+      importFromNovel: '从小说导入',
+      importFromNovelDesc: '上传小说文件，自动解析为项目章节',
+      selectFile: '选择文件',
+      dropFileHere: '拖拽文件到此处，或点击选择',
+      clickToUpload: '点击上传',
+      supportedFormats: '支持格式',
+      maxFileSize: '最大文件大小',
+      startParsing: '开始解析',
+      parsing: '正在解析小说...',
+      stepUploadComplete: '上传文件完成',
+      stepAIAnalysis: 'AI分析中',
+      stepExtractContent: '提取章节内容',
+      stepSaveToDb: '保存到数据库',
+      cancelParsing: '取消解析',
+      parseCompleted: '解析完成！',
+      foundEpisodes: '共发现',
+      viewEpisodes: '查看章节',
+      parseFailed: '解析失败',
+      unknownError: '未知错误',
+      retry: '重试',
+      uploadFailed: '上传失败',
+      fileSizeLimit: '文件大小不能超过10MB',
+      taskCancelled: '任务已取消',
+      cancelFailed: '取消失败'
     }
   },
   character: {

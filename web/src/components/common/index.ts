@@ -19,6 +19,7 @@ export { default as ImageCropDialog } from "./ImageCropDialog.vue";
 // Dialog Components / 弹窗组件
 export { default as CreateDramaDialog } from './CreateDramaDialog.vue'
 export { default as AIConfigDialog } from './AIConfigDialog.vue'
+export { default as NovelImportDialog } from './NovelImportDialog.vue'
 
 // Layout Components / 布局组件
 export { default as AppLayout } from './AppLayout.vue'

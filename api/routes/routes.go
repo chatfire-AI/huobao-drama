@@ -56,6 +56,11 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, log *logger.Logger, localStora
 	settingsHandler := handlers2.NewSettingsHandler(cfg, log)
 	propHandler := handlers2.NewPropHandler(db, cfg, log, aiService, imageGenService)
 
+	// 小说解析服务
+	dramaService := services2.NewDramaService(db, cfg, log)
+	novelParseService := services2.NewNovelParseService(db, cfg, log, aiService, dramaService)
+	novelParseHandler := handlers2.NewNovelParseHandler(cfg, log, novelParseService)
+
 	api := r.Group("/api/v1")
 	{
 		api.Use(middlewares2.RateLimitMiddleware())
@@ -221,6 +226,15 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, log *logger.Logger, localStora
 		{
 			settings.GET("/language", settingsHandler.GetLanguage)
 			settings.PUT("/language", settingsHandler.UpdateLanguage)
+		}
+
+		// 小说解析路由
+		novelParse := api.Group("/novel-parse")
+		{
+			novelParse.POST("/tasks", novelParseHandler.CreateTask)
+			novelParse.POST("/tasks/:task_id/start", novelParseHandler.StartTask)
+			novelParse.GET("/tasks/:task_id", novelParseHandler.GetTask)
+			novelParse.POST("/tasks/:task_id/cancel", novelParseHandler.CancelTask)
 		}
 	}
 
