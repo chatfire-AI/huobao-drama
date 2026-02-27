@@ -510,10 +510,10 @@ func (s *ImageGenerationService) getImageClient(provider string) (image.ImageCli
 	switch actualProvider {
 	case "openai", "dalle":
 		endpoint = "/images/generations"
-		return image.NewOpenAIImageClient(config.BaseURL, config.APIKey, model, endpoint), nil
+		return image.NewOpenAIImageClient(config.BaseURL, config.APIKey, model, endpoint, true), nil
 	case "chatfire":
 		endpoint = "/images/generations"
-		return image.NewOpenAIImageClient(config.BaseURL, config.APIKey, model, endpoint), nil
+		return image.NewOpenAIImageClient(config.BaseURL, config.APIKey, model, endpoint, false), nil
 	case "volcengine", "volces", "doubao":
 		endpoint = "/images/generations"
 		queryEndpoint = ""
@@ -523,7 +523,7 @@ func (s *ImageGenerationService) getImageClient(provider string) (image.ImageCli
 		return image.NewGeminiImageClient(config.BaseURL, config.APIKey, model, endpoint), nil
 	default:
 		endpoint = "/images/generations"
-		return image.NewOpenAIImageClient(config.BaseURL, config.APIKey, model, endpoint), nil
+		return image.NewOpenAIImageClient(config.BaseURL, config.APIKey, model, endpoint, false), nil
 	}
 }
 
@@ -568,10 +568,10 @@ func (s *ImageGenerationService) getImageClientWithModel(provider string, modelN
 	switch actualProvider {
 	case "openai", "dalle":
 		endpoint = "/images/generations"
-		return image.NewOpenAIImageClient(config.BaseURL, config.APIKey, model, endpoint), nil
+		return image.NewOpenAIImageClient(config.BaseURL, config.APIKey, model, endpoint, true), nil
 	case "chatfire":
 		endpoint = "/images/generations"
-		return image.NewOpenAIImageClient(config.BaseURL, config.APIKey, model, endpoint), nil
+		return image.NewOpenAIImageClient(config.BaseURL, config.APIKey, model, endpoint, false), nil
 	case "volcengine", "volces", "doubao":
 		endpoint = "/images/generations"
 		queryEndpoint = ""
@@ -581,7 +581,7 @@ func (s *ImageGenerationService) getImageClientWithModel(provider string, modelN
 		return image.NewGeminiImageClient(config.BaseURL, config.APIKey, model, endpoint), nil
 	default:
 		endpoint = "/images/generations"
-		return image.NewOpenAIImageClient(config.BaseURL, config.APIKey, model, endpoint), nil
+		return image.NewOpenAIImageClient(config.BaseURL, config.APIKey, model, endpoint, false), nil
 	}
 }
 
