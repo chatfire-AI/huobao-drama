@@ -319,7 +319,7 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
     {
       id: "openai",
       name: "OpenAI",
-      models: ["gpt-5.2", "gemini-3-flash-preview"],
+      models: ["gpt-5.2", "gpt-5", "gpt-4o", "gpt-4.1-mini"],
     },
     {
       id: "chatfire",
@@ -334,6 +334,26 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       id: "gemini",
       name: "Google Gemini",
       models: ["gemini-2.5-pro", "gemini-3-flash-preview"],
+    },
+    {
+      id: "volcengine",
+      name: "VolcEngine",
+      models: ["Doubao-Seed-1.8", "doubao-seed-1-8-250615"],
+    },
+    {
+      id: "dashscope",
+      name: "DashScope (Aliyun)",
+      models: ["qwen-max", "qwen-plus", "qwen-turbo", "qwen2.5-72b-instruct"],
+    },
+    {
+      id: "deepseek",
+      name: "DeepSeek",
+      models: ["deepseek-chat", "deepseek-reasoner"],
+    },
+    {
+      id: "anthropic",
+      name: "Anthropic",
+      models: ["claude-sonnet-4-5-20250929", "claude-3-7-sonnet-latest"],
     },
   ],
   image: [
@@ -353,6 +373,11 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       models: ["gemini-3-pro-image-preview"],
     },
     { id: "openai", name: "OpenAI", models: ["dall-e-3", "dall-e-2"] },
+    {
+      id: "dashscope",
+      name: "DashScope (Aliyun)",
+      models: ["wanx2.1-t2i-turbo", "wanx2.1-t2i-plus", "qwen-image"],
+    },
   ],
   video: [
     {
@@ -389,6 +414,16 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       ],
     },
     { id: "openai", name: "OpenAI", models: ["sora-2", "sora-2-pro"] },
+    {
+      id: "runway",
+      name: "Runway",
+      models: ["gen4_turbo", "gen3a_turbo"],
+    },
+    {
+      id: "pika",
+      name: "Pika",
+      models: ["pika-2.2", "pika-2.1"],
+    },
   ],
 };
 
@@ -402,12 +437,25 @@ const availableProviders = computed(() => {
 const availableModels = computed(() => {
   if (!form.provider || !form.service_type) return [];
 
-  // 从预定义配置中查找当前厂商的模型列表
+  const models = new Set<string>();
   const providerConfig = providerConfigs[form.service_type]?.find(
     (p) => p.id === form.provider,
   );
 
-  return providerConfig?.models || [];
+  providerConfig?.models.forEach((m) => models.add(m));
+
+  const activeConfigsForProvider = configs.value.filter(
+    (c) =>
+      c.provider === form.provider &&
+      c.service_type === form.service_type &&
+      c.is_active,
+  );
+
+  activeConfigsForProvider.forEach((config) => {
+    config.model.forEach((m) => models.add(m));
+  });
+
+  return Array.from(models);
 });
 
 const fullEndpointExample = computed(() => {
@@ -496,6 +544,14 @@ const generateConfigName = (
     openai: "OpenAI",
     gemini: "Gemini",
     google: "Google",
+    dashscope: "DashScope",
+    deepseek: "DeepSeek",
+    anthropic: "Anthropic",
+    minimax: "MiniMax",
+    runway: "Runway",
+    pika: "Pika",
+    volcengine: "VolcEngine",
+    volces: "Volces",
   };
 
   const serviceNames: Record<AIServiceType, string> = {
@@ -660,6 +716,12 @@ const handleProviderChange = () => {
   // 根据厂商自动设置 Base URL
   if (form.provider === "gemini" || form.provider === "google") {
     form.base_url = "https://generativelanguage.googleapis.com";
+  } else if (form.provider === "dashscope") {
+    form.base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+  } else if (form.provider === "deepseek") {
+    form.base_url = "https://api.deepseek.com/v1";
+  } else if (form.provider === "anthropic") {
+    form.base_url = "https://api.anthropic.com/v1";
   } else if (form.provider === "minimax") {
     form.base_url = "https://api.minimaxi.com/v1";
   } else if (form.provider === "volces" || form.provider === "volcengine") {
