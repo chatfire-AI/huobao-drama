@@ -335,6 +335,11 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       name: "Google Gemini",
       models: ["gemini-2.5-pro", "gemini-3-flash-preview"],
     },
+    {
+      id: "volcengine",
+      name: "火山引擎",
+      models: ["Doubao-Seed-1.8", "doubao-seed-1-8-251228"],
+    },
   ],
   image: [
     {
@@ -496,6 +501,7 @@ const generateConfigName = (
     openai: "OpenAI",
     gemini: "Gemini",
     google: "Google",
+    volcengine: "火山引擎",
   };
 
   const serviceNames: Record<AIServiceType, string> = {

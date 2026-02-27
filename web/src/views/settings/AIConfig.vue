@@ -245,6 +245,11 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       name: "Google Gemini",
       models: ["gemini-2.5-pro", "gemini-3-flash-preview"],
     },
+    {
+      id: "volcengine",
+      name: "火山引擎",
+      models: ["Doubao-Seed-1.8", "doubao-seed-1-8-251228"],
+    },
   ],
   image: [
     {
@@ -296,22 +301,16 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
 
 // 当前可用的厂商列表（只显示有激活配置的）
 const availableProviders = computed(() => {
-  // 获取当前service_type下所有激活的配置
-  const activeConfigs = configs.value.filter(
-    (c) => c.service_type === form.service_type && c.is_active,
-  );
-
-  // 提取所有激活配置的provider，去重
-  const activeProviderIds = new Set(activeConfigs.map((c) => c.provider));
-
-  // 从providerConfigs中筛选出有激活配置的provider
-  const allProviders = providerConfigs[form.service_type] || [];
-  return allProviders.filter((p) => activeProviderIds.has(p.id));
+  return providerConfigs[form.service_type] || [];
 });
 
 // 当前可用的模型列表（从已激活的配置中获取）
 const availableModels = computed(() => {
   if (!form.provider) return [];
+
+  const providerConfig = providerConfigs[form.service_type]?.find(
+    (p) => p.id === form.provider,
+  );
 
   // 从已激活的配置中提取该 provider 的所有模型
   const activeConfigsForProvider = configs.value.filter(
@@ -326,6 +325,11 @@ const availableModels = computed(() => {
   activeConfigsForProvider.forEach((config) => {
     config.model.forEach((m) => models.add(m));
   });
+
+  // 如果当前 provider 没有已激活配置，回退到预定义模型列表
+  if (models.size === 0 && providerConfig) {
+    providerConfig.models.forEach((m) => models.add(m));
+  }
 
   return Array.from(models);
 });
@@ -416,6 +420,7 @@ const generateConfigName = (
     openai: "OpenAI",
     gemini: "Gemini",
     google: "Google",
+    volcengine: "火山引擎",
   };
 
   const serviceNames: Record<AIServiceType, string> = {
@@ -580,6 +585,8 @@ const handleProviderChange = () => {
   // 根据厂商自动设置默认 base_url
   if (form.provider === "gemini" || form.provider === "google") {
     form.base_url = "https://api.chatfire.site";
+  } else if (form.provider === "volcengine" || form.provider === "volces") {
+    form.base_url = "https://ark.cn-beijing.volces.com/api/v3";
   } else {
     // openai, chatfire 等其他厂商
     form.base_url = "https://api.chatfire.site/v1";
