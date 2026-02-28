@@ -313,7 +313,7 @@
 import { onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { MagicStick, Film, Edit, Delete } from "@element-plus/icons-vue";
-import type { Episode } from "@/types/drama";
+import type { Episode, Storyboard, Character, Scene } from "@/types/drama";
 
 const { t: $t } = useI18n();
 
@@ -326,37 +326,34 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "generateShots"): void;
-  (e: "editShot", shot: any, index: number): void;
-  (e: "updateShot", shot: any): void;
-  (e: "deleteShot", shotId: any, index: number): void;
+  (e: "editShot", shot: Storyboard, index: number): void;
+  (e: "updateShot", shot: Storyboard): void;
+  (e: "deleteShot", shotId: string, index: number): void;
 }>();
 
 // 获取选中角色的头像图片
-const getSelectedCharacterImages = (row: any) => {
-  // row.characters 是后端返回的角色数组，每个元素有 id, name, image_url
+const getSelectedCharacterImages = (row: Storyboard) => {
   if (!row.characters || !row.characters.length) return [];
   return row.characters
-    .map((c: any) => {
-      // 角色对象可能有 image_url 或 reference_images
-      if (c?.reference_images && c.reference_images.length > 0) {
+    .map((c: string | Character) => {
+      if (typeof c === "object" && c?.reference_images && c.reference_images.length > 0) {
         return c.reference_images[0];
       }
-      return c?.image_url || null;
+      return typeof c === "object" ? c?.image_url || null : null;
     })
     .filter(Boolean);
 };
 
 // 获取选中角色的名称
-const getSelectedCharacterNames = (row: any) => {
+const getSelectedCharacterNames = (row: Storyboard) => {
   if (!row.characters || !row.characters.length) return [];
   return row.characters
-    .map((c: any) => c?.name || null)
+    .map((c: string | Character) => (typeof c === "object" ? c?.name : null))
     .filter(Boolean);
 };
 
 // 获取选中场景的图片
-const getSelectedSceneImages = (row: any) => {
-  // 后端使用 scene_id 和 background 字段
+const getSelectedSceneImages = (row: Storyboard) => {
   const images: string[] = [];
   if (row.background?.image_url) {
     images.push(row.background.image_url);
@@ -365,7 +362,7 @@ const getSelectedSceneImages = (row: any) => {
 };
 
 // 获取选中场景的名称
-const getSelectedSceneName = (row: any) => {
+const getSelectedSceneName = (row: Storyboard) => {
   if (row.background?.location) {
     return row.background.location;
   }
@@ -373,14 +370,13 @@ const getSelectedSceneName = (row: any) => {
 };
 
 // 处理角色变更
-const handleCharacterChange = (row: any) => {
-  // 构建更新后的角色对象
-  const updatedCharacters = row.characterIds.map((id: number) => {
+const handleCharacterChange = (row: Storyboard) => {
+  const updatedCharacters = (row.characterIds || []).map((id: number) => {
     const char = props.currentEpisode?.characters?.find((c) => c.id === id);
-    return char || id;
+    return char || String(id);
   });
 
-  const updatedShot = {
+  const updatedShot: Storyboard = {
     ...row,
     characters: updatedCharacters,
   };
@@ -389,21 +385,18 @@ const handleCharacterChange = (row: any) => {
 };
 
 // 处理场景变更
-const handleSceneChange = (row: any) => {
-  // 构建更新后的场景对象 - 使用 scene_id 字段
-  // 获取选中的场景完整信息
+const handleSceneChange = (row: Storyboard) => {
   const selectedScene = props.currentEpisode?.scenes?.find(
     (s) => Number(s.id) === Number(row.scene_id)
   );
 
-  const updatedShot = {
+  const updatedShot: Storyboard = {
     ...row,
     scene_id: row.scene_id,
     background: selectedScene ? {
-      id: Number(selectedScene.id),
-      location: selectedScene.location,
-      image_url: selectedScene.image_url
-    } : null,
+      ...selectedScene,
+      id: String(selectedScene.id),
+    } : undefined,
   };
 
   emit("updateShot", updatedShot);
@@ -412,17 +405,15 @@ const handleSceneChange = (row: any) => {
 // 初始化 characterIds 和 scene_id
 const initializeIds = () => {
   if (props.currentEpisode?.storyboards) {
-    props.currentEpisode.storyboards.forEach((shot: any) => {
-      // 初始化 characterIds - 从 row.characters 数组提取 ID，确保是数字类型
+    props.currentEpisode.storyboards.forEach((shot: Storyboard) => {
       if (!shot.characterIds) {
-        shot.characterIds = shot.characters?.map((c: any) => {
+        shot.characterIds = shot.characters?.map((c: string | Character) => {
           const id = typeof c === 'object' ? c.id : c;
-          return typeof id === 'string' ? parseInt(id, 10) : id;
+          return typeof id === 'string' ? parseInt(id, 10) : Number(id);
         }) || [];
       }
-      // 初始化 scene_id - 确保是数字类型
       if (shot.scene_id && typeof shot.scene_id === 'string') {
-        shot.scene_id = parseInt(shot.scene_id, 10);
+        (shot as any).scene_id = parseInt(shot.scene_id, 10);
       }
     });
   }

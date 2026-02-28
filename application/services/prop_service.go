@@ -2,7 +2,6 @@ package services
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	// Added missing import
@@ -149,37 +148,6 @@ func (s *PropService) processPropExtraction(taskID string, episode models.Episod
 	s.taskService.UpdateTaskResult(taskID, createdProps)
 }
 
-// deduplicatePropsByName 按名称去重道具
-func (s *PropService) deduplicatePropsByName(dramaID uint) int {
-	var props []models.Prop
-	if err := s.db.Where("drama_id = ?", dramaID).Order("created_at ASC").Find(&props).Error; err != nil {
-		s.log.Errorw("Failed to load props for dedup", "error", err)
-		return 0
-	}
-
-	groups := make(map[string][]models.Prop)
-	for _, prop := range props {
-		key := strings.ToLower(strings.TrimSpace(prop.Name))
-		groups[key] = append(groups[key], prop)
-	}
-
-	dedupCount := 0
-	for _, group := range groups {
-		if len(group) <= 1 {
-			continue
-		}
-		for i := 1; i < len(group); i++ {
-			if err := s.db.Delete(&group[i]).Error; err != nil {
-				s.log.Warnw("Failed to delete duplicate prop", "error", err, "prop_id", group[i].ID)
-				continue
-			}
-			dedupCount++
-		}
-	}
-
-	return dedupCount
-}
-
 // BatchExtractProps 批量从多个分集提取道具
 func (s *PropService) BatchExtractProps(dramaID uint, episodeIDs []uint) (string, error) {
 	var drama models.Drama
@@ -236,7 +204,7 @@ func (s *PropService) processBatchPropExtraction(taskID string, drama models.Dra
 	}
 
 	s.taskService.UpdateTaskStatus(taskID, "processing", 95, "正在去重道具...")
-	dedupCount := s.deduplicatePropsByName(drama.ID)
+	dedupCount := DeduplicatePropsByName(s.db, s.log, drama.ID)
 
 	s.taskService.UpdateTaskResult(taskID, map[string]interface{}{
 		"props":          totalProps,

@@ -287,18 +287,19 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
   ],
 };
 
-// 当前可用的厂商列表（只显示有激活配置的）
+// 当前可用的厂商列表
 const availableProviders = computed(() => {
-  // 获取当前service_type下所有激活的配置
+  const allProviders = providerConfigs[form.service_type] || [];
+
+  // 新建配置时显示所有厂商；编辑时只显示有激活配置的厂商
+  if (!isEdit.value) {
+    return allProviders;
+  }
+
   const activeConfigs = configs.value.filter(
     (c) => c.service_type === form.service_type && c.is_active,
   );
-
-  // 提取所有激活配置的provider，去重
   const activeProviderIds = new Set(activeConfigs.map((c) => c.provider));
-
-  // 从providerConfigs中筛选出有激活配置的provider
-  const allProviders = providerConfigs[form.service_type] || [];
   return allProviders.filter((p) => activeProviderIds.has(p.id));
 });
 
@@ -582,21 +583,6 @@ const handleProviderChange = () => {
   // 仅在新建配置时自动更新名称
   if (!isEdit.value) {
     form.name = generateConfigName(form.provider || '', form.service_type);
-  }
-};
-
-// getDefaultEndpoint 已移除，端点由后端根据 provider 自动设置
-// 保留该函数定义以避免编译错误
-const getDefaultEndpoint = (serviceType: AIServiceType): string => {
-  switch (serviceType) {
-    case "text":
-      return "";
-    case "image":
-      return "/v1/images/generations";
-    case "video":
-      return "/v1/video/generations";
-    default:
-      return "/v1/chat/completions";
   }
 };
 

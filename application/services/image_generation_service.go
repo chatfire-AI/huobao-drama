@@ -1007,44 +1007,13 @@ func (s *ImageGenerationService) processBatchBackgroundExtraction(taskID string,
 
 	// 场景去重
 	s.taskService.UpdateTaskStatus(taskID, "processing", 95, "正在去重场景...")
-	dedupCount := s.deduplicateScenesByLocation(drama.ID)
+	dedupCount := DeduplicateScenesByLocation(s.db, s.log, drama.ID)
 
 	s.taskService.UpdateTaskResult(taskID, map[string]interface{}{
 		"scenes":         totalScenes,
 		"episodes_count": totalEpisodes,
 		"dedup_scenes":   dedupCount,
 	})
-}
-
-// deduplicateScenesByLocation 按地点去重场景
-func (s *ImageGenerationService) deduplicateScenesByLocation(dramaID uint) int {
-	var scenes []models.Scene
-	if err := s.db.Where("drama_id = ?", dramaID).Order("created_at ASC").Find(&scenes).Error; err != nil {
-		s.log.Errorw("Failed to load scenes for dedup", "error", err)
-		return 0
-	}
-
-	groups := make(map[string][]models.Scene)
-	for _, scene := range scenes {
-		key := strings.ToLower(strings.TrimSpace(scene.Location))
-		groups[key] = append(groups[key], scene)
-	}
-
-	dedupCount := 0
-	for _, group := range groups {
-		if len(group) <= 1 {
-			continue
-		}
-		for i := 1; i < len(group); i++ {
-			if err := s.db.Delete(&group[i]).Error; err != nil {
-				s.log.Warnw("Failed to delete duplicate scene", "error", err, "scene_id", group[i].ID)
-				continue
-			}
-			dedupCount++
-		}
-	}
-
-	return dedupCount
 }
 
 // extractBackgroundsFromScript 从剧本内容中使用AI提取场景信息

@@ -100,6 +100,7 @@ export interface Storyboard {
   error_msg?: string
   status?: string
   character_ids?: number[]
+  characterIds?: number[] // 运行时由 VideoStep 初始化的角色ID数组
   prop_ids?: number[]
   props?: any[]
   scene_id?: string

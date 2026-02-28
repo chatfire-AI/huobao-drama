@@ -3,7 +3,6 @@ package services
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	models "github.com/drama-generator/backend/domain/models"
@@ -610,39 +609,6 @@ func (s *CharacterLibraryService) processCharacterExtraction(taskID string, epis
 	})
 }
 
-// deduplicateScenesByLocation 按地点去重场景
-func (s *CharacterLibraryService) deduplicateScenesByLocation(dramaID uint) int {
-	var scenes []models.Scene
-	if err := s.db.Where("drama_id = ?", dramaID).Order("created_at ASC").Find(&scenes).Error; err != nil {
-		s.log.Errorw("Failed to load scenes for dedup", "error", err)
-		return 0
-	}
-
-	// 按 normalized location 分组
-	groups := make(map[string][]models.Scene)
-	for _, scene := range scenes {
-		key := strings.ToLower(strings.TrimSpace(scene.Location))
-		groups[key] = append(groups[key], scene)
-	}
-
-	dedupCount := 0
-	for _, group := range groups {
-		if len(group) <= 1 {
-			continue
-		}
-		// 保留第一个（最早创建的），删除其余
-		for i := 1; i < len(group); i++ {
-			if err := s.db.Delete(&group[i]).Error; err != nil {
-				s.log.Warnw("Failed to delete duplicate scene", "error", err, "scene_id", group[i].ID)
-				continue
-			}
-			dedupCount++
-		}
-	}
-
-	return dedupCount
-}
-
 // BatchExtractCharacters 批量从多个分集提取角色
 func (s *CharacterLibraryService) BatchExtractCharacters(dramaID uint, episodeIDs []uint) (string, error) {
 	var drama models.Drama
@@ -686,7 +652,7 @@ func (s *CharacterLibraryService) processBatchCharacterExtraction(taskID string,
 	totalCharacters := 0
 
 	for i, episode := range episodes {
-		progress := (i * 100) / (totalEpisodes + 1) // +1 留空间给去重步骤
+		progress := (i * 100) / totalEpisodes
 		msg := fmt.Sprintf("正在提取第 %d/%d 集...", i+1, totalEpisodes)
 		s.taskService.UpdateTaskStatus(taskID, "processing", progress, msg)
 
@@ -699,13 +665,8 @@ func (s *CharacterLibraryService) processBatchCharacterExtraction(taskID string,
 		totalCharacters += len(characters)
 	}
 
-	// 场景去重
-	s.taskService.UpdateTaskStatus(taskID, "processing", 95, "正在去重场景...")
-	dedupCount := s.deduplicateScenesByLocation(drama.ID)
-
 	s.taskService.UpdateTaskResult(taskID, map[string]interface{}{
 		"characters":     totalCharacters,
 		"episodes_count": totalEpisodes,
-		"dedup_scenes":   dedupCount,
 	})
 }
