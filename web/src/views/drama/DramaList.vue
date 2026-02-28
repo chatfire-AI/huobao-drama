@@ -9,12 +9,37 @@
           <span class="btn-text">{{ $t('drama.createNew') }}</span>
         </el-button>
       </template>
+      <template #extra>
+        <div class="filter-bar">
+          <div class="glass-segmented filter-segmented">
+            <button
+              v-for="opt in statusOptions"
+              :key="opt.value"
+              class="glass-segmented-item"
+              :data-active="filterStatus === opt.value"
+              @click="onStatusFilter(opt.value)"
+            >{{ opt.label }}</button>
+          </div>
+          <el-input
+            v-model="searchKeyword"
+            :placeholder="$t('common.search') + '...'"
+            clearable
+            class="filter-search"
+            @input="onSearchInput"
+            @clear="onSearchInput"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
+      </template>
     </PageHeader>
 
-      <!-- Project Grid / 项目网格 -->
+      <!-- Project List / 项目列表 -->
       <div
         v-loading="loading"
-        class="projects-grid"
+        class="projects-list"
         :class="{ 'is-empty': !loading && dramas.length === 0 }"
       >
         <!-- Empty state / 空状态 -->
@@ -32,17 +57,36 @@
           </el-button>
         </EmptyState>
 
-        <!-- Project Cards / 项目卡片列表 -->
-        <ProjectCard
+        <!-- Project Rows / 项目行列表 -->
+        <div
           v-for="drama in dramas"
           :key="drama.id"
-          :title="drama.title"
-          :description="drama.description"
-          :updated-at="drama.updated_at"
-          :episode-count="drama.total_episodes || 0"
+          class="drama-row glass-list-row"
+          tabindex="0"
           @click="viewDrama(drama.id)"
+          @keydown.enter="viewDrama(drama.id)"
         >
-          <template #actions>
+          <span class="row-dot" :class="statusDotClass(drama.status)"></span>
+          <div class="row-body">
+            <div class="row-top">
+              <span class="row-title">{{ drama.title }}</span>
+              <div class="row-tags">
+                <span :class="['glass-chip', statusChipClass(drama.status)]">{{ $t(`drama.status.${drama.status}`) }}</span>
+                <span v-if="drama.style" class="glass-chip glass-chip-neutral">{{ $t(`drama.styles.${drama.style}`) }}</span>
+              </div>
+            </div>
+            <div class="row-bottom">
+              <span class="row-desc">{{ drama.description || $t('drama.noDescription') }}</span>
+              <div class="row-meta">
+                <span class="meta-item">{{ $t('drama.episodeCount', { count: drama.total_episodes || 0 }) }}</span>
+                <span v-if="formatDuration(drama.total_duration)" class="meta-sep">&middot;</span>
+                <span v-if="formatDuration(drama.total_duration)" class="meta-item">{{ formatDuration(drama.total_duration) }}</span>
+                <span class="meta-sep">&middot;</span>
+                <span class="meta-item">{{ formatDate(drama.updated_at) }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="row-actions" @click.stop>
             <ActionButton
               :icon="Edit"
               :tooltip="$t('common.edit')"
@@ -58,8 +102,8 @@
                 <el-button :icon="Delete" class="action-button danger" link />
               </template>
             </el-popconfirm>
-          </template>
-        </ProjectCard>
+          </div>
+        </div>
       </div>
 
       <!-- Edit Dialog / 编辑对话框 -->
@@ -156,27 +200,26 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { ElMessage } from "element-plus";
 import {
   Plus,
   Film,
-  Setting,
   Edit,
-  View,
   Delete,
-  InfoFilled,
   Loading,
+  Search,
 } from "@element-plus/icons-vue";
 import { dramaAPI } from "@/api/drama";
-import type { Drama, DramaListQuery } from "@/types/drama";
+import type { Drama, DramaListQuery, DramaStatus } from "@/types/drama";
 import {
   PageHeader,
-  ProjectCard,
   ActionButton,
   CreateDramaDialog,
   EmptyState,
 } from "@/components/common";
 
+const { t } = useI18n();
 const router = useRouter();
 const loading = ref(false);
 const loadingMore = ref(false);
@@ -184,6 +227,61 @@ const dramas = ref<Drama[]>([]);
 const total = ref(0);
 const sentinelRef = ref<HTMLElement | null>(null);
 let observer: IntersectionObserver | null = null;
+
+// Filter state / 筛选状态
+const filterStatus = ref<DramaStatus | ''>('');
+const searchKeyword = ref('');
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
+
+const statusOptions = computed<Array<{ value: DramaStatus | ''; label: string }>>(() => [
+  { value: '', label: t('common.all') },
+  { value: 'draft', label: t('drama.status.draft') },
+  { value: 'production', label: t('drama.status.production') },
+  { value: 'completed', label: t('drama.status.completed') },
+]);
+
+const onStatusFilter = (val: DramaStatus | '') => {
+  filterStatus.value = val;
+  queryParams.value.status = val || undefined;
+  resetAndLoad();
+};
+
+const onSearchInput = () => {
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    queryParams.value.keyword = searchKeyword.value || undefined;
+    resetAndLoad();
+  }, 300);
+};
+
+// Status helpers / 状态辅助
+const statusColorMap: Record<string, { chip: string; dot: string }> = {
+  draft: { chip: 'glass-chip-neutral', dot: 'dot-neutral' },
+  planning: { chip: 'glass-chip-info', dot: 'dot-info' },
+  generating: { chip: 'glass-chip-info', dot: 'dot-info' },
+  production: { chip: 'glass-chip-warning', dot: 'dot-warning' },
+  completed: { chip: 'glass-chip-success', dot: 'dot-success' },
+  error: { chip: 'glass-chip-danger', dot: 'dot-danger' },
+  archived: { chip: 'glass-chip-neutral', dot: 'dot-neutral' },
+};
+
+const statusChipClass = (status: DramaStatus) => statusColorMap[status]?.chip || 'glass-chip-neutral';
+const statusDotClass = (status: DramaStatus) => statusColorMap[status]?.dot || 'dot-neutral';
+
+const formatDuration = (seconds?: number) => {
+  if (!seconds || seconds <= 0) return '';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return s > 0 ? `${m}m${s}s` : `${m}m`;
+};
+
+const formatDate = (dateStr: string) => {
+  const d = new Date(dateStr);
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${day}`;
+};
 
 const queryParams = ref<DramaListQuery>({
   page: 1,
@@ -312,6 +410,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   observer?.disconnect();
+  if (searchTimer) clearTimeout(searchTimer);
 });
 </script>
 
@@ -326,50 +425,8 @@ onBeforeUnmount(() => {
 }
 
 /* ========================================
-   Header / 头部区域
-   ======================================== */
-.page-header-wrapper {
-  background: var(--glass-bg-surface);
-  backdrop-filter: blur(var(--glass-blur-md));
-  -webkit-backdrop-filter: blur(var(--glass-blur-md));
-  border: 1px solid var(--glass-stroke-base);
-  border-radius: var(--glass-radius-lg);
-  padding: var(--glass-space-5) var(--glass-space-6);
-  margin-bottom: var(--glass-space-5);
-  box-shadow: var(--glass-shadow-sm);
-}
-
-.page-title {
-  margin: 0 0 var(--glass-space-1) 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--glass-text-primary);
-  letter-spacing: -0.02em;
-}
-
-.page-subtitle {
-  margin: 0;
-  font-size: 0.875rem;
-  color: var(--glass-text-tertiary);
-}
-
-/* ========================================
    Header Buttons / 头部按钮
    ======================================== */
-.glass-btn-primary {
-  background: linear-gradient(135deg, var(--glass-accent-from) 0%, var(--glass-accent-to) 100%);
-  border: none;
-  color: var(--glass-text-on-accent);
-  font-weight: 500;
-  border-radius: var(--glass-radius-sm);
-  box-shadow: var(--glass-accent-shadow-soft);
-  transition: all 0.2s ease;
-}
-
-.glass-btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--glass-accent-shadow-strong);
-}
 
 @media (max-width: 640px) {
   .btn-text {
@@ -382,72 +439,163 @@ onBeforeUnmount(() => {
 }
 
 /* ========================================
-   Projects Grid / 项目网格 - 玻璃态卡片
+   Projects List / 项目列表
    ======================================== */
-.projects-grid {
-  padding: var(--glass-space-3);
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--glass-space-4);
+.projects-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   min-height: 300px;
 }
 
-.projects-grid.is-empty {
-  display: flex;
+.projects-list.is-empty {
   align-items: center;
   justify-content: center;
 }
 
 /* ========================================
-   Glass Card / 玻璃态卡片样式
+   Drama Row / 项目行 - 双行布局
    ======================================== */
-:deep(.project-card) {
-  background: var(--glass-bg-surface);
-  backdrop-filter: blur(var(--glass-blur-sm));
-  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
-  border: 1px solid var(--glass-stroke-base);
-  border-radius: var(--glass-radius-md);
-  overflow: hidden;
+.drama-row {
+  padding: 14px 16px;
   cursor: pointer;
-  transition: all 0.25s ease;
+  gap: 14px;
+  border-radius: var(--glass-radius-md);
   box-shadow: var(--glass-shadow-sm);
+  align-items: flex-start;
 }
 
-:deep(.project-card:hover) {
-  border-color: var(--glass-stroke-focus);
+.drama-row:hover {
   box-shadow: var(--glass-shadow-md);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
-:deep(.project-card .card-accent) {
-  background: linear-gradient(180deg, var(--glass-accent-from) 0%, var(--glass-accent-to) 100%);
+.drama-row:focus-visible {
+  outline: 2px solid var(--glass-accent-from);
+  outline-offset: 2px;
 }
 
-:deep(.project-card .card-footer) {
-  border-color: var(--glass-stroke-soft);
+/* Status dot / 状态圆点 */
+.row-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 7px;
 }
 
-:deep(.project-card .card-title) {
+.dot-neutral { background: var(--glass-tone-neutral-fg); }
+.dot-info { background: var(--glass-tone-info-fg); }
+.dot-success { background: var(--glass-tone-success-fg); }
+.dot-warning { background: var(--glass-tone-warning-fg); }
+.dot-danger { background: var(--glass-tone-danger-fg); }
+
+/* Body / 内容主体（双行） */
+.row-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Top line: title + tags */
+.row-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.row-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
   color: var(--glass-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-:deep(.project-card .card-description) {
+.row-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Bottom line: description + meta */
+.row-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.row-desc {
+  font-size: 0.8125rem;
+  color: var(--glass-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+}
+
+.row-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.meta-item {
+  font-size: 0.75rem;
+  color: var(--glass-text-tertiary);
+  white-space: nowrap;
+}
+
+.meta-sep {
+  font-size: 0.75rem;
   color: var(--glass-text-tertiary);
 }
 
-:deep(.project-card .meta-time),
-:deep(.project-card .episode-label) {
-  color: var(--glass-text-tertiary);
+/* Actions / 操作区 */
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
-:deep(.project-card .action-button) {
+.row-actions .action-button {
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
   background: var(--glass-bg-muted) !important;
-  border: 1px solid var(--glass-stroke-soft) !important;
+  border: none !important;
 }
 
-:deep(.project-card .action-button:hover) {
-  background: var(--glass-accent-from) !important;
-  color: white !important;
+/* Mobile / 移动端适配 */
+@media (max-width: 768px) {
+  .drama-row {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    align-items: center;
+  }
+
+  .row-body {
+    flex-basis: calc(100% - 60px);
+  }
+
+  .row-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .row-actions {
+    margin-top: 0;
+  }
 }
 
 /* ========================================
@@ -567,5 +715,45 @@ onBeforeUnmount(() => {
   border: 1px dashed var(--glass-stroke-base);
   border-radius: var(--glass-radius-lg);
   padding: var(--glass-space-8);
+}
+
+/* ========================================
+   Filter Bar / 筛选栏
+   ======================================== */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--glass-space-3);
+  flex-wrap: wrap;
+}
+
+.filter-segmented {
+  border-radius: var(--glass-radius-sm);
+}
+
+.filter-segmented .glass-segmented-item {
+  padding: 6px 14px;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-radius: var(--glass-radius-sm);
+}
+
+.filter-search {
+  width: 220px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-search {
+    width: 100%;
+  }
 }
 </style>

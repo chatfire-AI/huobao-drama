@@ -86,7 +86,8 @@ export default {
     batchDelete: '批量删除',
     batchGenerate: '批量生成图片',
     selectedCount: '已选 {count} 项',
-    cancelBatch: '取消'
+    cancelBatch: '取消',
+    all: '全部'
   },
   settings: {
     title: '设置',
@@ -186,8 +187,12 @@ export default {
     noDescription: '暂无描述',
     status: {
       draft: '草稿',
+      planning: '策划中',
+      generating: '生成中',
       production: '制作中',
-      completed: '已完成'
+      completed: '已完成',
+      error: '错误',
+      archived: '已归档'
     },
     actions: {
       edit: '编辑',

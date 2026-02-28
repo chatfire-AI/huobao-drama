@@ -1,7 +1,7 @@
 <template>
   <!-- Project card component - Compact design with always-visible actions -->
   <!-- 项目卡片组件 - 紧凑设计，操作始终可见 -->
-  <article class="project-card glass-surface hover-lift" @click="$emit('click')" tabindex="0" @keydown.enter="$emit('click')">
+  <article class="project-card glass-surface hover-lift" :style="accentStyle" @click="$emit('click')" tabindex="0" @keydown.enter="$emit('click')">
     <div class="card-accent"></div>
     <div class="card-body">
       <div class="card-top">
@@ -10,10 +10,20 @@
           <slot name="actions"></slot>
         </div>
       </div>
+      <div v-if="status || styleName" class="card-tags">
+        <span v-if="status" :class="['glass-chip', statusChipClass]">{{ $t(`drama.status.${status}`) }}</span>
+        <span v-if="styleName" class="glass-chip glass-chip-neutral">{{ $t(`drama.styles.${styleName}`) }}</span>
+      </div>
       <p v-if="description" class="card-description">{{ description }}</p>
       <div class="card-footer">
         <span class="meta-time">{{ formattedDate }}</span>
-        <span class="episode-label">{{ $t('drama.episodeCount', { count: episodeCount }) }}</span>
+        <span class="footer-right">
+          <span class="episode-label">{{ $t('drama.episodeCount', { count: episodeCount }) }}</span>
+          <template v-if="formattedDuration">
+            <span class="footer-dot">&middot;</span>
+            <span class="episode-label">{{ formattedDuration }}</span>
+          </template>
+        </span>
       </div>
     </div>
   </article>
@@ -21,6 +31,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { DramaStatus } from '@/types/drama'
 
 /**
  * ProjectCard - Reusable project/drama card component
@@ -31,14 +42,35 @@ const props = withDefaults(defineProps<{
   description?: string
   updatedAt: string
   episodeCount?: number
+  status?: DramaStatus
+  styleName?: string
+  totalDuration?: number
 }>(), {
   description: '',
-  episodeCount: 0
+  episodeCount: 0,
+  totalDuration: 0
 })
 
 defineEmits<{
   click: []
 }>()
+
+const statusColorMap: Record<string, { chip: string; accent: string }> = {
+  draft: { chip: 'glass-chip-neutral', accent: 'var(--glass-tone-neutral-fg)' },
+  planning: { chip: 'glass-chip-info', accent: 'var(--glass-tone-info-fg)' },
+  generating: { chip: 'glass-chip-info', accent: 'var(--glass-tone-info-fg)' },
+  production: { chip: 'glass-chip-warning', accent: 'var(--glass-tone-warning-fg)' },
+  completed: { chip: 'glass-chip-success', accent: 'var(--glass-tone-success-fg)' },
+  error: { chip: 'glass-chip-danger', accent: 'var(--glass-tone-danger-fg)' },
+  archived: { chip: 'glass-chip-neutral', accent: 'var(--glass-tone-neutral-fg)' },
+}
+
+const statusChipClass = computed(() => statusColorMap[props.status || '']?.chip || 'glass-chip-neutral')
+
+const accentStyle = computed(() => {
+  const accent = statusColorMap[props.status || '']?.accent
+  return accent ? { '--accent-color': accent } as Record<string, string> : {}
+})
 
 // Format date / 格式化日期
 const formattedDate = computed(() => {
@@ -50,6 +82,14 @@ const formattedDate = computed(() => {
   const minutes = String(date.getMinutes()).padStart(2, '0')
   const seconds = String(date.getSeconds()).padStart(2, '0')
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+})
+
+const formattedDuration = computed(() => {
+  const s = props.totalDuration
+  if (!s || s <= 0) return ''
+  const m = Math.floor(s / 60)
+  const sec = s % 60
+  return sec > 0 ? `${m}m${sec}s` : `${m}m`
 })
 </script>
 
@@ -82,8 +122,15 @@ const formattedDate = computed(() => {
   top: 0;
   bottom: 0;
   width: 4px;
-  background: var(--glass-accent-from);
+  background: var(--accent-color, var(--glass-accent-from));
   border-radius: var(--glass-radius-md) 0 0 var(--glass-radius-md);
+}
+
+/* Tags / 标签行 */
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 /* Top Section / 顶部区域 */
@@ -138,8 +185,20 @@ const formattedDate = computed(() => {
   padding-top: 8px;
   border-top: 1px solid var(--glass-stroke-base);
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.footer-right {
+  display: flex;
+  align-items: center;
   gap: 4px;
+}
+
+.footer-dot {
+  font-size: 0.75rem;
+  color: var(--text-muted);
 }
 
 .meta-time,

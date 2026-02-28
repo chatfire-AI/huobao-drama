@@ -91,6 +91,7 @@ export default {
     batchGenerate: 'Batch Generate Images',
     selectedCount: '{count} selected',
     cancelBatch: 'Cancel',
+    all: 'All',
   },
   settings: {
     title: 'Settings',
@@ -172,13 +173,30 @@ export default {
     projectDesc: 'Project Description',
     projectDescPlaceholder: 'Enter project description (optional)',
     deleteConfirm: 'Are you sure you want to delete this project?',
+    style: 'Style',
+    stylePlaceholder: 'Select a style',
+    styles: {
+      ghibli: 'Ghibli',
+      guoman: 'Chinese Anime',
+      wasteland: 'Post-Apocalyptic',
+      nostalgia: 'Nostalgia',
+      pixel: 'Pixel Art',
+      voxel: 'Voxel World',
+      urban: 'Urban',
+      guoman3d: 'Chinese Anime 3D',
+      chibi3d: 'Chibi 3D'
+    },
     episodeCount: '{count} episodes',
     noCover: 'No cover',
     noDescription: 'No description',
     status: {
       draft: 'Draft',
+      planning: 'Planning',
+      generating: 'Generating',
       production: 'In Production',
-      completed: 'Completed'
+      completed: 'Completed',
+      error: 'Error',
+      archived: 'Archived'
     },
     actions: {
       edit: 'Edit',
