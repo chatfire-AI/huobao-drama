@@ -15,7 +15,7 @@ export interface AIServiceConfig {
   updated_at: string
 }
 
-export type AIServiceType = 'text' | 'image' | 'video'
+export type AIServiceType = 'text' | 'image' | 'video' | 'audio' | 'lipsync'
 
 export interface CreateAIConfigRequest {
   service_type: AIServiceType
@@ -57,7 +57,9 @@ export interface AIServiceProvider {
   name: string
   display_name: string
   service_type: AIServiceType
+  provider: string        // 实际 provider id（如 chatfire, gemini, volces）
   default_url: string
+  preset_models: string[] // 预设模型列表
   description: string
   is_active: boolean
   created_at: string

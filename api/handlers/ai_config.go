@@ -134,3 +134,15 @@ func (h *AIConfigHandler) TestConnection(c *gin.Context) {
 
 	response.Success(c, gin.H{"message": "连接测试成功"})
 }
+
+func (h *AIConfigHandler) ListProviders(c *gin.Context) {
+	serviceType := c.Query("service_type")
+
+	providers, err := h.aiService.ListProviders(serviceType)
+	if err != nil {
+		response.InternalError(c, "获取厂商列表失败")
+		return
+	}
+
+	response.Success(c, providers)
+}

@@ -319,7 +319,7 @@ func (s *VideoMergeService) getVideoClient(provider string) (video.VideoClient, 
 		endpoint = "/video/generations"
 		queryEndpoint = "/video/task/{taskId}"
 		return video.NewChatfireClient(config.BaseURL, config.APIKey, model, endpoint, queryEndpoint), nil
-	case "doubao", "volces", "ark":
+	case "doubao", "volces", "volcengine", "ark":
 		endpoint = "/contents/generations/tasks"
 		queryEndpoint = "/generations/tasks/{taskId}"
 		return video.NewVolcesArkClient(config.BaseURL, config.APIKey, model, endpoint, queryEndpoint), nil

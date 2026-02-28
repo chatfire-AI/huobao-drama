@@ -9,7 +9,7 @@ import (
 
 type AIServiceConfig struct {
 	ID            uint       `gorm:"primaryKey;autoIncrement" json:"id"`
-	ServiceType   string     `gorm:"type:varchar(50);not null" json:"service_type"` // text, image, video
+	ServiceType   string     `gorm:"type:varchar(50);not null" json:"service_type"` // text, image, video, audio, lipsync
 	Provider      string     `gorm:"type:varchar(50)" json:"provider"`              // openai, gemini, volcengine, etc.
 	Name          string     `gorm:"type:varchar(100);not null" json:"name"`
 	BaseURL       string     `gorm:"type:varchar(255);not null" json:"base_url"`
@@ -30,15 +30,17 @@ func (c *AIServiceConfig) TableName() string {
 }
 
 type AIServiceProvider struct {
-	ID          uint      `gorm:"primaryKey;autoIncrement" json:"id"`
-	Name        string    `gorm:"type:varchar(100);not null;uniqueIndex" json:"name"`
-	DisplayName string    `gorm:"type:varchar(100);not null" json:"display_name"`
-	ServiceType string    `gorm:"type:varchar(50);not null" json:"service_type"`
-	DefaultURL  string    `gorm:"type:varchar(255)" json:"default_url"`
-	Description string    `gorm:"type:text" json:"description"`
-	IsActive    bool      `gorm:"default:true" json:"is_active"`
-	CreatedAt   time.Time `gorm:"not null;autoCreateTime" json:"created_at"`
-	UpdatedAt   time.Time `gorm:"not null;autoUpdateTime" json:"updated_at"`
+	ID           uint       `gorm:"primaryKey;autoIncrement" json:"id"`
+	Name         string     `gorm:"type:varchar(100);not null;uniqueIndex" json:"name"`
+	DisplayName  string     `gorm:"type:varchar(100);not null" json:"display_name"`
+	ServiceType  string     `gorm:"type:varchar(50);not null" json:"service_type"`
+	Provider     string     `gorm:"type:varchar(50)" json:"provider"`    // 实际 provider id（如 chatfire, gemini, volces）
+	DefaultURL   string     `gorm:"type:varchar(255)" json:"default_url"`
+	PresetModels ModelField `gorm:"type:text" json:"preset_models"`      // 预设模型列表
+	Description  string     `gorm:"type:text" json:"description"`
+	IsActive     bool       `gorm:"default:true" json:"is_active"`
+	CreatedAt    time.Time  `gorm:"not null;autoCreateTime" json:"created_at"`
+	UpdatedAt    time.Time  `gorm:"not null;autoUpdateTime" json:"updated_at"`
 }
 
 func (p *AIServiceProvider) TableName() string {

@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "lint:i18n": "node scripts/check-i18n-duplicates.js",
     "format": "prettier --write \"src/**/*.{ts,vue,css,scss,json}\"",
     "test": "vitest --run",
     "test:watch": "vitest"

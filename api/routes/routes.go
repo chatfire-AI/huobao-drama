@@ -90,6 +90,9 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, log *logger.Logger, localStora
 			aiConfigs.DELETE("/:id", aiConfigHandler.DeleteConfig)
 		}
 
+		// AI 厂商列表
+		api.GET("/ai-providers", aiConfigHandler.ListProviders)
+
 		generation := api.Group("/generation")
 		{
 			generation.POST("/characters", scriptGenHandler.GenerateCharacters)

@@ -13,11 +13,15 @@ export function useAIModelConfig() {
   const textConfigs = ref<AIServiceConfig[]>([])
   const imageConfigs = ref<AIServiceConfig[]>([])
   const videoConfigs = ref<AIServiceConfig[]>([])
+  const audioConfigs = ref<AIServiceConfig[]>([])
+  const lipsyncConfigs = ref<AIServiceConfig[]>([])
   const loading = ref(false)
 
   const selectedTextModel = ref('')
   const selectedImageModel = ref('')
   const selectedVideoModel = ref('')
+  const selectedAudioModel = ref('')
+  const selectedLipsyncModel = ref('')
 
   const textModelOptions = computed<ModelOption[]>(() =>
     extractModelOptions(textConfigs.value)
@@ -29,6 +33,14 @@ export function useAIModelConfig() {
 
   const videoModelOptions = computed<ModelOption[]>(() =>
     extractModelOptions(videoConfigs.value)
+  )
+
+  const audioModelOptions = computed<ModelOption[]>(() =>
+    extractModelOptions(audioConfigs.value)
+  )
+
+  const lipsyncModelOptions = computed<ModelOption[]>(() =>
+    extractModelOptions(lipsyncConfigs.value)
   )
 
   function extractModelOptions(configs: AIServiceConfig[]): ModelOption[] {
@@ -64,6 +76,12 @@ export function useAIModelConfig() {
       if (!type || type === 'video') {
         videoConfigs.value = await aiAPI.list('video')
       }
+      if (!type || type === 'audio') {
+        audioConfigs.value = await aiAPI.list('audio')
+      }
+      if (!type || type === 'lipsync') {
+        lipsyncConfigs.value = await aiAPI.list('lipsync')
+      }
     } catch (error) {
       console.error('Failed to load AI configs:', error)
     } finally {
@@ -79,6 +97,8 @@ export function useAIModelConfig() {
         if (parsed.textModel) selectedTextModel.value = parsed.textModel
         if (parsed.imageModel) selectedImageModel.value = parsed.imageModel
         if (parsed.videoModel) selectedVideoModel.value = parsed.videoModel
+        if (parsed.audioModel) selectedAudioModel.value = parsed.audioModel
+        if (parsed.lipsyncModel) selectedLipsyncModel.value = parsed.lipsyncModel
       }
     } catch {
       // ignore parse errors
@@ -89,7 +109,9 @@ export function useAIModelConfig() {
     localStorage.setItem(storageKey, JSON.stringify({
       textModel: selectedTextModel.value,
       imageModel: selectedImageModel.value,
-      videoModel: selectedVideoModel.value
+      videoModel: selectedVideoModel.value,
+      audioModel: selectedAudioModel.value,
+      lipsyncModel: selectedLipsyncModel.value
     }))
   }
 
@@ -97,13 +119,19 @@ export function useAIModelConfig() {
     textConfigs,
     imageConfigs,
     videoConfigs,
+    audioConfigs,
+    lipsyncConfigs,
     loading,
     selectedTextModel,
     selectedImageModel,
     selectedVideoModel,
+    selectedAudioModel,
+    selectedLipsyncModel,
     textModelOptions,
     imageModelOptions,
     videoModelOptions,
+    audioModelOptions,
+    lipsyncModelOptions,
     loadConfigs,
     loadSavedSelections,
     saveSelections

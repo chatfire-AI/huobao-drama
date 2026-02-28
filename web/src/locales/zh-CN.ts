@@ -38,6 +38,7 @@ export default {
     create: '创建',
     edit: '编辑',
     comingSoon: '即将上线',
+    error: '出错了',
     delete: '删除',
     save: '保存',
     cancel: '取消',
@@ -107,6 +108,7 @@ export default {
   },
   aiConfig: {
     title: 'AI 服务配置',
+    subtitle: '管理 AI 服务配置',
     addConfig: '添加配置',
     editConfig: '编辑配置',
     back: '返回',
@@ -342,6 +344,8 @@ export default {
     extractComplete: '提取完成：共 {scenes} 个场景，去重 {dedup} 个',
     extractTitle: '提取场景',
     addScene: '添加场景',
+    location: '地点',
+    prompt: '图片提示词',
     searchPlaceholder: '搜索场景名称...',
     emptyTip: '还没有场景，从剧本提取或手动添加'
   },
@@ -504,6 +508,7 @@ export default {
     reSplitConfirm: '确定要重新拂分分镜吗？',
     deleteCharacter: '删除角色',
     splitStoryboardFirst: '请先对章节进行分镜拆解',
+    splitStoryboardHint: '请先生成所有角色和场景图片，然后进行分镜拆分',
     aiSplitting: 'AI拆分中...',
     aiAutoSplit: 'AI自动拆分',
     batchTaskSubmitted: '批量生成任务已提交！',

@@ -111,6 +111,7 @@ export default {
   },
   aiConfig: {
     title: 'AI Service Configuration',
+    subtitle: 'Manage AI service configurations',
     addConfig: 'Add Configuration',
     editConfig: 'Edit Configuration',
     back: 'Back',
@@ -347,6 +348,8 @@ export default {
     extractTitle: 'Extract Scenes',
     addScene: 'Add Scene',
     searchPlaceholder: 'Search scene name...',
+    location: 'Location',
+    prompt: 'Image Prompt',
     emptyTip: 'No scenes yet. Extract from script or add manually'
   },
   scriptGenerationPage: {
@@ -530,6 +533,7 @@ export default {
     clickToUpload: 'Click to Upload',
     prevStep: 'Previous Step',
     nextStepSplitShots: 'Next Step: Split Shots',
+    splitStoryboardHint: 'Please generate all character and scene images first, then split storyboard',
     reExtractConfirmTitle: 'Re-extract Confirmation',
     reExtractConfirmMessage: 'Re-extraction will overwrite extracted characters and scenes (including generated images). Continue?',
     startReExtracting: 'Starting re-extraction, please wait...',

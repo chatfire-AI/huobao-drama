@@ -1,5 +1,6 @@
 import type {
     AIServiceConfig,
+    AIServiceProvider,
     AIServiceType,
     CreateAIConfigRequest,
     TestConnectionRequest,
@@ -32,5 +33,11 @@ export const aiAPI = {
 
   testConnection(data: TestConnectionRequest) {
     return request.post('/ai-configs/test', data)
-  }
+  },
+
+  listProviders(serviceType?: AIServiceType) {
+    return request.get<AIServiceProvider[]>('/ai-providers', {
+      params: { service_type: serviceType }
+    })
+  },
 }

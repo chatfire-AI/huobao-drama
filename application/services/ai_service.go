@@ -23,7 +23,7 @@ func NewAIService(db *gorm.DB, log *logger.Logger) *AIService {
 }
 
 type CreateAIConfigRequest struct {
-	ServiceType   string            `json:"service_type" binding:"required,oneof=text image video"`
+	ServiceType   string            `json:"service_type" binding:"required,oneof=text image video audio lipsync"`
 	Name          string            `json:"name" binding:"required,min=1,max=100"`
 	Provider      string            `json:"provider" binding:"required"`
 	BaseURL       string            `json:"base_url" binding:"required,url"`
@@ -45,8 +45,8 @@ type UpdateAIConfigRequest struct {
 	Endpoint      string             `json:"endpoint"`
 	QueryEndpoint string             `json:"query_endpoint"`
 	Priority      *int               `json:"priority"`
-	IsDefault     bool               `json:"is_default"`
-	IsActive      bool               `json:"is_active"`
+	IsDefault     *bool              `json:"is_default"`
+	IsActive      *bool              `json:"is_active"`
 	Settings      string             `json:"settings"`
 }
 
@@ -98,6 +98,20 @@ func (s *AIService) CreateConfig(req *CreateAIConfigRequest) (*models.AIServiceC
 				endpoint = "/contents/generations/tasks"
 				if queryEndpoint == "" {
 					queryEndpoint = "/generations/tasks/{taskId}"
+				}
+			}
+		case "minimax":
+			if req.ServiceType == "video" {
+				endpoint = "/video_generation"
+				if queryEndpoint == "" {
+					queryEndpoint = "/query/video_generation"
+				}
+			}
+		case "vidu":
+			if req.ServiceType == "video" {
+				endpoint = "/ent/v2/video/generation"
+				if queryEndpoint == "" {
+					queryEndpoint = "/ent/v2/video/generation/{taskId}"
 				}
 			}
 		default:
@@ -224,6 +238,21 @@ func (s *AIService) UpdateConfig(configID uint, req *UpdateAIConfigRequest) (*mo
 				updates["endpoint"] = "/video/generations"
 				updates["query_endpoint"] = "/video/task/{taskId}"
 			}
+		case "doubao", "volcengine", "volces":
+			if serviceType == "video" {
+				updates["endpoint"] = "/contents/generations/tasks"
+				updates["query_endpoint"] = "/generations/tasks/{taskId}"
+			}
+		case "minimax":
+			if serviceType == "video" {
+				updates["endpoint"] = "/video_generation"
+				updates["query_endpoint"] = "/query/video_generation"
+			}
+		case "vidu":
+			if serviceType == "video" {
+				updates["endpoint"] = "/ent/v2/video/generation"
+				updates["query_endpoint"] = "/ent/v2/video/generation/{taskId}"
+			}
 		}
 	} else if req.Endpoint != "" {
 		updates["endpoint"] = req.Endpoint
@@ -234,8 +263,12 @@ func (s *AIService) UpdateConfig(configID uint, req *UpdateAIConfigRequest) (*mo
 	if req.Settings != "" {
 		updates["settings"] = req.Settings
 	}
-	updates["is_default"] = req.IsDefault
-	updates["is_active"] = req.IsActive
+	if req.IsDefault != nil {
+		updates["is_default"] = *req.IsDefault
+	}
+	if req.IsActive != nil {
+		updates["is_active"] = *req.IsActive
+	}
 
 	if err := tx.Model(&config).Updates(updates).Error; err != nil {
 		tx.Rollback()
@@ -432,4 +465,22 @@ func (s *AIService) GenerateImage(prompt string, size string, n int) ([]string, 
 	}
 
 	return client.GenerateImage(prompt, size, n)
+}
+
+// ListProviders 获取 AI 厂商列表，可按 service_type 过滤
+func (s *AIService) ListProviders(serviceType string) ([]models.AIServiceProvider, error) {
+	var providers []models.AIServiceProvider
+	query := s.db.Where("is_active = ?", true)
+
+	if serviceType != "" {
+		query = query.Where("service_type = ?", serviceType)
+	}
+
+	err := query.Order("service_type, display_name").Find(&providers).Error
+	if err != nil {
+		s.log.Errorw("Failed to list AI providers", "error", err)
+		return nil, err
+	}
+
+	return providers, nil
 }
