@@ -60,28 +60,39 @@
       <el-button size="small" @click="clearSelection">{{ $t('common.cancelBatch') }}</el-button>
     </div>
 
-    <ResponsiveGrid v-if="filteredItems.length > 0">
-      <ItemCard
+    <div v-if="filteredItems.length > 0" class="list-container">
+      <div
         v-for="character in filteredItems"
         :key="character.id"
-        :title="character.name"
-        :description="character.appearance || character.description"
-        :image-url="(character.local_path || character.image_url) ? getImageUrl(character) : undefined"
-        :placeholder-icon="User"
-        :tag="character.role === 'main' ? 'Main' : character.role === 'supporting' ? 'Supporting' : 'Minor'"
-        :tag-type="character.role === 'main' ? 'danger' : 'info'"
-        :selectable="isBatchMode"
-        :selected="selectedIds.has(character.id)"
-        @select="toggleItem(character.id)"
+        class="list-row glass-list-row"
         @click="$emit('editCharacter', character)"
       >
-        <template #actions>
-          <el-button size="small" @click="$emit('editCharacter', character)">{{ $t('common.edit') }}</el-button>
-          <el-button size="small" @click="$emit('generateCharacterImage', character)">{{ $t('prop.generateImage') }}</el-button>
-          <el-button size="small" type="danger" @click="$emit('deleteCharacter', character)">{{ $t('common.delete') }}</el-button>
-        </template>
-      </ItemCard>
-    </ResponsiveGrid>
+        <el-checkbox
+          v-if="isBatchMode"
+          :model-value="selectedIds.has(character.id)"
+          @change="toggleItem(character.id)"
+          @click.stop
+        />
+        <div class="row-thumb" :class="{ 'row-thumb-icon': !hasImage(character) }">
+          <img v-if="hasImage(character)" :src="getImageUrl(character)" :alt="character.name" />
+          <el-icon v-else :size="20"><User /></el-icon>
+        </div>
+        <div class="row-body">
+          <div class="row-top">
+            <span class="row-title">{{ character.name }}</span>
+            <span :class="['glass-chip', roleChipClass(character.role)]">{{ character.role === 'main' ? 'Main' : character.role === 'supporting' ? 'Supporting' : 'Minor' }}</span>
+          </div>
+          <div class="row-bottom">
+            <span class="row-desc">{{ character.appearance || character.description || '-' }}</span>
+          </div>
+        </div>
+        <div class="row-actions" @click.stop>
+          <ActionButton :icon="Edit" :tooltip="$t('common.edit')" variant="primary" @click="$emit('editCharacter', character)" />
+          <ActionButton :icon="PictureFilled" :tooltip="$t('prop.generateImage')" @click="$emit('generateCharacterImage', character)" />
+          <ActionButton :icon="Delete" :tooltip="$t('common.delete')" variant="danger" @click="$emit('deleteCharacter', character)" />
+        </div>
+      </div>
+    </div>
 
     <EmptyState
       v-else
@@ -97,8 +108,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Document, Plus, Search, User } from '@element-plus/icons-vue'
-import { TabHeader, ItemCard, ResponsiveGrid, EmptyState } from '@/components/common'
+import { Document, Plus, Search, User, Edit, Delete, PictureFilled } from '@element-plus/icons-vue'
+import { TabHeader, ActionButton, EmptyState } from '@/components/common'
 import { getImageUrl } from '@/utils/image'
 import { useFilteredList } from '@/composables/useFilteredList'
 import { useBatchSelection } from '@/composables/useBatchSelection'
@@ -121,6 +132,14 @@ defineEmits<{
 }>()
 
 const charactersList = computed(() => props.characters)
+
+const hasImage = (character: Character) => !!(character.local_path || character.image_url)
+
+const roleChipClass = (role?: string) => {
+  if (role === 'main') return 'glass-chip-danger'
+  if (role === 'supporting') return 'glass-chip-info'
+  return 'glass-chip-neutral'
+}
 
 const { searchQuery, filterValue, filteredItems } = useFilteredList({
   items: charactersList,

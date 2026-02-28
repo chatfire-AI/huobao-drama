@@ -369,6 +369,147 @@
   border-color: transparent;
 }
 
+/* ----------------------------------------
+   List Row Extended / 列表行扩展（管理Tab通用）
+   ---------------------------------------- */
+.glass-list-row.list-row {
+  padding: 14px 16px;
+  cursor: pointer;
+  gap: 14px;
+  border-radius: var(--glass-radius-md);
+  box-shadow: var(--glass-shadow-sm);
+  align-items: flex-start;
+}
+
+.glass-list-row.list-row:hover {
+  box-shadow: var(--glass-shadow-md);
+  transform: translateY(-1px);
+}
+
+.list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.list-row .row-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.list-row .row-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.list-row .row-thumb-icon {
+  background: var(--glass-bg-muted);
+  color: var(--glass-text-tertiary);
+}
+
+.list-row .row-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.list-row .row-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.list-row .row-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--glass-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-row .row-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.list-row .row-desc {
+  font-size: 0.8125rem;
+  color: var(--glass-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+}
+
+.list-row .row-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.list-row .meta-item {
+  font-size: 0.75rem;
+  color: var(--glass-text-tertiary);
+  white-space: nowrap;
+}
+
+.list-row .meta-sep {
+  font-size: 0.75rem;
+  color: var(--glass-text-tertiary);
+}
+
+.list-row .row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.list-row .row-actions .action-button {
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  background: var(--glass-bg-muted) !important;
+  border: none !important;
+}
+
+@media (max-width: 768px) {
+  .glass-list-row.list-row {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    align-items: center;
+  }
+
+  .list-row .row-body {
+    flex-basis: calc(100% - 60px);
+  }
+
+  .list-row .row-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .list-row .row-actions {
+    margin-top: 0;
+  }
+}
+
 /* ========================================
    Segmented / 分段控制
    ======================================== */

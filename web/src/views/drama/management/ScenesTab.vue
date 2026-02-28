@@ -50,28 +50,39 @@
       <el-button size="small" @click="clearSelection">{{ $t('common.cancelBatch') }}</el-button>
     </div>
 
-    <ResponsiveGrid v-if="filteredItems.length > 0">
-      <ItemCard
+    <div v-if="filteredItems.length > 0" class="list-container">
+      <div
         v-for="scene in filteredItems"
         :key="scene.id"
-        :title="scene.title || scene.location"
-        :description="scene.description"
-        :image-url="getImageUrl(scene)"
-        :placeholder-icon="Picture"
-        :tag="scene.time"
-        tag-type="info"
-        :selectable="isBatchMode"
-        :selected="selectedIds.has(scene.id)"
-        @select="toggleItem(scene.id)"
+        class="list-row glass-list-row"
         @click="$emit('editScene', scene)"
       >
-        <template #actions>
-          <el-button size="small" @click="$emit('editScene', scene)">{{ $t('common.edit') }}</el-button>
-          <el-button size="small" @click="$emit('generateSceneImage', scene)">{{ $t('prop.generateImage') }}</el-button>
-          <el-button size="small" type="danger" @click="$emit('deleteScene', scene)">{{ $t('common.delete') }}</el-button>
-        </template>
-      </ItemCard>
-    </ResponsiveGrid>
+        <el-checkbox
+          v-if="isBatchMode"
+          :model-value="selectedIds.has(scene.id)"
+          @change="toggleItem(scene.id)"
+          @click.stop
+        />
+        <div class="row-thumb" :class="{ 'row-thumb-icon': !hasImage(scene) }">
+          <img v-if="hasImage(scene)" :src="getImageUrl(scene)" :alt="scene.title || scene.location" />
+          <el-icon v-else :size="20"><Picture /></el-icon>
+        </div>
+        <div class="row-body">
+          <div class="row-top">
+            <span class="row-title">{{ scene.title || scene.location }}</span>
+            <span v-if="scene.time" class="glass-chip glass-chip-info">{{ scene.time }}</span>
+          </div>
+          <div class="row-bottom">
+            <span class="row-desc">{{ scene.description || '-' }}</span>
+          </div>
+        </div>
+        <div class="row-actions" @click.stop>
+          <ActionButton :icon="Edit" :tooltip="$t('common.edit')" variant="primary" @click="$emit('editScene', scene)" />
+          <ActionButton :icon="PictureFilled" :tooltip="$t('prop.generateImage')" @click="$emit('generateSceneImage', scene)" />
+          <ActionButton :icon="Delete" :tooltip="$t('common.delete')" variant="danger" @click="$emit('deleteScene', scene)" />
+        </div>
+      </div>
+    </div>
 
     <EmptyState
       v-else-if="scenes.length === 0"
@@ -94,8 +105,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Document, Plus, Search, Picture } from '@element-plus/icons-vue'
-import { TabHeader, ItemCard, ResponsiveGrid, EmptyState } from '@/components/common'
+import { Document, Plus, Search, Picture, Edit, Delete, PictureFilled } from '@element-plus/icons-vue'
+import { TabHeader, ActionButton, EmptyState } from '@/components/common'
 import { getImageUrl } from '@/utils/image'
 import { useFilteredList } from '@/composables/useFilteredList'
 import { useBatchSelection } from '@/composables/useBatchSelection'
@@ -118,6 +129,8 @@ defineEmits<{
 }>()
 
 const scenesList = computed(() => props.scenes)
+
+const hasImage = (scene: Scene) => !!(scene.local_path || scene.image_url)
 
 const { searchQuery, filteredItems } = useFilteredList({
   items: scenesList,

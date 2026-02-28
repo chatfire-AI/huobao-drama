@@ -63,28 +63,39 @@
       <el-button size="small" @click="clearSelection">{{ $t('common.cancelBatch') }}</el-button>
     </div>
 
-    <ResponsiveGrid v-if="filteredItems.length > 0">
-      <ItemCard
+    <div v-if="filteredItems.length > 0" class="list-container">
+      <div
         v-for="prop in filteredItems"
         :key="prop.id"
-        :title="prop.name"
-        :description="prop.description || prop.prompt"
-        :image-url="getImageUrl(prop)"
-        :placeholder-icon="Box"
-        :tag="prop.type"
-        tag-type="info"
-        :selectable="isBatchMode"
-        :selected="selectedIds.has(prop.id)"
-        @select="toggleItem(prop.id)"
+        class="list-row glass-list-row"
         @click="$emit('editProp', prop)"
       >
-        <template #actions>
-          <el-button size="small" @click="$emit('editProp', prop)">{{ $t('common.edit') }}</el-button>
-          <el-button size="small" @click="$emit('generatePropImage', prop)" :disabled="!prop.prompt">{{ $t('prop.generateImage') }}</el-button>
-          <el-button size="small" type="danger" @click="$emit('deleteProp', prop)">{{ $t('common.delete') }}</el-button>
-        </template>
-      </ItemCard>
-    </ResponsiveGrid>
+        <el-checkbox
+          v-if="isBatchMode"
+          :model-value="selectedIds.has(prop.id)"
+          @change="toggleItem(prop.id)"
+          @click.stop
+        />
+        <div class="row-thumb" :class="{ 'row-thumb-icon': !hasImage(prop) }">
+          <img v-if="hasImage(prop)" :src="getImageUrl(prop)" :alt="prop.name" />
+          <el-icon v-else :size="20"><Box /></el-icon>
+        </div>
+        <div class="row-body">
+          <div class="row-top">
+            <span class="row-title">{{ prop.name }}</span>
+            <span v-if="prop.type" class="glass-chip glass-chip-info">{{ prop.type }}</span>
+          </div>
+          <div class="row-bottom">
+            <span class="row-desc">{{ prop.description || prop.prompt || '-' }}</span>
+          </div>
+        </div>
+        <div class="row-actions" @click.stop>
+          <ActionButton :icon="Edit" :tooltip="$t('common.edit')" variant="primary" @click="$emit('editProp', prop)" />
+          <ActionButton :icon="PictureFilled" :tooltip="$t('prop.generateImage')" :disabled="!prop.prompt" @click="$emit('generatePropImage', prop)" />
+          <ActionButton :icon="Delete" :tooltip="$t('common.delete')" variant="danger" @click="$emit('deleteProp', prop)" />
+        </div>
+      </div>
+    </div>
 
     <EmptyState
       v-else-if="propsList.length === 0"
@@ -107,8 +118,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Document, Plus, Search, Box } from '@element-plus/icons-vue'
-import { TabHeader, ItemCard, ResponsiveGrid, EmptyState } from '@/components/common'
+import { Document, Plus, Search, Box, Edit, Delete, PictureFilled } from '@element-plus/icons-vue'
+import { TabHeader, ActionButton, EmptyState } from '@/components/common'
 import { getImageUrl } from '@/utils/image'
 import { useFilteredList } from '@/composables/useFilteredList'
 import { useBatchSelection } from '@/composables/useBatchSelection'
@@ -131,6 +142,8 @@ defineEmits<{
 }>()
 
 const propsListRef = computed(() => props.propsList)
+
+const hasImage = (prop: Prop) => !!prop.image_url
 
 const propTypes = computed(() => {
   const types = new Set(props.propsList.map(p => p.type).filter(Boolean))
