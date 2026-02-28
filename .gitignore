@@ -66,3 +66,4 @@ build.sh
 /data/storage/
 /web/package-lock.json
 .DS_Store
+**/__tests__/

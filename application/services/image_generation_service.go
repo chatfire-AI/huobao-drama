@@ -927,6 +927,126 @@ func (s *ImageGenerationService) processBackgroundExtraction(taskID string, epis
 		"unique_scenes", len(scenes))
 }
 
+// BatchExtractBackgrounds 批量从多个分集提取场景
+func (s *ImageGenerationService) BatchExtractBackgrounds(dramaID uint, episodeIDs []uint) (string, error) {
+	var drama models.Drama
+	if err := s.db.First(&drama, dramaID).Error; err != nil {
+		return "", fmt.Errorf("drama not found")
+	}
+
+	var episodes []models.Episode
+	query := s.db.Where("drama_id = ?", dramaID)
+	if len(episodeIDs) > 0 {
+		query = query.Where("id IN ?", episodeIDs)
+	}
+	if err := query.Order("episode_number ASC").Find(&episodes).Error; err != nil {
+		return "", fmt.Errorf("加载分集失败: %w", err)
+	}
+
+	var validEpisodes []models.Episode
+	for _, ep := range episodes {
+		if ep.ScriptContent != nil && *ep.ScriptContent != "" {
+			validEpisodes = append(validEpisodes, ep)
+		}
+	}
+
+	if len(validEpisodes) == 0 {
+		return "", fmt.Errorf("所选分集中没有包含剧本内容的集")
+	}
+
+	task, err := s.taskService.CreateTask("batch_background_extraction", fmt.Sprintf("%d", dramaID))
+	if err != nil {
+		return "", fmt.Errorf("创建任务失败: %w", err)
+	}
+
+	go s.processBatchBackgroundExtraction(task.ID, drama, validEpisodes)
+
+	return task.ID, nil
+}
+
+func (s *ImageGenerationService) processBatchBackgroundExtraction(taskID string, drama models.Drama, episodes []models.Episode) {
+	totalEpisodes := len(episodes)
+	totalScenes := 0
+
+	for i, episode := range episodes {
+		progress := (i * 100) / (totalEpisodes + 1)
+		msg := fmt.Sprintf("正在提取第 %d/%d 集...", i+1, totalEpisodes)
+		s.taskService.UpdateTaskStatus(taskID, "processing", progress, msg)
+
+		backgroundsInfo, err := s.extractBackgroundsFromScript(*episode.ScriptContent, episode.DramaID, "", drama.Style)
+		if err != nil {
+			s.log.Errorw("Failed to extract backgrounds for episode",
+				"error", err, "episode_id", episode.ID)
+			continue
+		}
+
+		err = s.db.Transaction(func(tx *gorm.DB) error {
+			for _, bgInfo := range backgroundsInfo {
+				episodeIDVal := episode.ID
+				scene := &models.Scene{
+					DramaID:         drama.ID,
+					EpisodeID:       &episodeIDVal,
+					Location:        bgInfo.Location,
+					Time:            bgInfo.Time,
+					Prompt:          bgInfo.Prompt,
+					StoryboardCount: 1,
+					Status:          "pending",
+				}
+				if err := tx.Create(scene).Error; err != nil {
+					return err
+				}
+				totalScenes++
+			}
+			return nil
+		})
+
+		if err != nil {
+			s.log.Errorw("Failed to save scenes for episode", "error", err, "episode_id", episode.ID)
+		}
+	}
+
+	// 场景去重
+	s.taskService.UpdateTaskStatus(taskID, "processing", 95, "正在去重场景...")
+	dedupCount := s.deduplicateScenesByLocation(drama.ID)
+
+	s.taskService.UpdateTaskResult(taskID, map[string]interface{}{
+		"scenes":         totalScenes,
+		"episodes_count": totalEpisodes,
+		"dedup_scenes":   dedupCount,
+	})
+}
+
+// deduplicateScenesByLocation 按地点去重场景
+func (s *ImageGenerationService) deduplicateScenesByLocation(dramaID uint) int {
+	var scenes []models.Scene
+	if err := s.db.Where("drama_id = ?", dramaID).Order("created_at ASC").Find(&scenes).Error; err != nil {
+		s.log.Errorw("Failed to load scenes for dedup", "error", err)
+		return 0
+	}
+
+	groups := make(map[string][]models.Scene)
+	for _, scene := range scenes {
+		key := strings.ToLower(strings.TrimSpace(scene.Location))
+		groups[key] = append(groups[key], scene)
+	}
+
+	dedupCount := 0
+	for _, group := range groups {
+		if len(group) <= 1 {
+			continue
+		}
+		for i := 1; i < len(group); i++ {
+			if err := s.db.Delete(&group[i]).Error; err != nil {
+				s.log.Warnw("Failed to delete duplicate scene", "error", err, "scene_id", group[i].ID)
+				continue
+			}
+			dedupCount++
+		}
+	}
+
+	return dedupCount
+}
+
 // extractBackgroundsFromScript 从剧本内容中使用AI提取场景信息
 func (s *ImageGenerationService) extractBackgroundsFromScript(scriptContent string, dramaID uint, model string, style string) ([]BackgroundInfo, error) {
 	if scriptContent == "" {

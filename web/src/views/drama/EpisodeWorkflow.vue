@@ -1,6 +1,6 @@
 <template>
-  <div class="page-container">
-    <div class="content-wrapper animate-fade-in">
+  <div class="glass-page">
+    <div class="content-wrapper glass-surface animate-fade-in">
       <AppHeader :fixed="false">
         <template #left>
           <el-button text @click="$router.back()" class="back-btn">
@@ -65,7 +65,10 @@
           :characters-count="charactersCount"
           :script-content="scriptContent"
           :generating-script="generatingScript"
+          :extracting-characters-and-backgrounds="extractingCharactersAndBackgrounds"
           @save-script="handleSaveScript"
+          @extract-characters-and-scenes="handleExtractCharactersAndBackgrounds"
+          @next-step="nextStep"
         />
 
         <!-- 阶段 1: 生成图片 -->
@@ -107,10 +110,12 @@
           :task-message="taskMessage"
           @generate-shots="generateShots"
           @edit-shot="editShot"
+          @update-shot="handleUpdateShot"
+          @delete-shot="handleDeleteShot"
         />
       </div>
 
-      <div class="actions-container">
+      <div class="actions-container glass-surface-elevated" v-show="currentStep !== 0">
         <div class="action-buttons" v-show="currentStep === 0">
           <el-button
             type="primary"
@@ -744,6 +749,17 @@ const currentEpisode = computed(() => {
   if (!drama.value?.episodes) return null;
   return drama.value.episodes.find((ep) => ep.episode_number === episodeNumber);
 });
+
+// 初始化 scriptContent
+watch(
+  () => currentEpisode.value?.script_content,
+  (newContent) => {
+    if (newContent !== undefined) {
+      scriptContent.value = newContent;
+    }
+  },
+  { immediate: true }
+);
 
 const hasCharacters = computed((): boolean => {
   return !!(
@@ -1518,6 +1534,35 @@ const editShot = (shot: any, index: number) => {
   shotEditDialogVisible.value = true;
 };
 
+// 更新分镜（从列表直接编辑）
+const handleUpdateShot = async (updatedShot: any) => {
+  try {
+    await dramaAPI.updateStoryboard(
+      updatedShot.id.toString(),
+      updatedShot
+    );
+    ElMessage.success("更新成功");
+    // 刷新数据
+    await loadDramaData();
+  } catch (error: any) {
+    console.error("更新分镜失败:", error);
+    ElMessage.error("更新失败");
+  }
+};
+
+// 删除分镜
+const handleDeleteShot = async (shotId: any, index: number) => {
+  try {
+    await dramaAPI.deleteStoryboard(shotId.toString());
+    ElMessage.success("删除成功");
+    // 刷新数据
+    await loadDramaData();
+  } catch (error: any) {
+    console.error("删除分镜失败:", error);
+    ElMessage.error("删除失败");
+  }
+};
+
 const saveShotEdit = async () => {
   if (!editingShot.value) return;
 
@@ -1865,25 +1910,11 @@ onMounted(() => {
 
 <style scoped lang="scss">
 /* ========================================
-   Page Layout / 页面布局 - 紧凑边距
+   Page Layout / 页面布局 - 玻璃态设计
    ======================================== */
-.page-container {
+.glass-page {
   min-height: 100vh;
-  background: var(--bg-primary);
-  // padding: var(--space-2) var(--space-3);
   transition: background var(--transition-normal);
-}
-
-@media (min-width: 768px) {
-  .page-container {
-    // padding: var(--space-3) var(--space-4);
-  }
-}
-
-@media (min-width: 1024px) {
-  .page-container {
-    // padding: var(--space-4) var(--space-5);
-  }
 }
 
 .content-wrapper {
@@ -1903,7 +1934,6 @@ onMounted(() => {
 
 .actions-container {
   height: 70px;
-  background: var(--bg-card);
   overflow: hidden;
 }
 
@@ -1933,10 +1963,10 @@ onMounted(() => {
   align-items: center;
   gap: 0.375rem;
   padding: 0.5rem 0.875rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-lg);
-  color: var(--text-secondary);
+  background: var(--glass-bg-surface);
+  border: 1px solid var(--glass-stroke-soft);
+  border-radius: var(--glass-radius-lg);
+  color: var(--glass-text-secondary);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -1944,9 +1974,9 @@ onMounted(() => {
   white-space: nowrap;
 
   &:hover {
-    background: var(--bg-card-hover);
-    color: var(--text-primary);
-    border-color: var(--border-secondary);
+    background: var(--glass-bg-surface-strong);
+    color: var(--glass-text-primary);
+    border-color: var(--glass-stroke-strong);
   }
 }
 
@@ -1960,7 +1990,7 @@ onMounted(() => {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--glass-text-primary);
   letter-spacing: -0.025em;
   line-height: 1.2;
   white-space: nowrap;
@@ -2000,25 +2030,25 @@ onMounted(() => {
     gap: 8px;
     padding: 8px 16px;
     border-radius: 20px;
-    background: var(--bg-card-hover);
+    background: var(--glass-bg-muted);
     transition: all 0.3s;
 
     &.active {
-      background: var(--accent-light);
+      background: var(--glass-accent-from);
 
       .step-circle {
-        background: var(--accent);
-        color: var(--text-inverse);
+        background: var(--glass-accent-to);
+        color: var(--glass-text-on-accent);
       }
     }
 
     &.current {
-      background: var(--accent);
-      color: var(--text-inverse);
+      background: var(--glass-accent-from);
+      color: var(--glass-text-on-accent);
 
       .step-circle {
-        background: var(--bg-card);
-        color: var(--accent);
+        background: var(--glass-bg-surface);
+        color: var(--glass-accent-to);
       }
 
       .step-text {
@@ -2033,8 +2063,8 @@ onMounted(() => {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--border-secondary);
-      color: var(--text-secondary);
+      background: var(--glass-stroke-strong);
+      color: var(--glass-text-secondary);
       font-weight: 600;
       transition: all 0.3s;
     }
@@ -2047,7 +2077,7 @@ onMounted(() => {
   }
 
   .step-arrow {
-    color: var(--border-secondary);
+    color: var(--glass-text-tertiary);
   }
 }
 

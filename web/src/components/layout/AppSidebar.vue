@@ -9,6 +9,8 @@
     <!-- Main nav -->
     <nav class="sidebar-nav">
       <SidebarItem :icon="FolderOpened" :label="$t('sidebar.projects')" to="/" :collapsed="collapsed" />
+      <SidebarItem :icon="User" :label="$t('sidebar.characterLibrary')" to="/character-library" :collapsed="collapsed" />
+      <SidebarItem :icon="Picture" :label="$t('sidebar.assets')" to="/assets" :collapsed="collapsed" />
       <SidebarItem :icon="Setting" :label="$t('sidebar.settings')" to="/settings/ai-config" :collapsed="collapsed" />
     </nav>
 
@@ -28,7 +30,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Film, FolderOpened, Setting, DArrowLeft, DArrowRight } from '@element-plus/icons-vue'
+import { Film, FolderOpened, User, Picture, Setting, DArrowLeft, DArrowRight } from '@element-plus/icons-vue'
 import SidebarItem from './SidebarItem.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'

@@ -3,10 +3,10 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	models "github.com/drama-generator/backend/domain/models"
-	"github.com/drama-generator/backend/pkg/ai"
 	"github.com/drama-generator/backend/pkg/config"
 	"github.com/drama-generator/backend/pkg/logger"
 	"github.com/drama-generator/backend/pkg/utils"
@@ -520,32 +520,22 @@ func (s *CharacterLibraryService) ExtractCharactersFromScript(episodeID uint) (s
 	return task.ID, nil
 }
 
-func (s *CharacterLibraryService) processCharacterExtraction(taskID string, episode models.Episode) {
-	s.taskService.UpdateTaskStatus(taskID, "processing", 0, "正在分析剧本...")
-
+// extractCharactersForEpisode 从单集剧本提取角色（可复用核心逻辑）
+func (s *CharacterLibraryService) extractCharactersForEpisode(episode models.Episode, drama models.Drama) ([]models.Character, error) {
 	script := ""
 	if episode.ScriptContent != nil {
 		script = *episode.ScriptContent
 	}
 
-	// 获取 drama 的 style 信息
-	var drama models.Drama
-	if err := s.db.First(&drama, episode.DramaID).Error; err != nil {
-		s.log.Warnw("Failed to load drama", "error", err, "drama_id", episode.DramaID)
-	}
-
 	prompt := s.promptI18n.GetCharacterExtractionPrompt(drama.Style)
 	userPrompt := fmt.Sprintf("【剧本内容】\n%s", script)
 
-	response, err := s.aiService.GenerateText(userPrompt, prompt, ai.WithMaxTokens(3000))
+	response, err := s.aiService.GenerateText(userPrompt, prompt)
 	if err != nil {
-		s.taskService.UpdateTaskError(taskID, err)
-		return
+		return nil, fmt.Errorf("AI生成失败: %w", err)
 	}
 
-	s.taskService.UpdateTaskStatus(taskID, "processing", 50, "正在整理角色数据...")
-
-	var extractedCharacters []struct {
+	type extractedChar struct {
 		Name        string `json:"name"`
 		Role        string `json:"role"`
 		Appearance  string `json:"appearance"`
@@ -553,26 +543,28 @@ func (s *CharacterLibraryService) processCharacterExtraction(taskID string, epis
 		Description string `json:"description"`
 	}
 
+	var extractedCharacters []extractedChar
 	if err := utils.SafeParseAIJSON(response, &extractedCharacters); err != nil {
-		s.log.Errorw("Failed to parse AI response for characters", "error", err, "response", response)
-		s.taskService.UpdateTaskError(taskID, fmt.Errorf("解析AI响应失败"))
-		return
+		// AI 可能返回单个对象而非数组，尝试解析为单个角色
+		var single extractedChar
+		if err2 := utils.SafeParseAIJSON(response, &single); err2 == nil && single.Name != "" {
+			extractedCharacters = []extractedChar{single}
+		} else {
+			return nil, fmt.Errorf("解析AI响应失败: %w", err)
+		}
 	}
 
 	var savedCharacters []models.Character
 	for _, charData := range extractedCharacters {
-		// 检查是否已存在同名角色
 		var existingCharacter models.Character
 		err := s.db.Where("drama_id = ? AND name = ?", episode.DramaID, charData.Name).First(&existingCharacter).Error
 
 		if err == nil {
-			// 如果存在，只关联，不更新（或者可以选更新，这里暂不更新）
 			if err := s.db.Model(&episode).Association("Characters").Append(&existingCharacter); err != nil {
 				s.log.Warnw("Failed to associate existing character", "error", err)
 			}
 			savedCharacters = append(savedCharacters, existingCharacter)
 		} else {
-			// 创建新角色
 			newCharacter := models.Character{
 				DramaID:     episode.DramaID,
 				Name:        charData.Name,
@@ -586,7 +578,6 @@ func (s *CharacterLibraryService) processCharacterExtraction(taskID string, epis
 				continue
 			}
 
-			// 关联到分集
 			if err := s.db.Model(&episode).Association("Characters").Append(&newCharacter); err != nil {
 				s.log.Warnw("Failed to associate new character", "error", err)
 			}
@@ -594,8 +585,127 @@ func (s *CharacterLibraryService) processCharacterExtraction(taskID string, epis
 		}
 	}
 
+	return savedCharacters, nil
+}
+
+func (s *CharacterLibraryService) processCharacterExtraction(taskID string, episode models.Episode) {
+	s.taskService.UpdateTaskStatus(taskID, "processing", 0, "正在分析剧本...")
+
+	var drama models.Drama
+	if err := s.db.First(&drama, episode.DramaID).Error; err != nil {
+		s.log.Warnw("Failed to load drama", "error", err, "drama_id", episode.DramaID)
+	}
+
+	s.taskService.UpdateTaskStatus(taskID, "processing", 50, "正在整理角色数据...")
+
+	savedCharacters, err := s.extractCharactersForEpisode(episode, drama)
+	if err != nil {
+		s.taskService.UpdateTaskError(taskID, err)
+		return
+	}
+
 	s.taskService.UpdateTaskResult(taskID, map[string]interface{}{
 		"characters": savedCharacters,
 		"count":      len(savedCharacters),
+	})
+}
+
+// deduplicateScenesByLocation 按地点去重场景
+func (s *CharacterLibraryService) deduplicateScenesByLocation(dramaID uint) int {
+	var scenes []models.Scene
+	if err := s.db.Where("drama_id = ?", dramaID).Order("created_at ASC").Find(&scenes).Error; err != nil {
+		s.log.Errorw("Failed to load scenes for dedup", "error", err)
+		return 0
+	}
+
+	// 按 normalized location 分组
+	groups := make(map[string][]models.Scene)
+	for _, scene := range scenes {
+		key := strings.ToLower(strings.TrimSpace(scene.Location))
+		groups[key] = append(groups[key], scene)
+	}
+
+	dedupCount := 0
+	for _, group := range groups {
+		if len(group) <= 1 {
+			continue
+		}
+		// 保留第一个（最早创建的），删除其余
+		for i := 1; i < len(group); i++ {
+			if err := s.db.Delete(&group[i]).Error; err != nil {
+				s.log.Warnw("Failed to delete duplicate scene", "error", err, "scene_id", group[i].ID)
+				continue
+			}
+			dedupCount++
+		}
+	}
+
+	return dedupCount
+}
+
+// BatchExtractCharacters 批量从多个分集提取角色
+func (s *CharacterLibraryService) BatchExtractCharacters(dramaID uint, episodeIDs []uint) (string, error) {
+	var drama models.Drama
+	if err := s.db.First(&drama, dramaID).Error; err != nil {
+		return "", fmt.Errorf("drama not found")
+	}
+
+	var episodes []models.Episode
+	query := s.db.Where("drama_id = ?", dramaID)
+	if len(episodeIDs) > 0 {
+		query = query.Where("id IN ?", episodeIDs)
+	}
+	if err := query.Order("episode_number ASC").Find(&episodes).Error; err != nil {
+		return "", fmt.Errorf("加载分集失败: %w", err)
+	}
+
+	// 过滤掉没有剧本内容的集
+	var validEpisodes []models.Episode
+	for _, ep := range episodes {
+		if ep.ScriptContent != nil && *ep.ScriptContent != "" {
+			validEpisodes = append(validEpisodes, ep)
+		}
+	}
+
+	if len(validEpisodes) == 0 {
+		return "", fmt.Errorf("所选分集中没有包含剧本内容的集")
+	}
+
+	task, err := s.taskService.CreateTask("batch_character_extraction", fmt.Sprintf("%d", dramaID))
+	if err != nil {
+		return "", fmt.Errorf("创建任务失败: %w", err)
+	}
+
+	go s.processBatchCharacterExtraction(task.ID, drama, validEpisodes)
+
+	return task.ID, nil
+}
+
+func (s *CharacterLibraryService) processBatchCharacterExtraction(taskID string, drama models.Drama, episodes []models.Episode) {
+	totalEpisodes := len(episodes)
+	totalCharacters := 0
+
+	for i, episode := range episodes {
+		progress := (i * 100) / (totalEpisodes + 1) // +1 留空间给去重步骤
+		msg := fmt.Sprintf("正在提取第 %d/%d 集...", i+1, totalEpisodes)
+		s.taskService.UpdateTaskStatus(taskID, "processing", progress, msg)
+
+		characters, err := s.extractCharactersForEpisode(episode, drama)
+		if err != nil {
+			s.log.Errorw("Failed to extract characters for episode",
+				"error", err, "episode_id", episode.ID, "episode_num", episode.EpisodeNum)
+			continue
+		}
+		totalCharacters += len(characters)
+	}
+
+	// 场景去重
+	s.taskService.UpdateTaskStatus(taskID, "processing", 95, "正在去重场景...")
+	dedupCount := s.deduplicateScenesByLocation(drama.ID)
+
+	s.taskService.UpdateTaskResult(taskID, map[string]interface{}{
+		"characters":     totalCharacters,
+		"episodes_count": totalEpisodes,
+		"dedup_scenes":   dedupCount,
 	})
 }

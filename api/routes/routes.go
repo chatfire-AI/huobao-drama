@@ -75,6 +75,9 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, log *logger.Logger, localStora
 			dramas.PUT("/:id/episodes", dramaHandler.SaveEpisodes)
 			dramas.PUT("/:id/progress", dramaHandler.SaveProgress)
 			dramas.GET("/:id/props", propHandler.ListProps) // Added prop list route
+			dramas.POST("/:id/characters/batch-extract", characterLibraryHandler.BatchExtractCharacters)
+			dramas.POST("/:id/props/batch-extract", propHandler.BatchExtractProps)
+			dramas.POST("/:id/scenes/batch-extract", imageGenHandler.BatchExtractBackgrounds)
 		}
 
 		aiConfigs := api.Group("/ai-configs")

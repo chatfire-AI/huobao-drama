@@ -1,9 +1,11 @@
 <template>
   <!-- Base Card Component - Reusable card with modern design -->
   <!-- 基础卡片组件 - 现代设计的可复用卡片 -->
-  <div 
+  <div
     :class="[
       'base-card',
+      'glass-surface',
+      'hover-lift',
       `variant-${variant}`,
       { 'is-hoverable': hoverable, 'is-clickable': clickable }
     ]"
@@ -78,26 +80,23 @@ defineEmits<{
 .base-card {
   display: flex;
   flex-direction: column;
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
+  border-radius: var(--glass-radius-lg);
   transition: all var(--transition-normal);
   overflow: hidden;
 }
 
 /* Variants / 变体样式 */
 .variant-default {
-  border: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-card);
+  border: 1px solid var(--glass-stroke-soft);
 }
 
 .variant-elevated {
   border: none;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--glass-shadow-lg);
 }
 
 .variant-outlined {
-  border: 1px solid var(--border-primary);
-  box-shadow: none;
+  border: 1px solid var(--glass-stroke-soft);
 }
 
 .variant-ghost {
@@ -108,8 +107,7 @@ defineEmits<{
 
 /* Hover & Clickable States / 悬停和可点击状态 */
 .is-hoverable:hover {
-  box-shadow: var(--shadow-card-hover);
-  border-color: var(--border-secondary);
+  border-color: var(--glass-stroke-focus);
 }
 
 .is-clickable {
@@ -117,12 +115,12 @@ defineEmits<{
 }
 
 .is-clickable:hover {
-  border-color: var(--accent);
-  box-shadow: var(--shadow-glow);
+  border-color: var(--glass-accent-from);
+  box-shadow: var(--glass-shadow-md);
 }
 
 .is-clickable:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--glass-accent-from);
   outline-offset: 2px;
 }
 
@@ -150,9 +148,9 @@ defineEmits<{
   justify-content: center;
   width: 2.5rem;
   height: 2.5rem;
-  background: var(--accent-light);
-  border-radius: var(--radius-lg);
-  color: var(--accent);
+  background: var(--glass-accent-from);
+  border-radius: var(--glass-radius-lg);
+  color: var(--glass-text-on-accent);
 }
 
 .header-text {
@@ -198,8 +196,8 @@ defineEmits<{
   justify-content: flex-end;
   gap: var(--space-3);
   padding: var(--space-4) var(--space-5);
-  border-top: 1px solid var(--border-primary);
-  background: var(--bg-secondary);
+  border-top: 1px solid var(--glass-stroke-base);
+  background: var(--glass-bg-muted);
 }
 
 </style>

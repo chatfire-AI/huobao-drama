@@ -164,3 +164,30 @@ func (h *PropHandler) AssociateProps(c *gin.Context) {
 
 	response.Success(c, nil)
 }
+
+// BatchExtractProps 批量从剧本提取道具
+func (h *PropHandler) BatchExtractProps(c *gin.Context) {
+	dramaIDStr := c.Param("id")
+	dramaID, err := strconv.ParseUint(dramaIDStr, 10, 32)
+	if err != nil {
+		response.BadRequest(c, "无效的项目ID")
+		return
+	}
+
+	var req struct {
+		EpisodeIDs []uint `json:"episode_ids"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	taskID, err := h.propService.BatchExtractProps(uint(dramaID), req.EpisodeIDs)
+	if err != nil {
+		h.log.Errorw("Failed to batch extract props", "error", err)
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{"task_id": taskID, "message": "批量道具提取任务已提交"})
+}

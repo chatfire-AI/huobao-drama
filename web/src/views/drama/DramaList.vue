@@ -1,7 +1,7 @@
 <template>
-  <!-- Drama List Page - Refactored with modern minimalist design -->
-  <!-- 短剧列表页面 - 使用现代简约设计重构 -->
-  <div class="animate-fade-in">
+  <!-- Drama List Page - Glass Design -->
+  <!-- 短剧列表页面 - 玻璃态设计 -->
+  <div class="animate-fade-in drama-list-container">
     <PageHeader :title="$t('drama.title')" :subtitle="$t('drama.totalProjects', { count: total })">
       <template #actions>
         <el-button type="primary" @click="handleCreate" class="header-btn primary">
@@ -317,26 +317,58 @@ onBeforeUnmount(() => {
 
 <style scoped>
 /* ========================================
-   Page Layout / 页面布局 - 紧凑边距
+   Page Layout / 页面布局 - 玻璃态设计
    ======================================== */
+.drama-list-container {
+  min-height: 100vh;
+  background: var(--glass-bg-canvas);
+  padding: var(--glass-space-5);
+}
+
+/* ========================================
+   Header / 头部区域
+   ======================================== */
+.page-header-wrapper {
+  background: var(--glass-bg-surface);
+  backdrop-filter: blur(var(--glass-blur-md));
+  -webkit-backdrop-filter: blur(var(--glass-blur-md));
+  border: 1px solid var(--glass-stroke-base);
+  border-radius: var(--glass-radius-lg);
+  padding: var(--glass-space-5) var(--glass-space-6);
+  margin-bottom: var(--glass-space-5);
+  box-shadow: var(--glass-shadow-sm);
+}
+
+.page-title {
+  margin: 0 0 var(--glass-space-1) 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--glass-text-primary);
+  letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--glass-text-tertiary);
+}
 
 /* ========================================
    Header Buttons / 头部按钮
    ======================================== */
-.header-btn {
-  border-radius: var(--radius-lg);
-  font-weight: 500;
-}
-
-.header-btn.primary {
-  background: linear-gradient(135deg, var(--accent) 0%, #0284c7 100%);
+.glass-btn-primary {
+  background: linear-gradient(135deg, var(--glass-accent-from) 0%, var(--glass-accent-to) 100%);
   border: none;
-  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35);
+  color: var(--glass-text-on-accent);
+  font-weight: 500;
+  border-radius: var(--glass-radius-sm);
+  box-shadow: var(--glass-accent-shadow-soft);
+  transition: all 0.2s ease;
 }
 
-.header-btn.primary:hover {
+.glass-btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.45);
+  box-shadow: var(--glass-accent-shadow-strong);
 }
 
 @media (max-width: 640px) {
@@ -350,13 +382,13 @@ onBeforeUnmount(() => {
 }
 
 /* ========================================
-   Projects Grid / 项目网格 - 紧凑间距
+   Projects Grid / 项目网格 - 玻璃态卡片
    ======================================== */
 .projects-grid {
-  padding: 12px;
+  padding: var(--glass-space-3);
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--space-4);
+  gap: var(--glass-space-4);
   min-height: 300px;
 }
 
@@ -367,72 +399,173 @@ onBeforeUnmount(() => {
 }
 
 /* ========================================
+   Glass Card / 玻璃态卡片样式
+   ======================================== */
+:deep(.project-card) {
+  background: var(--glass-bg-surface);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  border: 1px solid var(--glass-stroke-base);
+  border-radius: var(--glass-radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: var(--glass-shadow-sm);
+}
+
+:deep(.project-card:hover) {
+  border-color: var(--glass-stroke-focus);
+  box-shadow: var(--glass-shadow-md);
+  transform: translateY(-2px);
+}
+
+:deep(.project-card .card-accent) {
+  background: linear-gradient(180deg, var(--glass-accent-from) 0%, var(--glass-accent-to) 100%);
+}
+
+:deep(.project-card .card-footer) {
+  border-color: var(--glass-stroke-soft);
+}
+
+:deep(.project-card .card-title) {
+  color: var(--glass-text-primary);
+}
+
+:deep(.project-card .card-description) {
+  color: var(--glass-text-tertiary);
+}
+
+:deep(.project-card .meta-time),
+:deep(.project-card .episode-label) {
+  color: var(--glass-text-tertiary);
+}
+
+:deep(.project-card .action-button) {
+  background: var(--glass-bg-muted) !important;
+  border: 1px solid var(--glass-stroke-soft) !important;
+}
+
+:deep(.project-card .action-button:hover) {
+  background: var(--glass-accent-from) !important;
+  color: white !important;
+}
+
+/* ========================================
    Scroll Sentinel / 无限滚动
    ======================================== */
 .scroll-sentinel {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-6) 0;
+  padding: var(--glass-space-6) 0;
   min-height: 1px;
 }
 
 .loading-more {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  color: var(--text-muted);
+  gap: var(--glass-space-2);
+  color: var(--glass-text-tertiary);
   font-size: 0.875rem;
 }
 
 .no-more {
-  color: var(--text-muted);
+  color: var(--glass-text-tertiary);
   font-size: 0.8125rem;
 }
 
 /* ========================================
-   Edit Dialog / 编辑对话框
+   Edit Dialog / 编辑对话框 - 玻璃态
    ======================================== */
-.edit-dialog :deep(.el-dialog) {
-  border-radius: var(--radius-xl);
+:deep(.edit-dialog .el-dialog) {
+  background: var(--glass-bg-surface-modal);
+  backdrop-filter: blur(var(--glass-blur-lg));
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+  border: 1px solid var(--glass-stroke-base);
+  border-radius: var(--glass-radius-xl);
+  box-shadow: var(--glass-shadow-modal);
 }
 
-.edit-dialog :deep(.el-dialog__header) {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border-primary);
+:deep(.edit-dialog .el-dialog__header) {
+  padding: var(--glass-space-5) var(--glass-space-6);
+  border-bottom: 1px solid var(--glass-stroke-soft);
   margin-right: 0;
 }
 
-.edit-dialog :deep(.el-dialog__title) {
+:deep(.edit-dialog .el-dialog__title) {
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--glass-text-primary);
 }
 
-.edit-dialog :deep(.el-dialog__body) {
-  padding: 1.5rem;
+:deep(.edit-dialog .el-dialog__body) {
+  padding: var(--glass-space-6);
 }
 
-.edit-form :deep(.el-form-item__label) {
+:deep(.edit-dialog .el-form-item__label) {
   font-weight: 500;
-  color: var(--text-primary);
-  margin-bottom: 0.5rem;
+  color: var(--glass-text-primary);
+  margin-bottom: var(--glass-space-2);
+}
+
+:deep(.edit-dialog .el-input__wrapper),
+:deep(.edit-dialog .el-textarea__inner) {
+  background: var(--glass-bg-muted);
+  border: 1px solid var(--glass-stroke-base);
+  border-radius: var(--glass-radius-sm);
+  box-shadow: none;
+}
+
+:deep(.edit-dialog .el-input__wrapper:hover),
+:deep(.edit-dialog .el-textarea__inner:hover) {
+  border-color: var(--glass-stroke-strong);
+}
+
+:deep(.edit-dialog .el-input__wrapper.is-focus),
+:deep(.edit-dialog .el-textarea__inner:focus) {
+  border-color: var(--glass-stroke-focus);
+  box-shadow: var(--glass-focus-ring);
+}
+
+:deep(.edit-dialog .el-select .el-input__wrapper) {
+  background: var(--glass-bg-muted);
+  border: 1px solid var(--glass-stroke-base);
 }
 
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
+  gap: var(--glass-space-3);
+}
+
+.dialog-footer .el-button {
+  border-radius: var(--glass-radius-sm);
+}
+
+.dialog-footer .el-button--primary {
+  background: linear-gradient(135deg, var(--glass-accent-from) 0%, var(--glass-accent-to) 100%);
+  border: none;
+  box-shadow: var(--glass-accent-shadow-soft);
 }
 
 /* Delete button style */
 .action-button.danger {
   padding: 0.5rem;
-  color: var(--text-muted);
+  color: var(--glass-text-tertiary);
 }
 
 .action-button.danger:hover {
   color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+  background: var(--glass-tone-danger-bg);
+}
+
+/* ========================================
+   Empty State / 空状态
+   ======================================== */
+:deep(.empty-state) {
+  background: var(--glass-bg-surface);
+  border: 1px dashed var(--glass-stroke-base);
+  border-radius: var(--glass-radius-lg);
+  padding: var(--glass-space-8);
 }
 </style>

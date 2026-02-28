@@ -1,73 +1,117 @@
 <template>
   <div>
-    <div class="tab-header">
-      <h2>{{ $t("drama.management.propList") }}</h2>
-      <div style="display: flex; gap: 10px">
-        <el-button :icon="Document" @click="$emit('extractProps')">{{
-          $t("prop.extract")
-        }}</el-button>
+    <TabHeader :title="$t('drama.management.propList')">
+      <template #actions>
+        <el-button
+          v-if="!isBatchMode"
+          size="small"
+          @click="isBatchMode = true"
+        >{{ $t('common.batchMode') }}</el-button>
+        <el-button
+          :icon="Document"
+          @click="$emit('extractProps')"
+        >{{ $t('prop.extract') }}</el-button>
         <el-button
           type="primary"
           :icon="Plus"
           @click="$emit('addProp')"
-          >{{ $t("common.add") }}</el-button
+        >{{ $t('common.add') }}</el-button>
+      </template>
+      <template #filter>
+        <el-input
+          v-model="searchQuery"
+          :placeholder="$t('prop.searchPlaceholder')"
+          :prefix-icon="Search"
+          clearable
+          style="width: 220px"
+        />
+        <el-select
+          v-model="filterValue"
+          :placeholder="$t('prop.filterType')"
+          clearable
+          style="width: 150px"
         >
-      </div>
+          <el-option
+            v-for="propType in propTypes"
+            :key="propType"
+            :label="propType"
+            :value="propType"
+          />
+        </el-select>
+      </template>
+    </TabHeader>
+
+    <!-- 批量操作栏 -->
+    <div v-if="isBatchMode" class="batch-bar">
+      <el-checkbox
+        :model-value="isAllSelected"
+        :indeterminate="isIndeterminate"
+        @change="toggleAll"
+      >{{ $t('common.selectAll') }}</el-checkbox>
+      <span class="batch-bar__count">{{ $t('common.selectedCount', { count: selectedCount }) }}</span>
+      <el-button
+        size="small"
+        type="danger"
+        :disabled="selectedCount === 0"
+        @click="$emit('batchDeleteProps', selectedItems)"
+      >{{ $t('common.batchDelete') }}</el-button>
+      <el-button
+        size="small"
+        :disabled="selectedCount === 0"
+        @click="$emit('batchGeneratePropImages', selectedItems)"
+      >{{ $t('common.batchGenerate') }}</el-button>
+      <el-button size="small" @click="clearSelection">{{ $t('common.cancelBatch') }}</el-button>
     </div>
 
-    <el-row :gutter="16" style="margin-top: 16px">
-      <el-col :span="6" v-for="prop in props.propsList" :key="prop.id">
-        <el-card shadow="hover" class="scene-card">
-          <div class="scene-preview">
-            <ImagePreview
-              :image-url="getImageUrl(prop)"
-              :alt="prop.name"
-              :size="120"
-              :show-placeholder-text="false"
-            />
-          </div>
+    <ResponsiveGrid v-if="filteredItems.length > 0">
+      <ItemCard
+        v-for="prop in filteredItems"
+        :key="prop.id"
+        :title="prop.name"
+        :description="prop.description || prop.prompt"
+        :image-url="getImageUrl(prop)"
+        :placeholder-icon="Box"
+        :tag="prop.type"
+        tag-type="info"
+        :selectable="isBatchMode"
+        :selected="selectedIds.has(prop.id)"
+        @select="toggleItem(prop.id)"
+        @click="$emit('editProp', prop)"
+      >
+        <template #actions>
+          <el-button size="small" @click="$emit('editProp', prop)">{{ $t('common.edit') }}</el-button>
+          <el-button size="small" @click="$emit('generatePropImage', prop)" :disabled="!prop.prompt">{{ $t('prop.generateImage') }}</el-button>
+          <el-button size="small" type="danger" @click="$emit('deleteProp', prop)">{{ $t('common.delete') }}</el-button>
+        </template>
+      </ItemCard>
+    </ResponsiveGrid>
 
-          <div class="scene-info">
-            <h4>{{ prop.name }}</h4>
-            <el-tag size="small" v-if="prop.type">{{
-              prop.type
-            }}</el-tag>
-            <p class="desc">{{ prop.description || prop.prompt }}</p>
-          </div>
+    <EmptyState
+      v-else-if="propsList.length === 0"
+      :title="$t('drama.management.noProps')"
+      :description="$t('prop.emptyTip')"
+      :icon="Box"
+    >
+      <el-button type="primary" :icon="Plus" @click="$emit('addProp')">{{ $t('common.add') }}</el-button>
+    </EmptyState>
 
-          <div class="scene-actions">
-            <el-button size="small" @click="$emit('editProp', prop)">{{
-              $t("common.edit")
-            }}</el-button>
-            <el-button
-              size="small"
-              @click="$emit('generatePropImage', prop)"
-              :disabled="!prop.prompt"
-              >{{ $t("prop.generateImage") }}</el-button
-            >
-            <el-button
-              size="small"
-              type="danger"
-              @click="$emit('deleteProp', prop)"
-              >{{ $t("common.delete") }}</el-button
-            >
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-empty
-      v-if="!propsList || propsList.length === 0"
-      :description="$t('drama.management.noProps')"
+    <EmptyState
+      v-else
+      :title="$t('common.noData')"
+      :description="$t('common.noData')"
+      :icon="Search"
     />
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Document, Plus } from '@element-plus/icons-vue'
-import { ImagePreview } from '@/components/common'
+import { Document, Plus, Search, Box } from '@element-plus/icons-vue'
+import { TabHeader, ItemCard, ResponsiveGrid, EmptyState } from '@/components/common'
 import { getImageUrl } from '@/utils/image'
+import { useFilteredList } from '@/composables/useFilteredList'
+import { useBatchSelection } from '@/composables/useBatchSelection'
 import type { Prop } from '@/types/prop'
 
 const { t } = useI18n()
@@ -82,97 +126,43 @@ defineEmits<{
   editProp: [prop: Prop]
   generatePropImage: [prop: Prop]
   deleteProp: [prop: Prop]
+  batchDeleteProps: [props: Prop[]]
+  batchGeneratePropImages: [props: Prop[]]
 }>()
+
+const propsListRef = computed(() => props.propsList)
+
+const propTypes = computed(() => {
+  const types = new Set(props.propsList.map(p => p.type).filter(Boolean))
+  return Array.from(types)
+})
+
+const { searchQuery, filterValue, filteredItems } = useFilteredList({
+  items: propsListRef,
+  searchFields: ['name', 'description'] as (keyof Prop)[],
+  filterField: 'type' as keyof Prop,
+})
+
+const {
+  selectedIds, isBatchMode, isAllSelected, isIndeterminate,
+  selectedItems, selectedCount, toggleItem, toggleAll, clearSelection,
+} = useBatchSelection(filteredItems)
 </script>
 
 <style scoped>
-.tab-header {
+.batch-bar {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
-}
-
-@media (min-width: 640px) {
-  .tab-header {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-}
-
-.tab-header h2 {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
-}
-
-.scene-card {
-  margin-bottom: var(--space-4);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-  transition: all var(--transition-normal);
-}
-
-.scene-card:hover {
-  border-color: var(--border-secondary);
-  box-shadow: var(--shadow-card-hover);
-}
-
-.scene-card :deep(.el-card__body) {
-  padding: 0;
-}
-
-.scene-preview {
-  display: flex;
-  justify-content: center;
   align-items: center;
-  height: 160px;
-  background: linear-gradient(135deg, var(--accent) 0%, #06b6d4 100%);
-  overflow: hidden;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  background: var(--bg-card-hover);
+  border-radius: var(--radius-lg);
+  flex-wrap: wrap;
 }
 
-.scene-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform var(--transition-normal);
-}
-
-.scene-card:hover .scene-preview img {
-  transform: scale(1.05);
-}
-
-.scene-info {
-  text-align: center;
-  padding: var(--space-4);
-}
-
-.scene-info h4 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.desc {
-  font-size: 0.8125rem;
-  color: var(--text-muted);
-  margin: var(--space-2) 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.scene-actions {
-  display: flex;
-  gap: var(--space-2);
-  justify-content: center;
-  padding: 0 var(--space-4) var(--space-4);
+.batch-bar__count {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
 }
 </style>

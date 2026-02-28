@@ -1,7 +1,7 @@
 <template>
   <!-- Page header component with title, subtitle and action buttons -->
   <!-- 页面头部组件，包含标题、副标题和操作按钮 -->
-  <header :class="['page-header', { 'with-border': showBorder }]">
+  <header :class="['page-header', 'glass-surface', { 'with-border': showBorder }]">
     <div class="header-content">
       <!-- Title section / 标题区域 -->
       <div class="header-text">
@@ -45,19 +45,22 @@ withDefaults(defineProps<{
 </script>
 
 <style scoped>
+/* Glass Surface base already applied via class */
+
 .page-header {
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--glass-space-5);
+  padding: var(--glass-space-4) var(--glass-space-5);
 }
 
 .page-header.with-border {
-  padding-bottom: var(--space-5);
-  border-bottom: 1px solid var(--border-primary);
+  padding-bottom: var(--glass-space-5);
+  border-bottom: 1px solid var(--glass-stroke-base);
 }
 
 .header-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--glass-space-2);
 }
 
 @media (min-width: 768px) {
@@ -79,7 +82,7 @@ withDefaults(defineProps<{
 .title-row {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--glass-space-3);
 }
 
 .title-icon {
@@ -88,9 +91,9 @@ withDefaults(defineProps<{
   justify-content: center;
   width: 2.5rem;
   height: 2.5rem;
-  background: linear-gradient(135deg, var(--accent) 0%, #06b6d4 100%);
-  border-radius: var(--radius-lg);
-  color: white;
+  background: linear-gradient(135deg, var(--glass-accent-from) 0%, var(--glass-accent-to) 100%);
+  border-radius: var(--glass-radius-lg);
+  color: var(--glass-text-on-accent);
   flex-shrink: 0;
 }
 
@@ -98,7 +101,7 @@ withDefaults(defineProps<{
   margin: 0;
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--glass-text-primary);
   letter-spacing: -0.025em;
   line-height: 1.2;
   overflow: hidden;
@@ -118,7 +121,7 @@ withDefaults(defineProps<{
 .header-subtitle {
   margin: 0;
   font-size: 0.875rem;
-  color: var(--text-muted);
+  color: var(--glass-text-tertiary);
   font-weight: 500;
   max-width: 480px;
   overflow: hidden;
@@ -130,7 +133,7 @@ withDefaults(defineProps<{
 .header-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--glass-space-2);
   align-items: center;
   flex-shrink: 0;
 }
@@ -143,8 +146,8 @@ withDefaults(defineProps<{
 
 /* Extra / 额外内容 */
 .header-extra {
-  margin-top: var(--space-4);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--border-primary);
+  margin-top: var(--glass-space-4);
+  padding-top: var(--glass-space-4);
+  border-top: 1px solid var(--glass-stroke-base);
 }
 </style>

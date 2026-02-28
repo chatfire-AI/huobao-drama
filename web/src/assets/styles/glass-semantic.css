@@ -1,0 +1,510 @@
+/**
+ * Glass Design System - Semantic Classes
+ * 玻璃态设计系统 - 语义化组件类
+ *
+ * 基于 waoowaoo 项目的 Glass Design System
+ */
+
+/* ========================================
+   Page / 页面
+   ======================================== */
+.glass-page {
+  background: var(--glass-bg-canvas);
+  color: var(--glass-text-primary);
+}
+
+/* ========================================
+   Surface / 表面
+   ======================================== */
+.glass-surface {
+  background: var(--glass-bg-surface);
+  border: 1px solid var(--glass-stroke-soft);
+  box-shadow: var(--glass-shadow-sm);
+  backdrop-filter: blur(var(--glass-blur-md));
+  -webkit-backdrop-filter: blur(var(--glass-blur-md));
+  border-radius: var(--glass-radius-lg);
+}
+
+.glass-surface-elevated {
+  background: var(--glass-bg-surface-strong);
+  border: 1px solid var(--glass-stroke-soft);
+  box-shadow: var(--glass-shadow-lg);
+  backdrop-filter: blur(var(--glass-blur-lg));
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+  border-radius: var(--glass-radius-lg);
+}
+
+.glass-surface-modal {
+  background: var(--glass-bg-surface-modal);
+  border: 1px solid var(--glass-stroke-soft);
+  box-shadow: var(--glass-shadow-modal);
+  backdrop-filter: blur(var(--glass-blur-lg));
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+  border-radius: var(--glass-radius-xl);
+}
+
+.glass-surface-nav {
+  background: var(--glass-bg-nav);
+  border: 1px solid var(--glass-stroke-soft);
+  box-shadow: var(--glass-shadow-nav);
+  backdrop-filter: blur(var(--glass-blur-nav));
+  -webkit-backdrop-filter: blur(var(--glass-blur-nav));
+  border-radius: 999px;
+}
+
+.glass-surface-soft {
+  background: var(--glass-bg-surface-strong);
+  box-shadow: var(--glass-shadow-sm);
+  backdrop-filter: blur(var(--glass-blur-md));
+  -webkit-backdrop-filter: blur(var(--glass-blur-md));
+  border-radius: var(--glass-radius-lg);
+}
+
+.glass-divider {
+  border-top: 1px solid var(--glass-stroke-base);
+}
+
+/* ========================================
+   Field / 表单字段
+   ======================================== */
+.glass-field-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--glass-text-primary);
+  letter-spacing: 0.01em;
+}
+
+.glass-field-hint {
+  font-size: 12px;
+  color: var(--glass-text-secondary);
+}
+
+/* ========================================
+   Input / 输入框
+   ======================================== */
+.glass-input-base,
+.glass-textarea-base,
+.glass-select-base {
+  width: 100%;
+  border-radius: var(--glass-radius-md);
+  border: 1px solid transparent;
+  background: var(--glass-bg-muted);
+  box-shadow: inset 0 0 0 1px var(--glass-stroke-base);
+  color: var(--glass-text-primary);
+  outline: none;
+  transition: box-shadow 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.glass-input-base::placeholder,
+.glass-textarea-base::placeholder {
+  color: var(--glass-text-tertiary);
+  opacity: 0.85;
+}
+
+.glass-input-base:hover,
+.glass-textarea-base:hover,
+.glass-select-base:hover {
+  box-shadow: inset 0 0 0 1px var(--glass-stroke-strong);
+}
+
+.glass-input-base:focus-visible,
+.glass-textarea-base:focus-visible,
+.glass-select-base:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px var(--glass-stroke-focus),
+    0 0 0 3px var(--glass-focus-ring);
+  background: var(--glass-bg-surface-strong);
+}
+
+.glass-input-base[aria-invalid='true'],
+.glass-textarea-base[aria-invalid='true'] {
+  box-shadow:
+    inset 0 0 0 1px var(--glass-stroke-danger),
+    0 0 0 2px var(--glass-danger-ring);
+}
+
+.glass-input-base:disabled,
+.glass-textarea-base:disabled,
+.glass-select-base:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ========================================
+   Button / 按钮
+   ======================================== */
+.glass-btn-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  border-radius: var(--glass-radius-md);
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.glass-btn-base:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--glass-focus-ring-strong);
+}
+
+.glass-btn-base:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Primary - 主按钮 */
+.glass-btn-primary {
+  background: linear-gradient(140deg, var(--glass-accent-from) 0%, var(--glass-accent-to) 100%);
+  color: var(--glass-text-on-accent);
+  box-shadow: 0 8px 20px var(--glass-accent-shadow-soft);
+}
+
+.glass-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px var(--glass-accent-shadow-strong);
+}
+
+/* Secondary - 次按钮 */
+.glass-btn-secondary {
+  background: var(--glass-bg-surface-strong);
+  color: var(--glass-text-primary);
+  box-shadow: var(--glass-shadow-sm);
+}
+
+.glass-btn-secondary:hover:not(:disabled) {
+  background: var(--glass-bg-surface-strong);
+  box-shadow: var(--glass-shadow-md);
+}
+
+/* Soft - 柔和按钮 */
+.glass-btn-soft {
+  background: var(--glass-bg-muted);
+  color: var(--glass-text-primary);
+  box-shadow: none;
+}
+
+.glass-btn-soft:hover:not(:disabled) {
+  background: var(--glass-bg-surface-strong);
+  transform: translateY(-1px);
+}
+
+/* Ghost - 幽灵按钮 */
+.glass-btn-ghost {
+  background: transparent;
+  color: var(--glass-text-secondary);
+}
+
+.glass-btn-ghost:hover:not(:disabled) {
+  background: var(--glass-ghost-hover-bg);
+}
+
+/* Danger - 危险按钮 */
+.glass-btn-danger {
+  background: rgba(246, 119, 119, 0.14);
+  color: var(--glass-tone-danger-fg);
+  box-shadow: inset 0 0 0 1px rgba(246, 119, 119, 0.32);
+}
+
+.glass-btn-danger:hover:not(:disabled) {
+  background: rgba(246, 119, 119, 0.22);
+}
+
+/* Tone variants - 色调变体 */
+.glass-btn-tone-info {
+  background: var(--glass-tone-info-bg);
+  color: var(--glass-tone-info-fg);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glass-tone-info-fg) 24%, transparent);
+}
+
+.glass-btn-tone-info:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--glass-tone-info-bg) 85%, white);
+}
+
+.glass-btn-tone-success {
+  background: var(--glass-tone-success-bg);
+  color: var(--glass-tone-success-fg);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glass-tone-success-fg) 24%, transparent);
+}
+
+.glass-btn-tone-success:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--glass-tone-success-bg) 85%, white);
+}
+
+.glass-btn-tone-warning {
+  background: var(--glass-tone-warning-bg);
+  color: var(--glass-tone-warning-fg);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glass-tone-warning-fg) 24%, transparent);
+}
+
+.glass-btn-tone-warning:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--glass-tone-warning-bg) 85%, white);
+}
+
+.glass-btn-tone-danger {
+  background: var(--glass-tone-danger-bg);
+  color: var(--glass-tone-danger-fg);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glass-tone-danger-fg) 24%, transparent);
+}
+
+.glass-btn-tone-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--glass-tone-danger-bg) 85%, white);
+}
+
+/* ========================================
+   Chip / 标签
+   ======================================== */
+.glass-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.glass-chip-neutral {
+  background: var(--glass-tone-neutral-bg);
+  color: var(--glass-tone-neutral-fg);
+}
+
+.glass-chip-info {
+  background: var(--glass-tone-info-bg);
+  color: var(--glass-tone-info-fg);
+}
+
+.glass-chip-success {
+  background: var(--glass-tone-success-bg);
+  color: var(--glass-tone-success-fg);
+}
+
+.glass-chip-warning {
+  background: var(--glass-tone-warning-bg);
+  color: var(--glass-tone-warning-fg);
+}
+
+.glass-chip-danger {
+  background: var(--glass-tone-danger-bg);
+  color: var(--glass-tone-danger-fg);
+}
+
+/* ========================================
+   Density / 密度
+   ======================================== */
+.glass-density-compact {
+  --glass-density-scale: 0.86;
+}
+
+.glass-density-default {
+  --glass-density-scale: 1;
+}
+
+/* ========================================
+   Overlay / 遮罩
+   ======================================== */
+.glass-overlay {
+  background: var(--glass-overlay);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+}
+
+.glass-overlay-soft {
+  background: var(--glass-overlay-soft);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+}
+
+.glass-overlay-strong {
+  background: var(--glass-overlay-strong);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+}
+
+/* ========================================
+   Icon Button / 图标按钮
+   ======================================== */
+.glass-icon-btn-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--glass-radius-xs);
+  color: var(--glass-text-tertiary);
+  transition: all 0.2s ease;
+}
+
+.glass-icon-btn-sm:hover {
+  color: var(--glass-text-secondary);
+  background: var(--glass-bg-muted);
+}
+
+/* ========================================
+   List Row / 列表行
+   ======================================== */
+.glass-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--glass-radius-xs);
+  border: 1px solid var(--glass-stroke-base);
+  background: var(--glass-bg-surface);
+  transition: all 0.2s ease;
+}
+
+.glass-list-row:hover {
+  border-color: var(--glass-stroke-focus);
+}
+
+.glass-list-row[data-disabled='true'] {
+  opacity: 0.5;
+  background: var(--glass-bg-muted);
+  border-color: transparent;
+}
+
+/* ========================================
+   Segmented / 分段控制
+   ======================================== */
+.glass-segmented {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  border-radius: var(--glass-radius-xs);
+  background: var(--glass-bg-muted);
+}
+
+.glass-segmented-item {
+  padding: 2px 6px;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--glass-text-secondary);
+  transition: all 0.2s ease;
+}
+
+.glass-segmented-item:hover {
+  color: var(--glass-text-primary);
+}
+
+.glass-segmented-item[data-active='true'] {
+  background: var(--glass-accent-from);
+  color: var(--glass-text-on-accent);
+}
+
+/* ========================================
+   Toggle / 开关
+   ======================================== */
+.glass-toggle {
+  width: 28px;
+  height: 16px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 2px;
+  transition: all 0.2s ease;
+  background: var(--glass-stroke-strong);
+  justify-content: flex-start;
+}
+
+.glass-toggle[data-active='true'] {
+  background: var(--glass-accent-from);
+  justify-content: flex-end;
+}
+
+.glass-toggle-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--glass-bg-surface);
+  box-shadow: var(--glass-shadow-sm);
+}
+
+/* ========================================
+   Checkbox / 复选框
+   ======================================== */
+.glass-check-mini {
+  display: inline-flex;
+  width: 12px;
+  height: 12px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  border: 1px solid var(--glass-stroke-strong);
+  background: var(--glass-bg-surface);
+  transition: all 0.2s ease;
+}
+
+.glass-check-mini[data-active='true'] {
+  border-color: var(--glass-accent-from);
+  background: var(--glass-accent-from);
+}
+
+/* ========================================
+   Scrollbar / 滚动条
+   ======================================== */
+.glass-provider-model-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-stroke-strong) transparent;
+}
+
+.glass-provider-model-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.glass-provider-model-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.glass-provider-model-scroll::-webkit-scrollbar-thumb {
+  background: var(--glass-stroke-strong);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+/* ========================================
+   Size Variants / 尺寸变体
+   ======================================== */
+.glass-btn-sm {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.glass-btn-md {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+.glass-btn-lg {
+  height: 44px;
+  padding: 0 20px;
+  font-size: 16px;
+}
+
+.glass-input-sm {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.glass-input-md {
+  height: 36px;
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+.glass-input-lg {
+  height: 44px;
+  padding: 0 14px;
+  font-size: 16px;
+}

@@ -8,6 +8,16 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/drama/DramaList.vue')
   },
   {
+    path: '/character-library',
+    name: 'CharacterLibrary',
+    component: () => import('../views/character-library/CharacterLibrary.vue')
+  },
+  {
+    path: '/assets',
+    name: 'Assets',
+    component: () => import('../views/assets/Assets.vue')
+  },
+  {
     path: '/dramas/create',
     name: 'DramaCreate',
     component: () => import('../views/drama/DramaCreate.vue')

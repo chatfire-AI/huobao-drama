@@ -10,6 +10,8 @@ export default {
   },
   sidebar: {
     projects: '项目列表',
+    characterLibrary: '角色库',
+    assets: '素材库',
     settings: '设置',
     collapse: '收起侧边栏',
     expand: '展开侧边栏'
@@ -35,6 +37,7 @@ export default {
   common: {
     create: '创建',
     edit: '编辑',
+    comingSoon: '即将上线',
     delete: '删除',
     save: '保存',
     cancel: '取消',
@@ -78,7 +81,12 @@ export default {
     name: '名称',
     description: '描述',
     image: '图片',
-    perPage: '每页'
+    perPage: '每页',
+    batchMode: '批量操作',
+    batchDelete: '批量删除',
+    batchGenerate: '批量生成图片',
+    selectedCount: '已选 {count} 项',
+    cancelBatch: '取消'
   },
   settings: {
     title: '设置',
@@ -226,7 +234,40 @@ export default {
       propsCreated: '已创建道具',
       createEpisode: '创建章节',
       episodePrefix: '第',
-      episodeTitle: '标题'
+      episodeTitle: '标题',
+      uploadNovel: '上传小说',
+      searchPlaceholder: '搜索章节标题...',
+      filterStatus: '状态',
+      emptyTip: '还没有章节，创建第一个章节开始',
+      projectFlow: '制作流程',
+      collapseAll: '全部折叠',
+      expandAll: '全部展开'
+    },
+    novel: {
+      title: '上传小说拆分章节',
+      uploadFile: '上传文件',
+      dragTip: '将 .txt 文件拖到此处，或点击上传',
+      txtOnly: '仅支持 .txt 格式',
+      fileName: '文件名',
+      totalChars: '总字数',
+      splitMode: '拆分模式',
+      byChapter: '按章节标记',
+      byCharCount: '按字数',
+      targetChars: '目标字数',
+      saveMode: '保存模式',
+      append: '追加到现有章节',
+      replace: '替换所有章节',
+      replaceWarning: '替换模式将删除所有现有章节，此操作不可撤销！',
+      startSplit: '开始拆分',
+      preview: '预览',
+      totalChapters: '共 {count} 章',
+      totalCharsCount: '总字数：{count}',
+      chapterTitle: '章节标题',
+      charCount: '{count} 字',
+      saveSuccess: '章节保存成功',
+      noFile: '请先上传文件',
+      back: '返回',
+      save: '保存章节'
     }
   },
   character: {
@@ -249,7 +290,16 @@ export default {
     empty: '角色已在剧本生成阶段创建，您可以在此查看和编辑',
     backToProject: '返回项目',
     saveChanges: '保存修改',
-    nextStep: '下一步：生成角色图片'
+    nextStep: '下一步：生成角色图片',
+    batchExtract: '批量提取角色',
+    batchExtractTip: '从选中的分集剧本中批量提取角色，自动去重',
+    selectEpisodes: '选择分集',
+    extractProgress: '正在提取第 {current}/{total} 集...',
+    extractComplete: '提取完成：共 {characters} 个角色，去重 {scenes} 个场景',
+    noScriptEpisodes: '所选分集中没有包含剧本内容的集',
+    searchPlaceholder: '搜索角色名称...',
+    filterRole: '角色类型',
+    emptyTip: '还没有角色，从剧本提取或手动添加'
   },
   prop: {
     title: '道具管理',
@@ -269,7 +319,26 @@ export default {
     extractTip: 'AI将分析剧本内容，自动提取关键道具并生成描述',
     startExtract: '开始提取',
     extractSuccess: '道具提取任务已提交，AI分析大约需要1分钟',
-    generateImage: '生成图片'
+    generateImage: '生成图片',
+    batchExtract: '批量提取道具',
+    batchExtractTip: '从选中的分集剧本中批量提取道具，自动去重',
+    selectEpisodes: '选择分集',
+    extractProgress: '正在提取第 {current}/{total} 集...',
+    extractComplete: '提取完成：共 {props} 个道具，去重 {dedup} 个',
+    searchPlaceholder: '搜索道具名称...',
+    filterType: '道具类型',
+    emptyTip: '还没有道具，从剧本提取或手动添加'
+  },
+  scene: {
+    batchExtract: '批量提取场景',
+    batchExtractTip: '从选中的分集剧本中批量提取场景，自动去重',
+    selectEpisodes: '选择分集',
+    extractProgress: '正在提取第 {current}/{total} 集...',
+    extractComplete: '提取完成：共 {scenes} 个场景，去重 {dedup} 个',
+    extractTitle: '提取场景',
+    addScene: '添加场景',
+    searchPlaceholder: '搜索场景名称...',
+    emptyTip: '还没有场景，从剧本提取或手动添加'
   },
   script: {
     title: '剧本生成',
@@ -395,7 +464,8 @@ export default {
     extractCharactersAndScenes: '提取角色和场景',
     reExtract: '重新提取角色和场景',
     nextStepGenerateImages: '下一步：生成图片',
-    extractWarning: '请先点击“提取角色和场景”按钮，完成提取后才能生成图片',
+    extractWarning: '请先点击”提取角色和场景”按钮，完成提取后才能生成图片',
+    extractHint: '请先保存章节内容，然后点击下方按钮提取角色和场景',
     characterImages: '角色图片',
     sceneImages: '场景图片',
     characterCount: '共 {count} 个角色需要生成图片',
@@ -408,6 +478,7 @@ export default {
     uploadImage: '上传图片',
     selectFromLibrary: '从角色库选择',
     shotList: '镜头列表',
+    shots: '个镜头',
     dragFilesHere: '将文件拖到此处，或',
     clickToUpload: '点击上传',
     prevStep: '上一步',

@@ -1,0 +1,199 @@
+/**
+ * Glass Design System - Design Tokens
+ * 玻璃态设计系统 - 设计令牌
+ *
+ * 基于 waoowaoo 项目的 Glass Design System
+ */
+
+/* ========================================
+   Surface and Background / 表面和背景
+   ======================================== */
+:root {
+  /* Canvas - 画布背景 */
+  --glass-bg-canvas: #f3f4f6;
+
+  /* Surface - 卡片/面板背景 */
+  --glass-bg-surface: rgba(255, 255, 255, 0.88);
+  --glass-bg-surface-strong: rgba(255, 255, 255, 0.94);
+  --glass-bg-surface-modal: rgba(255, 255, 255, 0.97);
+  --glass-bg-muted: rgba(255, 255, 255, 0.86);
+  --glass-bg-nav: rgba(255, 255, 255, 0.96);
+
+  /* Text - 文字颜色 */
+  --glass-text-primary: #0a0a0a;
+  --glass-text-secondary: #111827;
+  --glass-text-tertiary: #4b5563;
+  --glass-text-on-accent: #ffffff;
+
+  /* ========================================
+     Border Strategy / 边框策略
+     默认使用柔和边框，聚焦/错误时使用更强边框
+     ======================================== */
+  --glass-stroke-soft: rgba(255, 255, 255, 0.22);
+  --glass-stroke-base: rgba(111, 126, 153, 0.24);
+  --glass-stroke-strong: rgba(93, 109, 138, 0.36);
+  --glass-stroke-focus: rgba(47, 123, 255, 0.64);
+  --glass-stroke-danger: rgba(236, 72, 72, 0.64);
+  --glass-stroke-warning: rgba(234, 149, 0, 0.62);
+  --glass-stroke-success: rgba(18, 176, 109, 0.62);
+
+  /* ========================================
+     Elevation + Blur / Elevation + 模糊
+     ======================================== */
+  --glass-shadow-sm: 0 2px 10px rgba(22, 35, 64, 0.05);
+  --glass-shadow-md: 0 6px 18px rgba(19, 35, 66, 0.08);
+  --glass-shadow-lg: 0 10px 24px rgba(20, 35, 69, 0.1);
+  --glass-shadow-modal: 0 14px 34px rgba(15, 32, 66, 0.14);
+  --glass-shadow-nav: 0 8px 18px rgba(15, 32, 66, 0.1);
+
+  --glass-blur-sm: 4px;
+  --glass-blur-md: 8px;
+  --glass-blur-lg: 12px;
+  --glass-blur-nav: 16px;
+
+  /* ========================================
+     Radius / 圆角
+     ======================================== */
+  --glass-radius-xs: 8px;
+  --glass-radius-sm: 12px;
+  --glass-radius-md: 16px;
+  --glass-radius-lg: 22px;
+  --glass-radius-xl: 28px;
+
+  /* ========================================
+     Spacing + Density / 间距 + 密度
+     ======================================== */
+  --glass-space-1: 4px;
+  --glass-space-2: 8px;
+  --glass-space-3: 12px;
+  --glass-space-4: 16px;
+  --glass-space-5: 20px;
+  --glass-space-6: 24px;
+  --glass-space-7: 28px;
+  --glass-space-8: 32px;
+
+  /* ========================================
+     Tone System / 色调系统
+     ======================================== */
+  --glass-tone-neutral-bg: rgba(100, 116, 139, 0.18);
+  --glass-tone-neutral-fg: #374151;
+
+  --glass-tone-info-bg: rgba(47, 123, 255, 0.2);
+  --glass-tone-info-fg: #1d63e8;
+
+  --glass-tone-success-bg: rgba(16, 185, 129, 0.2);
+  --glass-tone-success-fg: #0f9f62;
+
+  --glass-tone-warning-bg: rgba(245, 158, 11, 0.24);
+  --glass-tone-warning-fg: #b86400;
+
+  --glass-tone-danger-bg: rgba(239, 68, 68, 0.2);
+  --glass-tone-danger-fg: #cb3a3a;
+
+  /* ========================================
+     Overlay / 遮罩
+     ======================================== */
+  --glass-overlay-soft: rgba(10, 16, 30, 0.34);
+  --glass-overlay: rgba(10, 16, 30, 0.46);
+  --glass-overlay-strong: rgba(10, 16, 30, 0.58);
+
+  /* ========================================
+     Accent + Interactive / 强调色 + 交互
+     ======================================== */
+  --glass-accent-from: #2f7bff;
+  --glass-accent-to: #5ca8ff;
+  --glass-accent-shadow-soft: rgba(47, 123, 255, 0.24);
+  --glass-accent-shadow-strong: rgba(47, 123, 255, 0.32);
+
+  --glass-focus-ring: rgba(47, 123, 255, 0.16);
+  --glass-focus-ring-strong: rgba(47, 123, 255, 0.22);
+  --glass-danger-ring: rgba(239, 68, 68, 0.14);
+  --glass-ghost-hover-bg: rgba(255, 255, 255, 0.5);
+}
+
+/* Low-cost preset for performance-sensitive environments */
+/* 性能优化预设 */
+[data-glass-preset='subtle'] {
+  --glass-bg-surface: rgba(255, 255, 255, 0.92);
+  --glass-bg-surface-strong: rgba(255, 255, 255, 0.96);
+  --glass-bg-surface-modal: rgba(255, 255, 255, 0.98);
+  --glass-bg-nav: rgba(255, 255, 255, 0.98);
+  --glass-blur-sm: 2px;
+  --glass-blur-md: 4px;
+  --glass-blur-lg: 8px;
+  --glass-shadow-sm: 0 1px 6px rgba(22, 35, 64, 0.04);
+  --glass-shadow-md: 0 4px 12px rgba(19, 35, 66, 0.06);
+  --glass-shadow-lg: 0 8px 18px rgba(20, 35, 69, 0.08);
+  --glass-shadow-modal: 0 10px 22px rgba(15, 32, 66, 0.1);
+  --glass-shadow-nav: 0 6px 14px rgba(15, 32, 66, 0.08);
+  --glass-blur-nav: 12px;
+}
+
+/* ========================================
+   Dark Mode / 深色模式
+   ======================================== */
+.dark {
+  /* Canvas - 画布背景 */
+  --glass-bg-canvas: #0f172a;
+
+  /* Surface - 卡片/面板背景 */
+  --glass-bg-surface: rgba(30, 41, 59, 0.88);
+  --glass-bg-surface-strong: rgba(30, 41, 59, 0.94);
+  --glass-bg-surface-modal: rgba(30, 41, 59, 0.97);
+  --glass-bg-muted: rgba(30, 41, 59, 0.86);
+  --glass-bg-nav: rgba(15, 23, 42, 0.96);
+
+  /* Text - 文字颜色 */
+  --glass-text-primary: #f1f5f9;
+  --glass-text-secondary: #cbd5e1;
+  --glass-text-tertiary: #94a3b8;
+  --glass-text-on-accent: #ffffff;
+
+  /* Border Strategy / 边框策略 */
+  --glass-stroke-soft: rgba(255, 255, 255, 0.08);
+  --glass-stroke-base: rgba(148, 163, 184, 0.24);
+  --glass-stroke-strong: rgba(148, 163, 184, 0.36);
+  --glass-stroke-focus: rgba(96, 165, 250, 0.64);
+  --glass-stroke-danger: rgba(248, 113, 113, 0.64);
+  --glass-stroke-warning: rgba(251, 191, 36, 0.62);
+  --glass-stroke-success: rgba(52, 211, 153, 0.62);
+
+  /* Elevation + Blur / Elevation + 模糊 */
+  --glass-shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.3);
+  --glass-shadow-md: 0 6px 18px rgba(0, 0, 0, 0.35);
+  --glass-shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.4);
+  --glass-shadow-modal: 0 14px 34px rgba(0, 0, 0, 0.5);
+  --glass-shadow-nav: 0 8px 18px rgba(0, 0, 0, 0.4);
+
+  /* Overlay / 遮罩 */
+  --glass-overlay-soft: rgba(0, 0, 0, 0.5);
+  --glass-overlay: rgba(0, 0, 0, 0.65);
+  --glass-overlay-strong: rgba(0, 0, 0, 0.78);
+
+  /* Accent + Interactive / 强调色 + 交互 */
+  --glass-accent-from: #60a5fa;
+  --glass-accent-to: #3b82f6;
+  --glass-accent-shadow-soft: rgba(96, 165, 250, 0.24);
+  --glass-accent-shadow-strong: rgba(96, 165, 250, 0.32);
+
+  --glass-focus-ring: rgba(96, 165, 250, 0.16);
+  --glass-focus-ring-strong: rgba(96, 165, 250, 0.22);
+  --glass-danger-ring: rgba(248, 113, 113, 0.14);
+  --glass-ghost-hover-bg: rgba(255, 255, 255, 0.08);
+
+  /* Tone System / 色调系统 */
+  --glass-tone-neutral-bg: rgba(71, 85, 105, 0.24);
+  --glass-tone-neutral-fg: #cbd5e1;
+
+  --glass-tone-info-bg: rgba(96, 165, 250, 0.24);
+  --glass-tone-info-fg: #60a5fa;
+
+  --glass-tone-success-bg: rgba(52, 211, 153, 0.24);
+  --glass-tone-success-fg: #34d399;
+
+  --glass-tone-warning-bg: rgba(251, 191, 36, 0.28);
+  --glass-tone-warning-fg: #fbbf24;
+
+  --glass-tone-danger-bg: rgba(248, 113, 113, 0.24);
+  --glass-tone-danger-fg: #f87171;
+}

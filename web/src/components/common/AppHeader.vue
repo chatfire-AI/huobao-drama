@@ -44,9 +44,10 @@ withDefaults(defineProps<Props>(), {
 
 <style scoped>
 .app-header {
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border-primary);
-  backdrop-filter: blur(8px);
+  background: var(--glass-bg-surface);
+  border-bottom: 1px solid var(--glass-stroke-soft);
+  backdrop-filter: blur(var(--glass-blur-md));
+  -webkit-backdrop-filter: blur(var(--glass-blur-md));
   z-index: 1000;
 }
 

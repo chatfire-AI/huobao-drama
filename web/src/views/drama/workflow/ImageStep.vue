@@ -1,294 +1,289 @@
 <template>
-  <el-card class="workflow-card">
+  <div class="workflow-card glass-surface">
     <div class="stage-body">
       <!-- 角色图片生成 -->
       <div class="image-gen-section">
-        <div class="section-header">
-          <div class="section-title">
-            <h3>
-              <el-icon><User /></el-icon>
-              {{ $t("workflow.characterImages") }}
-            </h3>
-            <el-alert type="info" :closable="false" style="margin: 0">
-              {{
-                $t("workflow.characterCount", { count: charactersCount })
-              }}
-            </el-alert>
+        <div class="section-header glass-surface">
+          <div class="section-title-row">
+            <el-icon class="section-icon"><User /></el-icon>
+            <h3>{{ $t("workflow.characterImages") }}</h3>
+            <span class="glass-chip glass-chip-info">
+              {{ $t("workflow.characterCount", { count: charactersCount }) }}
+            </span>
           </div>
           <div class="section-actions">
             <el-checkbox
               v-model="localSelectAllCharacters"
               @change="toggleSelectAllCharacters"
-              style="margin-right: 12px"
             >
               {{ $t("workflow.selectAll") }}
             </el-checkbox>
             <el-button
               type="primary"
+              class="glass-btn-base glass-btn-primary"
               @click="$emit('batchGenerateCharacterImages')"
               :loading="batchGeneratingCharacters"
               :disabled="selectedCharacterIds.length === 0"
-              size="default"
             >
-              {{ $t("workflow.batchGenerate") }} ({{
-                selectedCharacterIds.length
-              }})
+              <el-icon><MagicStick /></el-icon>
+              {{ $t("workflow.batchGenerate") }} ({{ selectedCharacterIds.length }})
             </el-button>
           </div>
         </div>
 
-        <div class="character-image-list">
+        <div class="image-grid">
           <div
             v-for="char in currentEpisode?.characters"
             :key="char.id"
-            class="character-item"
+            class="image-card"
           >
-            <el-card shadow="hover" class="fixed-card">
-              <div class="card-header">
-                <el-checkbox
-                  v-model="selectedCharacterIds"
-                  :value="char.id"
-                  style="margin-right: 8px"
-                />
-                <div class="header-left">
-                  <h4>{{ char.name }}</h4>
-                  <el-tag size="small">{{ char.role }}</el-tag>
-                </div>
-                <el-button
-                  type="danger"
-                  size="small"
-                  :icon="Delete"
-                  circle
-                  @click="$emit('deleteCharacter', char.id)"
-                  :title="$t('workflow.deleteCharacter')"
-                />
+            <!-- 卡片头部 -->
+            <div class="card-header-row">
+              <el-checkbox
+                v-model="selectedCharacterIds"
+                :value="char.id"
+              />
+              <div class="card-info">
+                <span class="card-name">{{ char.name }}</span>
+                <span class="card-role">{{ char.role }}</span>
               </div>
+              <el-button
+                class="card-delete-btn"
+                type="danger"
+                :icon="Delete"
+                size="small"
+                circle
+                @click="$emit('deleteCharacter', char.id)"
+              />
+            </div>
 
-              <div class="card-image-container">
-                <div v-if="hasImage(char)" class="char-image">
-                  <el-image :src="getImageUrl(char)" fit="cover" />
-                </div>
-                <div
-                  v-else-if="
-                    char.image_generation_status === 'pending' ||
-                    char.image_generation_status === 'processing' ||
-                    generatingCharacterImages[char.id]
-                  "
-                  class="char-placeholder generating"
-                >
-                  <el-icon :size="64" class="rotating"><Loading /></el-icon>
-                  <span>{{ $t("common.generating") }}</span>
-                  <el-tag type="warning" size="small" style="margin-top: 8px">{{
-                    char.image_generation_status === "pending"
-                      ? $t("common.queuing")
-                      : $t("common.processing")
-                  }}</el-tag>
-                </div>
-                <div
-                  v-else-if="char.image_generation_status === 'failed'"
-                  class="char-placeholder failed"
-                >
-                  <el-icon :size="64"><WarningFilled /></el-icon>
-                  <span>{{ $t("common.generateFailed") }}</span>
-                  <el-tag type="danger" size="small" style="margin-top: 8px">{{
-                    $t("common.clickToRegenerate")
-                  }}</el-tag>
-                </div>
-                <div v-else class="char-placeholder">
-                  <el-icon :size="64"><User /></el-icon>
-                  <span>{{ $t("common.notGenerated") }}</span>
-                </div>
-              </div>
-
-              <div class="card-actions">
-                <el-tooltip :content="$t('tooltip.editPrompt')" placement="top">
-                  <el-button
-                    size="small"
-                    @click="$emit('openPromptDialog', char, 'character')"
-                    :icon="Edit"
-                    circle
-                  />
-                </el-tooltip>
-                <el-tooltip :content="$t('tooltip.aiGenerate')" placement="top">
+            <!-- 图片区域 -->
+            <div class="card-image-area">
+              <div v-if="hasImage(char)" class="card-image">
+                <el-image :src="getImageUrl(char)" fit="cover" />
+                <div class="image-overlay">
                   <el-button
                     type="primary"
-                    size="small"
-                    @click="$emit('generateCharacterImage', char.id)"
-                    :loading="generatingCharacterImages[char.id]"
+                    circle
                     :icon="MagicStick"
-                    circle
+                    @click="$emit('generateCharacterImage', char.id)"
                   />
-                </el-tooltip>
-                <el-tooltip :content="$t('tooltip.uploadImage')" placement="top">
                   <el-button
-                    size="small"
-                    @click="$emit('uploadCharacterImage', char.id)"
+                    circle
                     :icon="Upload"
-                    circle
+                    @click="$emit('uploadCharacterImage', char.id)"
                   />
-                </el-tooltip>
-                <el-tooltip :content="$t('tooltip.selectFromLibrary')" placement="top">
-                  <el-button
-                    size="small"
-                    @click="$emit('selectFromLibrary', char.id)"
-                    :icon="Picture"
-                    circle
-                  />
-                </el-tooltip>
-                <el-tooltip :content="$t('workflow.addToLibrary')" placement="top">
-                  <el-button
-                    size="small"
-                    @click="$emit('addToCharacterLibrary', char)"
-                    :icon="FolderAdd"
-                    :disabled="!char.image_url"
-                    circle
-                  />
-                </el-tooltip>
+                </div>
               </div>
-            </el-card>
+              <div
+                v-else-if="
+                  char.image_generation_status === 'pending' ||
+                  char.image_generation_status === 'processing' ||
+                  generatingCharacterImages[char.id]
+                "
+                class="card-placeholder generating"
+              >
+                <el-icon :size="48" class="rotating"><Loading /></el-icon>
+                <span>{{ $t("common.generating") }}</span>
+                <span class="status-tag">
+                  {{ char.image_generation_status === "pending" ? $t("common.queuing") : $t("common.processing") }}
+                </span>
+              </div>
+              <div
+                v-else-if="char.image_generation_status === 'failed'"
+                class="card-placeholder failed"
+                @click="$emit('generateCharacterImage', char.id)"
+              >
+                <el-icon :size="48"><WarningFilled /></el-icon>
+                <span>{{ $t("common.generateFailed") }}</span>
+                <span class="status-tag retry">{{ $t("common.clickToRegenerate") }}</span>
+              </div>
+              <div v-else class="card-placeholder">
+                <el-icon :size="48"><Picture /></el-icon>
+                <span>{{ $t("common.notGenerated") }}</span>
+              </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="card-actions-row">
+              <el-tooltip :content="$t('tooltip.editPrompt')" placement="top">
+                <el-button
+                  class="action-btn"
+                  :icon="Edit"
+                  @click="$emit('openPromptDialog', char, 'character')"
+                />
+              </el-tooltip>
+              <el-tooltip :content="$t('tooltip.aiGenerate')" placement="top">
+                <el-button
+                  type="primary"
+                  class="action-btn"
+                  :icon="MagicStick"
+                  @click="$emit('generateCharacterImage', char.id)"
+                  :loading="generatingCharacterImages[char.id]"
+                />
+              </el-tooltip>
+              <el-tooltip :content="$t('tooltip.uploadImage')" placement="top">
+                <el-button
+                  class="action-btn"
+                  :icon="Upload"
+                  @click="$emit('uploadCharacterImage', char.id)"
+                />
+              </el-tooltip>
+              <el-tooltip :content="$t('tooltip.selectFromLibrary')" placement="top">
+                <el-button
+                  class="action-btn"
+                  :icon="Picture"
+                  @click="$emit('selectFromLibrary', char.id)"
+                />
+              </el-tooltip>
+              <el-tooltip :content="$t('workflow.addToLibrary')" placement="top">
+                <el-button
+                  class="action-btn"
+                  :icon="FolderAdd"
+                  :disabled="!char.image_url"
+                  @click="$emit('addToCharacterLibrary', char)"
+                />
+              </el-tooltip>
+            </div>
           </div>
         </div>
       </div>
 
-      <el-divider />
+      <div class="glass-divider" />
 
       <!-- 场景图片生成 -->
       <div class="image-gen-section">
-        <div class="section-header">
-          <div class="section-title">
-            <h3>
-              <el-icon><Place /></el-icon>
-              {{ $t("workflow.sceneImages") }}
-            </h3>
-            <el-alert type="info" :closable="false" style="margin: 0">
-              {{
-                $t("workflow.sceneCount", {
-                  count: currentEpisode?.scenes?.length || 0,
-                })
-              }}
-            </el-alert>
+        <div class="section-header glass-surface">
+          <div class="section-title-row">
+            <el-icon class="section-icon"><Place /></el-icon>
+            <h3>{{ $t("workflow.sceneImages") }}</h3>
+            <span class="glass-chip glass-chip-info">
+              {{ $t("workflow.sceneCount", { count: currentEpisode?.scenes?.length || 0 }) }}
+            </span>
           </div>
           <div class="section-actions">
             <el-checkbox
               v-model="localSelectAllScenes"
               @change="toggleSelectAllScenes"
-              style="margin-left: 12px; margin-right: 12px"
             >
               {{ $t("workflow.selectAll") }}
             </el-checkbox>
             <el-button
               type="primary"
+              class="glass-btn-base glass-btn-primary"
               @click="$emit('batchGenerateSceneImages')"
               :loading="batchGeneratingScenes"
               :disabled="selectedSceneIds.length === 0"
-              size="default"
             >
-              {{ $t("workflow.batchGenerateSelected") }} ({{
-                selectedSceneIds.length
-              }})
+              <el-icon><MagicStick /></el-icon>
+              {{ $t("workflow.batchGenerateSelected") }} ({{ selectedSceneIds.length }})
             </el-button>
-
             <el-button
-              :icon="Plus"
+              class="glass-btn-base glass-btn-secondary"
               @click="$emit('openAddSceneDialog')"
-              size="default"
             >
+              <el-icon><Plus /></el-icon>
               {{ $t("workflow.addScene") }}
             </el-button>
           </div>
         </div>
 
-        <div class="scene-image-list">
+        <div class="image-grid">
           <div
             v-for="scene in currentEpisode?.scenes"
             :key="scene.id"
-            class="scene-item"
+            class="image-card"
           >
-            <el-card shadow="hover" class="fixed-card">
-              <div class="card-header">
-                <el-checkbox
-                  v-model="selectedSceneIds"
-                  :value="scene.id"
-                  style="margin-right: 8px"
-                />
-                <div class="header-left">
-                  <h4>{{ scene.location }}</h4>
-                  <el-tag size="small">{{ scene.time }}</el-tag>
-                </div>
+            <!-- 卡片头部 -->
+            <div class="card-header-row">
+              <el-checkbox
+                v-model="selectedSceneIds"
+                :value="scene.id"
+              />
+              <div class="card-info">
+                <span class="card-name">{{ scene.location }}</span>
+                <span class="card-role">{{ scene.time }}</span>
               </div>
+            </div>
 
-              <div class="card-image-container">
-                <div v-if="hasImage(scene)" class="scene-image">
-                  <el-image :src="getImageUrl(scene)" fit="cover" />
-                </div>
-                <div
-                  v-else-if="
-                    scene.image_generation_status === 'pending' ||
-                    scene.image_generation_status === 'processing' ||
-                    generatingSceneImages[scene.id]
-                  "
-                  class="scene-placeholder generating"
-                >
-                  <el-icon :size="64" class="rotating"><Loading /></el-icon>
-                  <span>{{ $t("common.generating") }}</span>
-                  <el-tag type="warning" size="small" style="margin-top: 8px">{{
-                    scene.image_generation_status === "pending"
-                      ? $t("common.queuing")
-                      : $t("common.processing")
-                  }}</el-tag>
-                </div>
-                <div
-                  v-else-if="scene.image_generation_status === 'failed'"
-                  class="scene-placeholder failed"
-                  @click="$emit('generateSceneImage', scene.id)"
-                  style="cursor: pointer"
-                >
-                  <el-icon :size="64"><WarningFilled /></el-icon>
-                  <span>{{ $t("common.generateFailed") }}</span>
-                  <el-tag type="danger" size="small" style="margin-top: 8px">{{
-                    $t("common.clickToRegenerate")
-                  }}</el-tag>
-                </div>
-                <div v-else class="scene-placeholder">
-                  <el-icon :size="64"><Place /></el-icon>
-                  <span>{{ $t("common.notGenerated") }}</span>
-                </div>
-              </div>
-
-              <div class="card-actions">
-                <el-tooltip :content="$t('tooltip.editPrompt')" placement="top">
-                  <el-button
-                    size="small"
-                    @click="$emit('openPromptDialog', scene, 'scene')"
-                    :icon="Edit"
-                    circle
-                  />
-                </el-tooltip>
-                <el-tooltip :content="$t('tooltip.aiGenerate')" placement="top">
+            <!-- 图片区域 -->
+            <div class="card-image-area">
+              <div v-if="hasImage(scene)" class="card-image">
+                <el-image :src="getImageUrl(scene)" fit="cover" />
+                <div class="image-overlay">
                   <el-button
                     type="primary"
-                    size="small"
-                    @click="$emit('generateSceneImage', scene.id)"
-                    :loading="generatingSceneImages[scene.id]"
+                    circle
                     :icon="MagicStick"
-                    circle
+                    @click="$emit('generateSceneImage', scene.id)"
                   />
-                </el-tooltip>
-                <el-tooltip :content="$t('tooltip.uploadImage')" placement="top">
                   <el-button
-                    size="small"
-                    @click="$emit('uploadSceneImage', scene.id)"
-                    :icon="Upload"
                     circle
+                    :icon="Upload"
+                    @click="$emit('uploadSceneImage', scene.id)"
                   />
-                </el-tooltip>
+                </div>
               </div>
-            </el-card>
+              <div
+                v-else-if="
+                  scene.image_generation_status === 'pending' ||
+                  scene.image_generation_status === 'processing' ||
+                  generatingSceneImages[scene.id]
+                "
+                class="card-placeholder generating"
+              >
+                <el-icon :size="48" class="rotating"><Loading /></el-icon>
+                <span>{{ $t("common.generating") }}</span>
+                <span class="status-tag">
+                  {{ scene.image_generation_status === "pending" ? $t("common.queuing") : $t("common.processing") }}
+                </span>
+              </div>
+              <div
+                v-else-if="scene.image_generation_status === 'failed'"
+                class="card-placeholder failed"
+                @click="$emit('generateSceneImage', scene.id)"
+              >
+                <el-icon :size="48"><WarningFilled /></el-icon>
+                <span>{{ $t("common.generateFailed") }}</span>
+                <span class="status-tag retry">{{ $t("common.clickToRegenerate") }}</span>
+              </div>
+              <div v-else class="card-placeholder">
+                <el-icon :size="48"><Place /></el-icon>
+                <span>{{ $t("common.notGenerated") }}</span>
+              </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="card-actions-row">
+              <el-tooltip :content="$t('tooltip.editPrompt')" placement="top">
+                <el-button
+                  class="action-btn"
+                  :icon="Edit"
+                  @click="$emit('openPromptDialog', scene, 'scene')"
+                />
+              </el-tooltip>
+              <el-tooltip :content="$t('tooltip.aiGenerate')" placement="top">
+                <el-button
+                  type="primary"
+                  class="action-btn"
+                  :icon="MagicStick"
+                  @click="$emit('generateSceneImage', scene.id)"
+                  :loading="generatingSceneImages[scene.id]"
+                />
+              </el-tooltip>
+              <el-tooltip :content="$t('tooltip.uploadImage')" placement="top">
+                <el-button
+                  class="action-btn"
+                  :icon="Upload"
+                  @click="$emit('uploadSceneImage', scene.id)"
+                />
+              </el-tooltip>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </el-card>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -377,18 +372,11 @@ const toggleSelectAllScenes = () => {
 .workflow-card {
   height: calc(100% - 24px);
   margin: 12px;
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  border: 1px solid var(--border-primary);
-
-  :deep(.el-card__body) {
-    padding: 0;
-  }
+  overflow-y: auto;
 }
 
 .stage-body {
-  background: var(--bg-card);
+  padding: 16px;
 }
 
 .image-gen-section {
@@ -399,174 +387,236 @@ const toggleSelectAllScenes = () => {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 16px;
-    padding: 16px;
-    background: var(--bg-secondary);
+    padding: 14px 20px;
 
-    .section-title {
+    .section-title-row {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
+
+      .section-icon {
+        font-size: 20px;
+        color: var(--glass-accent-from);
+      }
 
       h3 {
-        display: flex;
-        align-items: center;
-        gap: 8px;
         margin: 0;
         font-size: 16px;
         font-weight: 600;
-        color: var(--text-primary);
-
-        .el-icon {
-          color: var(--accent);
-          font-size: 18px;
-        }
-      }
-
-      .el-alert {
-        border-radius: 4px;
+        color: var(--glass-text-primary);
       }
     }
 
     .section-actions {
       display: flex;
       align-items: center;
+      gap: 12px;
     }
   }
 }
 
-.fixed-card {
-  height: 100%;
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.image-card {
   display: flex;
   flex-direction: column;
-  border-radius: 8px;
+  background: var(--glass-bg-surface);
+  border: 1px solid var(--glass-stroke-soft);
+  border-radius: var(--glass-radius-lg);
   overflow: hidden;
-  border: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-card);
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 
   &:hover {
-    box-shadow: var(--shadow-card-hover);
+    border-color: var(--glass-stroke-focus);
+    box-shadow: var(--glass-shadow-md);
+    transform: translateY(-2px);
   }
 
-  :deep(.el-card__body) {
-    flex: 1;
-    padding: 0;
+  .card-header-row {
     display: flex;
-    flex-direction: column;
-  }
-
-  .card-header {
-    padding: 14px;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-primary);
-    display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 8px;
+    padding: 12px;
+    background: var(--glass-bg-muted);
+    border-bottom: 1px solid var(--glass-stroke-soft);
 
-    .header-left {
+    .card-info {
       flex: 1;
       min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
 
-      h4 {
-        margin: 0 0 4px 0;
+      .card-name {
         font-size: 14px;
         font-weight: 600;
-        color: var(--text-primary);
+        color: var(--glass-text-primary);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
 
-      .el-tag {
-        margin-top: 0;
+      .card-role {
+        font-size: 12px;
+        color: var(--glass-text-tertiary);
       }
+    }
+
+    .card-delete-btn {
+      flex-shrink: 0;
     }
   }
 
-  .card-image-container {
-    flex: 1;
+  .card-image-area {
+    position: relative;
     width: 100%;
-    min-height: 200px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg-secondary);
+    aspect-ratio: 3 / 4;
+    background: var(--glass-bg-muted);
+    overflow: hidden;
 
-    .char-image,
-    .scene-image {
+    .card-image {
       width: 100%;
       height: 100%;
-      position: relative;
-      z-index: 1;
 
       .el-image {
         width: 100%;
         height: 100%;
-        border-radius: 0;
+      }
+
+      .image-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: rgba(0, 0, 0, 0.5);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+
+        .el-button {
+          width: 36px;
+          height: 36px;
+        }
+      }
+
+      &:hover .image-overlay {
+        opacity: 1;
       }
     }
 
-    .char-placeholder,
-    .scene-placeholder {
+    .card-placeholder {
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      color: var(--text-muted);
-      padding: 20px;
+      gap: 8px;
+      color: var(--glass-text-tertiary);
+
+      .el-icon {
+        opacity: 0.4;
+      }
+
+      span {
+        font-size: 12px;
+      }
+
+      .status-tag {
+        padding: 2px 8px;
+        background: var(--glass-tone-warning-bg);
+        color: var(--glass-tone-warning-fg);
+        border-radius: 4px;
+        font-size: 11px;
+
+        &.retry {
+          background: var(--glass-tone-danger-bg);
+          color: var(--glass-tone-danger-fg);
+        }
+      }
 
       &.generating {
-        color: var(--warning);
-        background: var(--warning-light);
-
         .rotating {
           animation: rotating 2s linear infinite;
         }
       }
 
       &.failed {
-        color: var(--error);
-        background: var(--error-light);
-      }
-      position: relative;
-      z-index: 1;
-
-      .el-icon {
-        opacity: 0.5;
-      }
-
-      span {
-        margin-top: 10px;
-        font-size: 12px;
+        cursor: pointer;
+        &:hover {
+          background: var(--glass-tone-danger-bg);
+        }
       }
     }
   }
 
-  .card-actions {
-    padding: 10px;
-    background: var(--bg-card);
-    border-top: 1px solid var(--border-primary);
+  .card-actions-row {
     display: flex;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
+    padding: 10px;
+    background: var(--glass-bg-surface);
+    border-top: 1px solid var(--glass-stroke-soft);
 
-    .el-button {
-      margin: 0;
+    .action-btn {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border-radius: var(--glass-radius-md);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--glass-bg-surface);
+      border: 1px solid var(--glass-stroke-soft);
+      color: var(--glass-text-secondary);
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: var(--glass-bg-surface-strong);
+        border-color: var(--glass-accent-from);
+        color: var(--glass-accent-from);
+      }
+
+      &.is-disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      // 主按钮样式
+      &.el-button--primary {
+        background: linear-gradient(140deg, var(--glass-accent-from) 0%, var(--glass-accent-to) 100%);
+        border: none;
+        color: white;
+
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px var(--glass-accent-shadow-soft);
+        }
+      }
     }
   }
 }
 
-.character-image-list,
-.scene-image-list {
-  padding: 5px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
+@media (max-width: 768px) {
+  .image-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
 
-  .character-item,
-  .scene-item {
-    min-height: 360px;
+  .image-gen-section .section-header {
+    flex-direction: column;
+    gap: 12px;
+
+    .section-actions {
+      width: 100%;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
   }
 }
 
@@ -579,13 +629,13 @@ const toggleSelectAllScenes = () => {
   }
 }
 
-:deep(.el-card) {
-  background: var(--bg-card);
-  border-color: var(--border-primary);
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: var(--glass-accent-from);
+  border-color: var(--glass-accent-from);
 }
 
-:deep(.el-card__header) {
-  background: var(--bg-secondary);
-  border-color: var(--border-primary);
+:deep(.el-button--primary) {
+  background: linear-gradient(140deg, var(--glass-accent-from) 0%, var(--glass-accent-to) 100%);
+  border: none;
 }
 </style>

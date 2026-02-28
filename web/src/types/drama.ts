@@ -86,6 +86,7 @@ export interface Storyboard {
   image_prompt?: string
   video_prompt?: string
   characters?: (string | Character)[]
+  scenes?: (string | Scene)[]
   image_url?: string
   video_url?: string
   composed_image?: string

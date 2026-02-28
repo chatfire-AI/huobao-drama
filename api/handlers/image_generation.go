@@ -242,3 +242,30 @@ func (h *ImageGenerationHandler) UploadImage(c *gin.Context) {
 
 	response.Success(c, imageGen)
 }
+
+// BatchExtractBackgrounds 批量从剧本提取场景
+func (h *ImageGenerationHandler) BatchExtractBackgrounds(c *gin.Context) {
+	dramaIDStr := c.Param("id")
+	dramaID, err := strconv.ParseUint(dramaIDStr, 10, 32)
+	if err != nil {
+		response.BadRequest(c, "无效的项目ID")
+		return
+	}
+
+	var req struct {
+		EpisodeIDs []uint `json:"episode_ids"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	taskID, err := h.imageService.BatchExtractBackgrounds(uint(dramaID), req.EpisodeIDs)
+	if err != nil {
+		h.log.Errorw("Failed to batch extract backgrounds", "error", err)
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{"task_id": taskID, "message": "批量场景提取任务已提交"})
+}

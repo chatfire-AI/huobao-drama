@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	// Added missing import
@@ -76,18 +77,11 @@ func (s *PropService) ExtractPropsFromScript(episodeID uint) (string, error) {
 	return task.ID, nil
 }
 
-func (s *PropService) processPropExtraction(taskID string, episode models.Episode) {
-	s.taskService.UpdateTaskStatus(taskID, "processing", 0, "正在分析剧本...")
-
+// extractPropsForEpisode 从单集剧本提取道具（可复用核心逻辑）
+func (s *PropService) extractPropsForEpisode(episode models.Episode, drama models.Drama) ([]models.Prop, error) {
 	script := ""
 	if episode.ScriptContent != nil {
 		script = *episode.ScriptContent
-	}
-
-	// 获取 drama 的 style 信息
-	var drama models.Drama
-	if err := s.db.First(&drama, episode.DramaID).Error; err != nil {
-		s.log.Warnw("Failed to load drama", "error", err, "drama_id", episode.DramaID)
 	}
 
 	promptTemplate := s.promptI18n.GetPropExtractionPrompt(drama.Style)
@@ -95,23 +89,25 @@ func (s *PropService) processPropExtraction(taskID string, episode models.Episod
 
 	response, err := s.aiService.GenerateText(prompt, "", ai.WithMaxTokens(2000))
 	if err != nil {
-		s.taskService.UpdateTaskError(taskID, err)
-		return
+		return nil, fmt.Errorf("AI生成失败: %w", err)
 	}
 
-	var extractedProps []struct {
+	type extractedProp struct {
 		Name        string `json:"name"`
 		Type        string `json:"type"`
 		Description string `json:"description"`
 		ImagePrompt string `json:"image_prompt"`
 	}
 
+	var extractedProps []extractedProp
 	if err := utils.SafeParseAIJSON(response, &extractedProps); err != nil {
-		s.taskService.UpdateTaskError(taskID, fmt.Errorf("解析AI结果失败: %w", err))
-		return
+		var single extractedProp
+		if err2 := utils.SafeParseAIJSON(response, &single); err2 == nil && single.Name != "" {
+			extractedProps = []extractedProp{single}
+		} else {
+			return nil, fmt.Errorf("解析AI结果失败: %w", err)
+		}
 	}
-
-	s.taskService.UpdateTaskStatus(taskID, "processing", 50, "正在保存道具...")
 
 	var createdProps []models.Prop
 	for _, p := range extractedProps {
@@ -122,7 +118,6 @@ func (s *PropService) processPropExtraction(taskID string, episode models.Episod
 			Description: &p.Description,
 			Prompt:      &p.ImagePrompt,
 		}
-		// 检查是否已存在同名道具（避免重复）
 		var count int64
 		s.db.Model(&models.Prop{}).Where("drama_id = ? AND name = ?", episode.DramaID, p.Name).Count(&count)
 		if count == 0 {
@@ -132,7 +127,122 @@ func (s *PropService) processPropExtraction(taskID string, episode models.Episod
 		}
 	}
 
+	return createdProps, nil
+}
+
+func (s *PropService) processPropExtraction(taskID string, episode models.Episode) {
+	s.taskService.UpdateTaskStatus(taskID, "processing", 0, "正在分析剧本...")
+
+	var drama models.Drama
+	if err := s.db.First(&drama, episode.DramaID).Error; err != nil {
+		s.log.Warnw("Failed to load drama", "error", err, "drama_id", episode.DramaID)
+	}
+
+	s.taskService.UpdateTaskStatus(taskID, "processing", 50, "正在保存道具...")
+
+	createdProps, err := s.extractPropsForEpisode(episode, drama)
+	if err != nil {
+		s.taskService.UpdateTaskError(taskID, err)
+		return
+	}
+
 	s.taskService.UpdateTaskResult(taskID, createdProps)
+}
+
+// deduplicatePropsByName 按名称去重道具
+func (s *PropService) deduplicatePropsByName(dramaID uint) int {
+	var props []models.Prop
+	if err := s.db.Where("drama_id = ?", dramaID).Order("created_at ASC").Find(&props).Error; err != nil {
+		s.log.Errorw("Failed to load props for dedup", "error", err)
+		return 0
+	}
+
+	groups := make(map[string][]models.Prop)
+	for _, prop := range props {
+		key := strings.ToLower(strings.TrimSpace(prop.Name))
+		groups[key] = append(groups[key], prop)
+	}
+
+	dedupCount := 0
+	for _, group := range groups {
+		if len(group) <= 1 {
+			continue
+		}
+		for i := 1; i < len(group); i++ {
+			if err := s.db.Delete(&group[i]).Error; err != nil {
+				s.log.Warnw("Failed to delete duplicate prop", "error", err, "prop_id", group[i].ID)
+				continue
+			}
+			dedupCount++
+		}
+	}
+
+	return dedupCount
+}
+
+// BatchExtractProps 批量从多个分集提取道具
+func (s *PropService) BatchExtractProps(dramaID uint, episodeIDs []uint) (string, error) {
+	var drama models.Drama
+	if err := s.db.First(&drama, dramaID).Error; err != nil {
+		return "", fmt.Errorf("drama not found")
+	}
+
+	var episodes []models.Episode
+	query := s.db.Where("drama_id = ?", dramaID)
+	if len(episodeIDs) > 0 {
+		query = query.Where("id IN ?", episodeIDs)
+	}
+	if err := query.Order("episode_number ASC").Find(&episodes).Error; err != nil {
+		return "", fmt.Errorf("加载分集失败: %w", err)
+	}
+
+	var validEpisodes []models.Episode
+	for _, ep := range episodes {
+		if ep.ScriptContent != nil && *ep.ScriptContent != "" {
+			validEpisodes = append(validEpisodes, ep)
+		}
+	}
+
+	if len(validEpisodes) == 0 {
+		return "", fmt.Errorf("所选分集中没有包含剧本内容的集")
+	}
+
+	task, err := s.taskService.CreateTask("batch_prop_extraction", fmt.Sprintf("%d", dramaID))
+	if err != nil {
+		return "", fmt.Errorf("创建任务失败: %w", err)
+	}
+
+	go s.processBatchPropExtraction(task.ID, drama, validEpisodes)
+
+	return task.ID, nil
+}
+
+func (s *PropService) processBatchPropExtraction(taskID string, drama models.Drama, episodes []models.Episode) {
+	totalEpisodes := len(episodes)
+	totalProps := 0
+
+	for i, episode := range episodes {
+		progress := (i * 100) / (totalEpisodes + 1)
+		msg := fmt.Sprintf("正在提取第 %d/%d 集...", i+1, totalEpisodes)
+		s.taskService.UpdateTaskStatus(taskID, "processing", progress, msg)
+
+		props, err := s.extractPropsForEpisode(episode, drama)
+		if err != nil {
+			s.log.Errorw("Failed to extract props for episode",
+				"error", err, "episode_id", episode.ID, "episode_num", episode.EpisodeNum)
+			continue
+		}
+		totalProps += len(props)
+	}
+
+	s.taskService.UpdateTaskStatus(taskID, "processing", 95, "正在去重道具...")
+	dedupCount := s.deduplicatePropsByName(drama.ID)
+
+	s.taskService.UpdateTaskResult(taskID, map[string]interface{}{
+		"props":          totalProps,
+		"episodes_count": totalEpisodes,
+		"dedup_props":    dedupCount,
+	})
 }
 
 // GeneratePropImage 生成道具图片

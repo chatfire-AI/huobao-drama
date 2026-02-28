@@ -112,5 +112,13 @@ export const characterLibraryAPI = {
   // 从剧本提取角色
   extractFromEpisode(episodeId: number) {
     return request.post<{ task_id: string; message: string }>(`/episodes/${episodeId}/characters/extract`)
+  },
+
+  // 批量从剧本提取角色
+  batchExtractFromEpisodes(dramaId: string, episodeIds: number[]) {
+    return request.post<{ task_id: string; message: string }>(
+      `/dramas/${dramaId}/characters/batch-extract`,
+      { episode_ids: episodeIds }
+    )
   }
 }

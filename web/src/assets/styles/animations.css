@@ -1,0 +1,393 @@
+/**
+ * Glass Design System - Animations
+ * 玻璃态设计系统 - 动画效果
+ *
+ * 基于 waoowaoo 项目的动画系统
+ */
+
+/* ========================================
+   Float / 浮动动画
+   ======================================== */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ========================================
+   Slide Up / 向上滑入
+   ======================================== */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* ========================================
+   Slide Down / 向下滑入
+   ======================================== */
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.3s ease-out;
+}
+
+/* ========================================
+   Slide Left / 向左滑入
+   ======================================== */
+@keyframes slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-left {
+  animation: slide-left 0.3s ease-out;
+}
+
+/* ========================================
+   Slide Right / 向右滑入
+   ======================================== */
+@keyframes slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-right {
+  animation: slide-right 0.3s ease-out;
+}
+
+/* ========================================
+   Fade In / 淡入
+   ======================================== */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* ========================================
+   Fade Out / 淡出
+   ======================================== */
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-fade-out {
+  animation: fade-out 0.3s ease-out;
+}
+
+/* ========================================
+   Scale In / 缩放进入
+   ======================================== */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out;
+}
+
+/* ========================================
+   Scale Out / 缩放退出
+   ======================================== */
+@keyframes scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+.animate-scale-out {
+  animation: scale-out 0.2s ease-out;
+}
+
+/* ========================================
+   Pulse / 脉冲
+   ======================================== */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ========================================
+   Bounce / 弹跳
+   ======================================== */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(-5%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+/* ========================================
+   Spin / 旋转
+   ======================================== */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ========================================
+   Ping / 涟漪
+   ======================================== */
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.animate-ping {
+  animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* ========================================
+   Shimmer / 闪烁
+   ======================================== */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--glass-bg-muted) 0%,
+    var(--glass-bg-surface-strong) 50%,
+    var(--glass-bg-muted) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ========================================
+   Focus Ring / 焦点环动画
+   ======================================== */
+@keyframes focus-ring-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--glass-focus-ring);
+  }
+  50% {
+    box-shadow: 0 0 0 4px var(--glass-focus-ring);
+  }
+}
+
+.animate-focus-ring {
+  animation: focus-ring-pulse 2s ease-in-out infinite;
+}
+
+/* ========================================
+   Skeleton Loading / 骨架屏
+   ======================================== */
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.animate-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--glass-bg-muted) 25%,
+    var(--glass-bg-surface-strong) 50%,
+    var(--glass-bg-muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+/* ========================================
+   Glass Effect / 玻璃态动效
+   ======================================== */
+@keyframes glass-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-glass-shimmer {
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: glass-shimmer 2s ease-in-out infinite;
+}
+
+/* ========================================
+   Utility Classes / 工具类
+   ======================================== */
+.animation-delay-100 {
+  animation-delay: 100ms;
+}
+
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animation-delay-300 {
+  animation-delay: 300ms;
+}
+
+.animation-delay-400 {
+  animation-delay: 400ms;
+}
+
+.animation-delay-500 {
+  animation-delay: 500ms;
+}
+
+.animation-duration-fast {
+  animation-duration: 150ms;
+}
+
+.animation-duration-normal {
+  animation-duration: 300ms;
+}
+
+.animation-duration-slow {
+  animation-duration: 500ms;
+}
+
+/* ========================================
+   Hover Transitions / 悬停过渡
+   ======================================== */
+.transition-glass {
+  transition: all 0.2s ease;
+}
+
+.transition-glass-fast {
+  transition: all 0.15s ease;
+}
+
+.transition-glass-slow {
+  transition: all 0.3s ease;
+}
+
+/* Hover lift - 悬停提升 */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glass-shadow-md);
+}
+
+/* Hover scale - 悬停缩放 */
+.hover-scale {
+  transition: transform 0.2s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.hover-scale:active {
+  transform: scale(0.98);
+}
+
+/* Hover glow - 悬停发光 */
+.hover-glow {
+  transition: box-shadow 0.2s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px var(--glass-accent-shadow-soft);
+}

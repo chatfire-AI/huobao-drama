@@ -1,99 +1,112 @@
 <template>
   <div>
-    <div class="tab-header">
-      <h2>{{ $t("drama.management.characterList") }}</h2>
-      <div style="display: flex; gap: 10px">
+    <TabHeader :title="$t('drama.management.characterList')">
+      <template #actions>
+        <el-button
+          v-if="!isBatchMode"
+          size="small"
+          @click="isBatchMode = true"
+        >{{ $t('common.batchMode') }}</el-button>
         <el-button
           :icon="Document"
           @click="$emit('extractCharacters')"
-          >{{ $t("prop.extract") }}</el-button
-        >
+        >{{ $t('prop.extract') }}</el-button>
         <el-button
           type="primary"
           :icon="Plus"
           @click="$emit('addCharacter')"
-          >{{ $t("character.add") }}</el-button
+        >{{ $t('character.add') }}</el-button>
+      </template>
+      <template #filter>
+        <el-input
+          v-model="searchQuery"
+          :placeholder="$t('character.searchPlaceholder')"
+          :prefix-icon="Search"
+          clearable
+          style="width: 220px"
+        />
+        <el-select
+          v-model="filterValue"
+          :placeholder="$t('character.filterRole')"
+          clearable
+          style="width: 150px"
         >
-      </div>
+          <el-option label="Main" value="main" />
+          <el-option label="Supporting" value="supporting" />
+          <el-option label="Minor" value="minor" />
+        </el-select>
+      </template>
+    </TabHeader>
+
+    <!-- 批量操作栏 -->
+    <div v-if="isBatchMode" class="batch-bar">
+      <el-checkbox
+        :model-value="isAllSelected"
+        :indeterminate="isIndeterminate"
+        @change="toggleAll"
+      >{{ $t('common.selectAll') }}</el-checkbox>
+      <span class="batch-bar__count">{{ $t('common.selectedCount', { count: selectedCount }) }}</span>
+      <el-button
+        size="small"
+        type="danger"
+        :disabled="selectedCount === 0"
+        @click="$emit('batchDeleteCharacters', selectedItems)"
+      >{{ $t('common.batchDelete') }}</el-button>
+      <el-button
+        size="small"
+        :disabled="selectedCount === 0"
+        @click="$emit('batchGenerateCharacterImages', selectedItems)"
+      >{{ $t('common.batchGenerate') }}</el-button>
+      <el-button size="small" @click="clearSelection">{{ $t('common.cancelBatch') }}</el-button>
     </div>
 
-    <el-row :gutter="16" style="margin-top: 16px">
-      <el-col
-        :span="6"
-        v-for="character in characters"
+    <ResponsiveGrid v-if="filteredItems.length > 0">
+      <ItemCard
+        v-for="character in filteredItems"
         :key="character.id"
+        :title="character.name"
+        :description="character.appearance || character.description"
+        :image-url="(character.local_path || character.image_url) ? getImageUrl(character) : undefined"
+        :placeholder-icon="User"
+        :tag="character.role === 'main' ? 'Main' : character.role === 'supporting' ? 'Supporting' : 'Minor'"
+        :tag-type="character.role === 'main' ? 'danger' : 'info'"
+        :selectable="isBatchMode"
+        :selected="selectedIds.has(character.id)"
+        @select="toggleItem(character.id)"
+        @click="$emit('editCharacter', character)"
       >
-        <el-card shadow="hover" class="character-card">
-          <div class="character-preview">
-            <ImagePreview
-              v-if="character.local_path || character.image_url"
-              :image-url="getImageUrl(character)"
-              :alt="character.name"
-              :size="120"
-            />
-            <el-avatar v-else :size="120">{{
-              character.name[0]
-            }}</el-avatar>
-          </div>
+        <template #actions>
+          <el-button size="small" @click="$emit('editCharacter', character)">{{ $t('common.edit') }}</el-button>
+          <el-button size="small" @click="$emit('generateCharacterImage', character)">{{ $t('prop.generateImage') }}</el-button>
+          <el-button size="small" type="danger" @click="$emit('deleteCharacter', character)">{{ $t('common.delete') }}</el-button>
+        </template>
+      </ItemCard>
+    </ResponsiveGrid>
 
-          <div class="character-info">
-            <div class="character-name">
-              <h4>{{ character.name }}</h4>
-              <el-tag
-                :type="character.role === 'main' ? 'danger' : 'info'"
-                size="small"
-              >
-                {{
-                  character.role === "main"
-                    ? "Main"
-                    : character.role === "supporting"
-                      ? "Supporting"
-                      : "Minor"
-                }}
-              </el-tag>
-            </div>
-            <p class="desc">
-              {{ character.appearance || character.description }}
-            </p>
-          </div>
-
-          <div class="character-actions">
-            <el-button size="small" @click="$emit('editCharacter', character)">{{
-              $t("common.edit")
-            }}</el-button>
-            <el-button
-              size="small"
-              @click="$emit('generateCharacterImage', character)"
-              >{{ $t("prop.generateImage") }}</el-button
-            >
-            <el-button
-              size="small"
-              type="danger"
-              @click="$emit('deleteCharacter', character)"
-              >{{ $t("common.delete") }}</el-button
-            >
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-empty
-      v-if="!characters || characters.length === 0"
-      :description="$t('drama.management.noCharacters')"
-    />
+    <EmptyState
+      v-else
+      :title="$t('drama.management.noCharacters')"
+      :description="$t('character.emptyTip')"
+      :icon="User"
+    >
+      <el-button type="primary" :icon="Plus" @click="$emit('addCharacter')">{{ $t('character.add') }}</el-button>
+    </EmptyState>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Document, Plus } from '@element-plus/icons-vue'
-import { ImagePreview } from '@/components/common'
+import { Document, Plus, Search, User } from '@element-plus/icons-vue'
+import { TabHeader, ItemCard, ResponsiveGrid, EmptyState } from '@/components/common'
 import { getImageUrl } from '@/utils/image'
+import { useFilteredList } from '@/composables/useFilteredList'
+import { useBatchSelection } from '@/composables/useBatchSelection'
 import type { Character } from '@/types/drama'
 
 const { t } = useI18n()
 
-defineProps<{
+const props = defineProps<{
   characters: Character[]
 }>()
 
@@ -103,103 +116,38 @@ defineEmits<{
   editCharacter: [character: Character]
   generateCharacterImage: [character: Character]
   deleteCharacter: [character: Character]
+  batchDeleteCharacters: [characters: Character[]]
+  batchGenerateCharacterImages: [characters: Character[]]
 }>()
+
+const charactersList = computed(() => props.characters)
+
+const { searchQuery, filterValue, filteredItems } = useFilteredList({
+  items: charactersList,
+  searchFields: ['name', 'description', 'appearance'] as (keyof Character)[],
+  filterField: 'role' as keyof Character,
+})
+
+const {
+  selectedIds, isBatchMode, isAllSelected, isIndeterminate,
+  selectedItems, selectedCount, toggleItem, toggleAll, clearSelection,
+} = useBatchSelection(filteredItems)
 </script>
 
 <style scoped>
-.tab-header {
+.batch-bar {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   margin-bottom: var(--space-4);
+  background: var(--bg-card-hover);
+  border-radius: var(--radius-lg);
+  flex-wrap: wrap;
 }
 
-@media (min-width: 640px) {
-  .tab-header {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-}
-
-.tab-header h2 {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
-}
-.character-card {
-  margin-bottom: var(--space-4);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-  transition: all var(--transition-normal);
-}
-
-.character-card:hover {
-  border-color: var(--border-secondary);
-  box-shadow: var(--shadow-card-hover);
-}
-
-.character-card :deep(.el-card__body) {
-  padding: 0;
-}
-
-.character-preview {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 160px;
-  background: linear-gradient(135deg, var(--accent) 0%, #06b6d4 100%);
-  overflow: hidden;
-}
-
-.character-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform var(--transition-normal);
-}
-
-.character-card:hover .character-preview img {
-  transform: scale(1.05);
-}
-
-.character-info {
-  text-align: center;
-  padding: var(--space-4);
-}
-
-.character-name {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.character-info h4 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.desc {
-  font-size: 0.8125rem;
-  color: var(--text-muted);
-  margin: var(--space-2) 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.character-actions {
-  display: flex;
-  gap: var(--space-2);
-  justify-content: center;
-  padding: 0 var(--space-4) var(--space-4);
+.batch-bar__count {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
 }
 </style>

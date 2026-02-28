@@ -1,7 +1,7 @@
 <template>
   <!-- Project card component - Compact design with always-visible actions -->
   <!-- 项目卡片组件 - 紧凑设计，操作始终可见 -->
-  <article class="project-card" @click="$emit('click')" tabindex="0" @keydown.enter="$emit('click')">
+  <article class="project-card glass-surface hover-lift" @click="$emit('click')" tabindex="0" @keydown.enter="$emit('click')">
     <div class="card-accent"></div>
     <div class="card-body">
       <div class="card-top">
@@ -59,21 +59,19 @@ const formattedDate = computed(() => {
   position: relative;
   display: flex;
   flex-direction: column;
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--glass-stroke-soft);
+  border-radius: var(--glass-radius-lg);
   overflow: hidden;
   cursor: pointer;
   transition: all var(--transition-normal);
 }
 
 .project-card:hover {
-  border-color: var(--accent);
-  box-shadow: var(--shadow-card-hover);
+  border-color: var(--glass-stroke-focus);
 }
 
 .project-card:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--glass-accent-from);
   outline-offset: 2px;
 }
 
@@ -84,8 +82,8 @@ const formattedDate = computed(() => {
   top: 0;
   bottom: 0;
   width: 4px;
-  background: var(--accent);
-  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  background: var(--glass-accent-from);
+  border-radius: var(--glass-radius-md) 0 0 var(--glass-radius-md);
 }
 
 /* Top Section / 顶部区域 */
@@ -138,7 +136,7 @@ const formattedDate = computed(() => {
 .card-footer {
   margin-top: auto;
   padding-top: 8px;
-  border-top: 1px solid var(--border-primary);
+  border-top: 1px solid var(--glass-stroke-base);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -154,7 +152,7 @@ const formattedDate = computed(() => {
   width: 28px !important;
   height: 28px !important;
   padding: 0 !important;
-  background: var(--bg-secondary) !important;
+  background: var(--glass-bg-muted) !important;
   border: none !important;
 }
 </style>

@@ -40,27 +40,21 @@
     </div>
 
     <!-- 引导卡片：无章节时显示 -->
-    <el-alert
+    <EmptyState
       v-if="episodesCount === 0"
       :title="$t('drama.management.startFirstEpisode')"
-      type="info"
-      :closable="false"
+      :description="$t('drama.management.noEpisodesYet')"
+      :icon="Document"
       style="margin-top: 20px"
     >
-      <template #default>
-        <p style="margin: 8px 0">
-          {{ $t("drama.management.noEpisodesYet") }}
-        </p>
-        <el-button
-          type="primary"
-          :icon="Plus"
-          @click="$emit('createEpisode')"
-          style="margin-top: 8px"
-        >
-          {{ $t("drama.management.createFirstEpisode") }}
-        </el-button>
-      </template>
-    </el-alert>
+      <el-button
+        type="primary"
+        :icon="Plus"
+        @click="$emit('createEpisode')"
+      >
+        {{ $t("drama.management.createFirstEpisode") }}
+      </el-button>
+    </EmptyState>
 
     <el-card shadow="never" class="project-info-card">
       <template #header>
@@ -100,7 +94,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { Document, User, Picture, Plus, Box } from '@element-plus/icons-vue'
-import { StatCard } from '@/components/common'
+import { StatCard, EmptyState } from '@/components/common'
 import type { Drama } from '@/types/drama'
 
 const { t } = useI18n()
@@ -158,7 +152,7 @@ const formatDate = (date?: string) => {
 
 @media (min-width: 1024px) {
   .stats-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 

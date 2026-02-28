@@ -17,6 +17,12 @@ export const propAPI = {
     extractFromScript(episodeId: number) {
         return request.post<{ task_id: string }>(`/episodes/${episodeId}/props/extract`)
     },
+    batchExtractFromEpisodes(dramaId: string, episodeIds: number[]) {
+        return request.post<{ task_id: string; message: string }>(
+            `/dramas/${dramaId}/props/batch-extract`,
+            { episode_ids: episodeIds }
+        )
+    },
     generateImage(id: number) {
         return request.post<{ task_id: string }>(`/props/${id}/generate`)
     },

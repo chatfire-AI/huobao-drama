@@ -83,6 +83,13 @@ export const dramaAPI = {
     return request.post<{ task_id: string; status: string; message: string }>(`/images/episode/${episodeId}/backgrounds/extract`, { model })
   },
 
+  batchExtractBackgrounds(dramaId: string, episodeIds: number[]) {
+    return request.post<{ task_id: string; message: string }>(
+      `/dramas/${dramaId}/scenes/batch-extract`,
+      { episode_ids: episodeIds }
+    )
+  },
+
   batchGenerateBackgrounds(episodeId: string) {
     return request.post<{ task_id: string; status: string; message: string }>(`/images/episode/${episodeId}/batch`)
   },

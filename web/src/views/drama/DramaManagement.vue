@@ -1,71 +1,89 @@
 <template>
-  <div class="animate-fade-in">
-    <PageHeader :title="drama?.title || ''" :subtitle="drama?.description || $t('drama.management.overview')">
-    </PageHeader>
+  <div class="animate-fade-in drama-management-container">
+    <ProjectFlowHeader
+      :title="drama?.title"
+      :description="drama?.description"
+      :status="drama?.status"
+      :episodes-count="episodesCount"
+      :characters-count="charactersCount"
+      :scenes-count="scenesCount"
+      :props-count="propsCount"
+    />
 
-    <!-- Tabs / 标签页 -->
     <div class="tabs-wrapper">
-        <el-tabs v-model="activeTab" class="management-tabs">
-          <!-- 项目概览 -->
-          <el-tab-pane :label="$t('drama.management.overview')" name="overview">
-            <OverviewTab
-              :drama="drama ?? null"
-              :episodes-count="episodesCount"
-              :characters-count="charactersCount"
-              :scenes-count="scenesCount"
-              :props-count="propsCount"
-              @create-episode="createNewEpisode"
-            />
-          </el-tab-pane>
+      <el-tabs v-model="activeTab" class="management-tabs">
+        <el-tab-pane name="episodes">
+          <template #label>
+            <div class="tab-label">
+              <el-icon :size="16"><Document /></el-icon>
+              <span>{{ $t('drama.management.episodes') }}</span>
+              <span v-if="episodesCount" class="tab-badge">{{ episodesCount }}</span>
+            </div>
+          </template>
+          <EpisodesTab
+            :episodes="drama?.episodes || []"
+            @create-episode="createNewEpisode"
+            @enter-episode="enterEpisodeWorkflow"
+            @delete-episode="deleteEpisode"
+            @upload-novel="showUploadNovel = true"
+          />
+        </el-tab-pane>
 
-          <!-- 章节管理 -->
-          <el-tab-pane :label="$t('drama.management.episodes')" name="episodes">
-            <EpisodesTab
-              :episodes="drama?.episodes || []"
-              @create-episode="createNewEpisode"
-              @enter-episode="enterEpisodeWorkflow"
-              @delete-episode="deleteEpisode"
-            />
-          </el-tab-pane>
+        <el-tab-pane name="characters">
+          <template #label>
+            <div class="tab-label">
+              <el-icon :size="16"><User /></el-icon>
+              <span>{{ $t('drama.management.characters') }}</span>
+              <span v-if="charactersCount" class="tab-badge">{{ charactersCount }}</span>
+            </div>
+          </template>
+          <CharactersTab
+            :characters="drama?.characters || []"
+            @extract-characters="openExtractCharacterDialog"
+            @add-character="openAddCharacterDialog"
+            @edit-character="editCharacter"
+            @generate-character-image="generateCharacterImage"
+            @delete-character="deleteCharacter"
+          />
+        </el-tab-pane>
 
-          <!-- 角色管理 -->
-          <el-tab-pane
-            :label="$t('drama.management.characters')"
-            name="characters"
-          >
-            <CharactersTab
-              :characters="drama?.characters || []"
-              @extract-characters="openExtractCharacterDialog"
-              @add-character="openAddCharacterDialog"
-              @edit-character="editCharacter"
-              @generate-character-image="generateCharacterImage"
-              @delete-character="deleteCharacter"
-            />
-          </el-tab-pane>
+        <el-tab-pane name="scenes">
+          <template #label>
+            <div class="tab-label">
+              <el-icon :size="16"><Picture /></el-icon>
+              <span>{{ $t('drama.management.sceneList') }}</span>
+              <span v-if="scenesCount" class="tab-badge">{{ scenesCount }}</span>
+            </div>
+          </template>
+          <ScenesTab
+            :scenes="scenes"
+            @extract-scenes="openExtractSceneDialog"
+            @add-scene="openAddSceneDialog"
+            @edit-scene="editScene"
+            @generate-scene-image="generateSceneImage"
+            @delete-scene="deleteScene"
+          />
+        </el-tab-pane>
 
-          <!-- 场景库管理 -->
-          <el-tab-pane :label="$t('drama.management.sceneList')" name="scenes">
-            <ScenesTab
-              :scenes="scenes"
-              @edit-scene="editScene"
-              @generate-scene-image="generateSceneImage"
-              @delete-scene="deleteScene"
-            />
-          </el-tab-pane>
-
-          <!-- 道具管理 -->
-          <el-tab-pane :label="$t('drama.management.propList')" name="props">
-            <PropsTab
-              :props-list="drama?.props || []"
-              @extract-props="openExtractDialog"
-              @add-prop="openAddPropDialog"
-              @edit-prop="editProp"
-              @generate-prop-image="generatePropImage"
-              @delete-prop="deleteProp"
-            />
-          </el-tab-pane>
-        </el-tabs>
-      </div>
+        <el-tab-pane name="props">
+          <template #label>
+            <div class="tab-label">
+              <el-icon :size="16"><Box /></el-icon>
+              <span>{{ $t('drama.management.propList') }}</span>
+              <span v-if="propsCount" class="tab-badge">{{ propsCount }}</span>
+            </div>
+          </template>
+          <PropsTab
+            :props-list="drama?.props || []"
+            @extract-props="openExtractDialog"
+            @add-prop="openAddPropDialog"
+            @edit-prop="editProp"
+            @generate-prop-image="generatePropImage"
+            @delete-prop="deleteProp"
+          />
+        </el-tab-pane>
+      </el-tabs>
+    </div>
 
       <!-- 添加/编辑角色对话框 -->
       <el-dialog
@@ -304,125 +322,187 @@
       <!-- 从剧本提取道具对话框 -->
       <el-dialog
         v-model="extractPropsDialogVisible"
-        :title="$t('prop.extractTitle')"
+        :title="$t('prop.batchExtract')"
         width="500px"
       >
         <el-form label-width="100px">
-          <el-form-item :label="$t('prop.selectEpisode')">
-            <el-select
-              v-model="selectedExtractEpisodeId"
-              :placeholder="$t('common.pleaseSelect')"
-              style="width: 100%"
-            >
-              <el-option
-                v-for="ep in sortedEpisodes"
-                :key="ep.id"
-                :label="ep.title"
-                :value="ep.id"
-              />
-            </el-select>
+          <el-form-item :label="$t('prop.selectEpisodes')">
+            <div style="width: 100%">
+              <el-checkbox
+                v-model="selectAllPropsEpisodes"
+                :indeterminate="isPropsIndeterminate"
+                @change="handleSelectAllPropsEpisodes"
+                style="margin-bottom: 8px"
+              >{{ $t('common.selectAll') }}</el-checkbox>
+              <el-select
+                v-model="selectedPropsEpisodeIds"
+                multiple
+                collapse-tags
+                collapse-tags-tooltip
+                :placeholder="$t('common.pleaseSelect')"
+                style="width: 100%"
+                @change="handlePropsEpisodeSelectionChange"
+              >
+                <el-option
+                  v-for="ep in sortedEpisodes"
+                  :key="ep.id"
+                  :label="ep.title"
+                  :value="ep.id"
+                />
+              </el-select>
+            </div>
           </el-form-item>
           <el-alert
-            :title="$t('prop.extractTip')"
+            :title="$t('prop.batchExtractTip')"
             type="info"
             :closable="false"
             show-icon
           />
+          <div v-if="propsExtractProgress.active" style="margin-top: 16px">
+            <el-progress :percentage="propsExtractProgress.percent" :status="propsExtractProgress.status" />
+            <p style="margin-top: 8px; color: var(--el-text-color-secondary); font-size: 13px">
+              {{ propsExtractProgress.message }}
+            </p>
+          </div>
         </el-form>
         <template #footer>
-          <el-button @click="extractPropsDialogVisible = false">{{
+          <el-button @click="extractPropsDialogVisible = false" :disabled="propsExtractProgress.active">{{
             $t("common.cancel")
           }}</el-button>
           <el-button
             type="primary"
             @click="handleExtractProps"
-            :disabled="!selectedExtractEpisodeId"
-            >{{ $t("prop.startExtract") }}</el-button
-          >
+            :disabled="selectedPropsEpisodeIds.length === 0 || propsExtractProgress.active"
+            :loading="propsExtractProgress.active"
+          >{{ $t("prop.startExtract") }}</el-button>
         </template>
       </el-dialog>
 
       <!-- 从剧本提取角色对话框 -->
       <el-dialog
         v-model="extractCharactersDialogVisible"
-        :title="$t('prop.extractTitle')"
+        :title="$t('character.batchExtract')"
         width="500px"
       >
         <el-form label-width="100px">
-          <el-form-item :label="$t('prop.selectEpisode')">
-            <el-select
-              v-model="selectedExtractEpisodeId"
-              :placeholder="$t('common.pleaseSelect')"
-              style="width: 100%"
-            >
-              <el-option
-                v-for="ep in sortedEpisodes"
-                :key="ep.id"
-                :label="ep.title"
-                :value="ep.id"
-              />
-            </el-select>
+          <el-form-item :label="$t('character.selectEpisodes')">
+            <div style="width: 100%">
+              <el-checkbox
+                v-model="selectAllEpisodes"
+                :indeterminate="isIndeterminate"
+                @change="handleSelectAllEpisodes"
+                style="margin-bottom: 8px"
+              >{{ $t('common.selectAll') }}</el-checkbox>
+              <el-select
+                v-model="selectedExtractEpisodeIds"
+                multiple
+                collapse-tags
+                collapse-tags-tooltip
+                :placeholder="$t('common.pleaseSelect')"
+                style="width: 100%"
+                @change="handleEpisodeSelectionChange"
+              >
+                <el-option
+                  v-for="ep in sortedEpisodes"
+                  :key="ep.id"
+                  :label="ep.title"
+                  :value="ep.id"
+                />
+              </el-select>
+            </div>
           </el-form-item>
           <el-alert
-            :title="$t('prop.extractTip')"
+            :title="$t('character.batchExtractTip')"
             type="info"
             :closable="false"
             show-icon
           />
+          <div v-if="extractProgress.active" style="margin-top: 16px">
+            <el-progress :percentage="extractProgress.percent" :status="extractProgress.status" />
+            <p style="margin-top: 8px; color: var(--el-text-color-secondary); font-size: 13px">
+              {{ extractProgress.message }}
+            </p>
+          </div>
         </el-form>
         <template #footer>
-          <el-button @click="extractCharactersDialogVisible = false">{{
+          <el-button @click="extractCharactersDialogVisible = false" :disabled="extractProgress.active">{{
             $t("common.cancel")
           }}</el-button>
           <el-button
             type="primary"
             @click="handleExtractCharacters"
-            :disabled="!selectedExtractEpisodeId"
-            >{{ $t("prop.startExtract") }}</el-button
-          >
+            :disabled="selectedExtractEpisodeIds.length === 0 || extractProgress.active"
+            :loading="extractProgress.active"
+          >{{ $t("prop.startExtract") }}</el-button>
         </template>
       </el-dialog>
 
       <!-- 从剧本提取场景对话框 -->
       <el-dialog
         v-model="extractScenesDialogVisible"
-        :title="$t('prop.extractTitle')"
+        :title="$t('scene.batchExtract')"
         width="500px"
       >
         <el-form label-width="100px">
-          <el-form-item :label="$t('prop.selectEpisode')">
-            <el-select
-              v-model="selectedExtractEpisodeId"
-              :placeholder="$t('common.pleaseSelect')"
-              style="width: 100%"
-            >
-              <el-option
-                v-for="ep in sortedEpisodes"
-                :key="ep.id"
-                :label="ep.title"
-                :value="ep.id"
-              />
-            </el-select>
+          <el-form-item :label="$t('scene.selectEpisodes')">
+            <div style="width: 100%">
+              <el-checkbox
+                v-model="selectAllScenesEpisodes"
+                :indeterminate="isScenesIndeterminate"
+                @change="handleSelectAllScenesEpisodes"
+                style="margin-bottom: 8px"
+              >{{ $t('common.selectAll') }}</el-checkbox>
+              <el-select
+                v-model="selectedScenesEpisodeIds"
+                multiple
+                collapse-tags
+                collapse-tags-tooltip
+                :placeholder="$t('common.pleaseSelect')"
+                style="width: 100%"
+                @change="handleScenesEpisodeSelectionChange"
+              >
+                <el-option
+                  v-for="ep in sortedEpisodes"
+                  :key="ep.id"
+                  :label="ep.title"
+                  :value="ep.id"
+                />
+              </el-select>
+            </div>
           </el-form-item>
           <el-alert
-            :title="$t('prop.extractTip')"
+            :title="$t('scene.batchExtractTip')"
             type="info"
             :closable="false"
             show-icon
           />
+          <div v-if="scenesExtractProgress.active" style="margin-top: 16px">
+            <el-progress :percentage="scenesExtractProgress.percent" :status="scenesExtractProgress.status" />
+            <p style="margin-top: 8px; color: var(--el-text-color-secondary); font-size: 13px">
+              {{ scenesExtractProgress.message }}
+            </p>
+          </div>
         </el-form>
         <template #footer>
-          <el-button @click="extractScenesDialogVisible = false">{{
+          <el-button @click="extractScenesDialogVisible = false" :disabled="scenesExtractProgress.active">{{
             $t("common.cancel")
           }}</el-button>
           <el-button
             type="primary"
             @click="handleExtractScenes"
-            :disabled="!selectedExtractEpisodeId"
-            >{{ $t("prop.startExtract") }}</el-button
-          >
+            :disabled="selectedScenesEpisodeIds.length === 0 || scenesExtractProgress.active"
+            :loading="scenesExtractProgress.active"
+          >{{ $t("prop.startExtract") }}</el-button>
         </template>
       </el-dialog>
+
+      <!-- 上传小说对话框 -->
+      <UploadNovelDialog
+        v-model="showUploadNovel"
+        :drama-id="(route.params.id as string)"
+        :existing-episode-count="episodesCount"
+        @success="loadDramaData"
+      />
   </div>
 </template>
 
@@ -430,26 +510,27 @@
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Plus } from "@element-plus/icons-vue";
+import { Plus, Document, User, Picture, Box } from "@element-plus/icons-vue";
 import { dramaAPI } from "@/api/drama";
 import { characterLibraryAPI } from "@/api/character-library";
 import { propAPI } from "@/api/prop";
+import { taskAPI } from "@/api/task";
 import type { Drama } from "@/types/drama";
-import { PageHeader } from "@/components/common";
+import { ProjectFlowHeader } from "@/components/common";
 import { getImageUrl, hasImage } from "@/utils/image";
 import { useI18n } from "vue-i18n";
-import OverviewTab from "./management/OverviewTab.vue";
 import EpisodesTab from "./management/EpisodesTab.vue";
 import CharactersTab from "./management/CharactersTab.vue";
 import ScenesTab from "./management/ScenesTab.vue";
 import PropsTab from "./management/PropsTab.vue";
+import UploadNovelDialog from "./components/UploadNovelDialog.vue";
 
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 
 const drama = ref<Drama>();
-const activeTab = ref((route.query.tab as string) || "overview");
+const activeTab = ref("episodes");
 const scenes = ref<any[]>([]);
 
 let pollingTimer: any = null;
@@ -460,11 +541,40 @@ const addPropDialogVisible = ref(false);
 const extractPropsDialogVisible = ref(false);
 const extractCharactersDialogVisible = ref(false);
 const extractScenesDialogVisible = ref(false);
+const showUploadNovel = ref(false);
 
 const editingCharacter = ref<any>(null);
 const editingScene = ref<any>(null);
 const editingProp = ref<any>(null);
-const selectedExtractEpisodeId = ref<string | number | null>(null);
+const selectedExtractEpisodeIds = ref<(string | number)[]>([]);
+const selectAllEpisodes = ref(false);
+const isIndeterminate = ref(false);
+const extractProgress = ref({
+  active: false,
+  percent: 0,
+  message: '',
+  status: '' as '' | 'success' | 'exception',
+});
+
+const selectedPropsEpisodeIds = ref<(string | number)[]>([]);
+const selectAllPropsEpisodes = ref(false);
+const isPropsIndeterminate = ref(false);
+const propsExtractProgress = ref({
+  active: false,
+  percent: 0,
+  message: '',
+  status: '' as '' | 'success' | 'exception',
+});
+
+const selectedScenesEpisodeIds = ref<(string | number)[]>([]);
+const selectAllScenesEpisodes = ref(false);
+const isScenesIndeterminate = ref(false);
+const scenesExtractProgress = ref({
+  active: false,
+  percent: 0,
+  message: '',
+  status: '' as '' | 'success' | 'exception',
+});
 
 const newCharacter = ref({
   name: "",
@@ -653,27 +763,76 @@ const generateCharacterImage = async (character: any) => {
 
 const openExtractCharacterDialog = () => {
   extractCharactersDialogVisible.value = true;
-  if (sortedEpisodes.value.length > 0 && !selectedExtractEpisodeId.value) {
-    selectedExtractEpisodeId.value = sortedEpisodes.value[0].id;
-  }
+  selectedExtractEpisodeIds.value = [];
+  selectAllEpisodes.value = false;
+  isIndeterminate.value = false;
+  extractProgress.value = { active: false, percent: 0, message: '', status: '' };
+};
+
+const handleSelectAllEpisodes = (val: boolean) => {
+  selectedExtractEpisodeIds.value = val ? sortedEpisodes.value.map(ep => ep.id) : [];
+  isIndeterminate.value = false;
+};
+
+const handleEpisodeSelectionChange = (val: (string | number)[]) => {
+  const total = sortedEpisodes.value.length;
+  selectAllEpisodes.value = val.length === total;
+  isIndeterminate.value = val.length > 0 && val.length < total;
 };
 
 const handleExtractCharacters = async () => {
-  if (!selectedExtractEpisodeId.value) return;
+  if (selectedExtractEpisodeIds.value.length === 0) return;
 
   try {
-    const res = await characterLibraryAPI.extractFromEpisode(
-      Number(selectedExtractEpisodeId.value),
-    );
-    extractCharactersDialogVisible.value = false;
+    extractProgress.value = { active: true, percent: 0, message: t('character.extracting'), status: '' };
 
-    let checkCount = 0;
-    const checkInterval = setInterval(() => {
-      loadDramaData();
-      checkCount++;
-      if (checkCount > 10) clearInterval(checkInterval);
-    }, 5000);
+    const res = await characterLibraryAPI.batchExtractFromEpisodes(
+      route.params.id as string,
+      selectedExtractEpisodeIds.value.map(Number),
+    );
+
+    const taskId = res.task_id;
+
+    // 轮询任务进度
+    const pollInterval = setInterval(async () => {
+      try {
+        const task = await taskAPI.getStatus(taskId);
+        if (task.progress !== undefined) {
+          extractProgress.value.percent = task.progress;
+        }
+        if (task.message) {
+          extractProgress.value.message = task.message;
+        }
+
+        if (task.status === 'completed') {
+          clearInterval(pollInterval);
+          const result = typeof task.result === 'string' ? JSON.parse(task.result) : task.result;
+          extractProgress.value = {
+            active: false,
+            percent: 100,
+            message: t('character.extractComplete', {
+              characters: result?.characters || 0,
+              scenes: result?.dedup_scenes || 0,
+            }),
+            status: 'success',
+          };
+          await loadDramaData();
+        } else if (task.status === 'failed') {
+          clearInterval(pollInterval);
+          extractProgress.value = {
+            active: false,
+            percent: 0,
+            message: task.error || t('common.failed'),
+            status: 'exception',
+          };
+        }
+      } catch {
+        clearInterval(pollInterval);
+        extractProgress.value = { active: false, percent: 0, message: t('common.failed'), status: 'exception' };
+      }
+    }, 3000);
   } catch (error: any) {
+    extractProgress.value = { active: false, percent: 0, message: '', status: '' };
     ElMessage.error(error.message || t('message.extractFailed'));
   }
 };
@@ -690,27 +849,75 @@ const generateSceneImage = async (scene: any) => {
 
 const openExtractSceneDialog = () => {
   extractScenesDialogVisible.value = true;
-  if (sortedEpisodes.value.length > 0 && !selectedExtractEpisodeId.value) {
-    selectedExtractEpisodeId.value = sortedEpisodes.value[0].id;
-  }
+  selectedScenesEpisodeIds.value = [];
+  selectAllScenesEpisodes.value = false;
+  isScenesIndeterminate.value = false;
+  scenesExtractProgress.value = { active: false, percent: 0, message: '', status: '' };
+};
+
+const handleSelectAllScenesEpisodes = (val: boolean) => {
+  selectedScenesEpisodeIds.value = val ? sortedEpisodes.value.map(ep => ep.id) : [];
+  isScenesIndeterminate.value = false;
+};
+
+const handleScenesEpisodeSelectionChange = (val: (string | number)[]) => {
+  const total = sortedEpisodes.value.length;
+  selectAllScenesEpisodes.value = val.length === total;
+  isScenesIndeterminate.value = val.length > 0 && val.length < total;
 };
 
 const handleExtractScenes = async () => {
-  if (!selectedExtractEpisodeId.value) return;
+  if (selectedScenesEpisodeIds.value.length === 0) return;
 
   try {
-    const res = await dramaAPI.extractBackgrounds(
-      selectedExtractEpisodeId.value.toString(),
-    );
-    extractScenesDialogVisible.value = false;
+    scenesExtractProgress.value = { active: true, percent: 0, message: t('character.extracting'), status: '' };
 
-    let checkCount = 0;
-    const checkInterval = setInterval(() => {
-      loadScenes();
-      checkCount++;
-      if (checkCount > 10) clearInterval(checkInterval);
-    }, 5000);
+    const res = await dramaAPI.batchExtractBackgrounds(
+      route.params.id as string,
+      selectedScenesEpisodeIds.value.map(Number),
+    );
+
+    const taskId = res.task_id;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const task = await taskAPI.getStatus(taskId);
+        if (task.progress !== undefined) {
+          scenesExtractProgress.value.percent = task.progress;
+        }
+        if (task.message) {
+          scenesExtractProgress.value.message = task.message;
+        }
+
+        if (task.status === 'completed') {
+          clearInterval(pollInterval);
+          const result = typeof task.result === 'string' ? JSON.parse(task.result) : task.result;
+          scenesExtractProgress.value = {
+            active: false,
+            percent: 100,
+            message: t('scene.extractComplete', {
+              scenes: result?.scenes || 0,
+              dedup: result?.dedup_scenes || 0,
+            }),
+            status: 'success',
+          };
+          await loadDramaData();
+        } else if (task.status === 'failed') {
+          clearInterval(pollInterval);
+          scenesExtractProgress.value = {
+            active: false,
+            percent: 0,
+            message: task.error || t('common.failed'),
+            status: 'exception',
+          };
+        }
+      } catch {
+        clearInterval(pollInterval);
+        scenesExtractProgress.value = { active: false, percent: 0, message: t('common.failed'), status: 'exception' };
+      }
+    }, 3000);
   } catch (error: any) {
+    scenesExtractProgress.value = { active: false, percent: 0, message: '', status: '' };
     ElMessage.error(error.message || t('message.extractFailed'));
   }
 };
@@ -988,51 +1195,308 @@ const handlePropImageSuccess = (response: any) => {
 
 const openExtractDialog = () => {
   extractPropsDialogVisible.value = true;
-  if (sortedEpisodes.value.length > 0 && !selectedExtractEpisodeId.value) {
-    selectedExtractEpisodeId.value = sortedEpisodes.value[0].id;
-  }
+  selectedPropsEpisodeIds.value = [];
+  selectAllPropsEpisodes.value = false;
+  isPropsIndeterminate.value = false;
+  propsExtractProgress.value = { active: false, percent: 0, message: '', status: '' };
+};
+
+const handleSelectAllPropsEpisodes = (val: boolean) => {
+  selectedPropsEpisodeIds.value = val ? sortedEpisodes.value.map(ep => ep.id) : [];
+  isPropsIndeterminate.value = false;
+};
+
+const handlePropsEpisodeSelectionChange = (val: (string | number)[]) => {
+  const total = sortedEpisodes.value.length;
+  selectAllPropsEpisodes.value = val.length === total;
+  isPropsIndeterminate.value = val.length > 0 && val.length < total;
 };
 
 const handleExtractProps = async () => {
-  if (!selectedExtractEpisodeId.value) return;
+  if (selectedPropsEpisodeIds.value.length === 0) return;
 
   try {
-    const res = await propAPI.extractFromScript(Number(selectedExtractEpisodeId.value));
-    extractPropsDialogVisible.value = false;
+    propsExtractProgress.value = { active: true, percent: 0, message: t('prop.extracting') || t('character.extracting'), status: '' };
 
-    let checkCount = 0;
-    const checkInterval = setInterval(() => {
-      loadDramaData();
-      checkCount++;
-      if (checkCount > 10) clearInterval(checkInterval);
-    }, 5000);
+    const res = await propAPI.batchExtractFromEpisodes(
+      route.params.id as string,
+      selectedPropsEpisodeIds.value.map(Number),
+    );
+
+    const taskId = res.task_id;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const task = await taskAPI.getStatus(taskId);
+        if (task.progress !== undefined) {
+          propsExtractProgress.value.percent = task.progress;
+        }
+        if (task.message) {
+          propsExtractProgress.value.message = task.message;
+        }
+
+        if (task.status === 'completed') {
+          clearInterval(pollInterval);
+          const result = typeof task.result === 'string' ? JSON.parse(task.result) : task.result;
+          propsExtractProgress.value = {
+            active: false,
+            percent: 100,
+            message: t('prop.extractComplete', {
+              props: result?.props || 0,
+              dedup: result?.dedup_props || 0,
+            }),
+            status: 'success',
+          };
+          await loadDramaData();
+        } else if (task.status === 'failed') {
+          clearInterval(pollInterval);
+          propsExtractProgress.value = {
+            active: false,
+            percent: 0,
+            message: task.error || t('common.failed'),
+            status: 'exception',
+          };
+        }
+      } catch {
+        clearInterval(pollInterval);
+        propsExtractProgress.value = { active: false, percent: 0, message: t('common.failed'), status: 'exception' };
+      }
+    }, 3000);
   } catch (error: any) {
-    ElMessage.error(error.message || t("common.failed"));
+    propsExtractProgress.value = { active: false, percent: 0, message: '', status: '' };
+    ElMessage.error(error.message || t('common.failed'));
   }
 };
 
 onMounted(() => {
   loadDramaData();
   loadScenes();
-
-  if (route.query.tab) {
-    activeTab.value = route.query.tab as string;
-  }
 });
 </script>
 
 <style scoped>
+/* Container */
+.drama-management-container {
+  min-height: 100vh;
+  background: var(--glass-bg-canvas);
+  padding: var(--glass-space-5);
+}
+
+/* Glass Design for DramaManagement */
 .tabs-wrapper {
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3);
-  box-shadow: var(--shadow-card);
+  background: var(--glass-bg-surface);
+  backdrop-filter: blur(var(--glass-blur-md));
+  -webkit-backdrop-filter: blur(var(--glass-blur-md));
+  border: 1px solid var(--glass-stroke-base);
+  border-radius: var(--glass-radius-lg);
+  padding: var(--glass-space-3);
+  box-shadow: var(--glass-shadow-sm);
 }
 
 @media (min-width: 768px) {
   .tabs-wrapper {
-    padding: var(--space-4);
+    padding: var(--glass-space-4);
   }
+}
+
+.tab-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--glass-text-tertiary);
+  background: var(--glass-bg-muted);
+  border-radius: 10px;
+  border: 1px solid var(--glass-stroke-soft);
+  transition: all 0.2s ease;
+}
+
+:deep(.el-tabs__item.is-active) .tab-badge {
+  color: var(--glass-accent-from);
+  background: var(--glass-tone-info-bg);
+  border-color: transparent;
+}
+
+:deep(.management-tabs .el-tabs__header) {
+  margin-bottom: var(--glass-space-4);
+}
+
+:deep(.management-tabs .el-tabs__nav-wrap::after) {
+  height: 1px;
+  background: var(--glass-stroke-base);
+}
+
+:deep(.management-tabs .el-tabs__active-bar) {
+  height: 2.5px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--glass-accent-from), var(--glass-accent-to));
+}
+
+:deep(.management-tabs .el-tabs__item) {
+  padding: 0 20px;
+  height: 44px;
+  font-weight: 500;
+  color: var(--glass-text-tertiary);
+  transition: color 0.2s ease;
+}
+
+:deep(.management-tabs .el-tabs__item.is-active) {
+  color: var(--glass-accent-from);
+  font-weight: 600;
+}
+
+:deep(.management-tabs .el-tabs__item:hover) {
+  color: var(--glass-accent-from);
+}
+
+/* Glass Dialog Styles */
+:deep(.el-dialog) {
+  background: var(--glass-bg-surface-modal);
+  backdrop-filter: blur(var(--glass-blur-lg));
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+  border: 1px solid var(--glass-stroke-base);
+  border-radius: var(--glass-radius-xl);
+  box-shadow: var(--glass-shadow-modal);
+}
+
+:deep(.el-dialog__header) {
+  padding: var(--glass-space-5) var(--glass-space-6);
+  border-bottom: 1px solid var(--glass-stroke-soft);
+  margin-right: 0;
+}
+
+:deep(.el-dialog__title) {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--glass-text-primary);
+}
+
+:deep(.el-dialog__body) {
+  padding: var(--glass-space-6);
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 500;
+  color: var(--glass-text-primary);
+}
+
+:deep(.el-input__wrapper),
+:deep(.el-textarea__inner) {
+  background: var(--glass-bg-muted);
+  border: 1px solid var(--glass-stroke-base);
+  border-radius: var(--glass-radius-sm);
+  box-shadow: none;
+}
+
+:deep(.el-input__wrapper:hover),
+:deep(.el-textarea__inner:hover) {
+  border-color: var(--glass-stroke-strong);
+}
+
+:deep(.el-input__wrapper.is-focus),
+:deep(.el-textarea__inner:focus) {
+  border-color: var(--glass-stroke-focus);
+  box-shadow: var(--glass-focus-ring);
+}
+
+:deep(.el-select .el-input__wrapper) {
+  background: var(--glass-bg-muted);
+  border: 1px solid var(--glass-stroke-base);
+}
+
+:deep(.el-select .el-input__wrapper:hover) {
+  border-color: var(--glass-stroke-strong);
+}
+
+:deep(.el-dialog__footer) {
+  padding: var(--glass-space-4) var(--glass-space-6);
+  border-top: 1px solid var(--glass-stroke-soft);
+}
+
+:deep(.el-dialog__footer .el-button) {
+  border-radius: var(--glass-radius-sm);
+}
+
+:deep(.el-dialog__footer .el-button--primary) {
+  background: linear-gradient(135deg, var(--glass-accent-from) 0%, var(--glass-accent-to) 100%);
+  border: none;
+  box-shadow: var(--glass-accent-shadow-soft);
+}
+
+:deep(.el-dialog__footer .el-button--default) {
+  background: var(--glass-bg-muted);
+  border: 1px solid var(--glass-stroke-base);
+  color: var(--glass-text-primary);
+}
+
+:deep(.el-dialog__footer .el-button--default:hover) {
+  background: var(--glass-bg-surface-strong);
+  border-color: var(--glass-stroke-strong);
+}
+
+/* Avatar uploader */
+:deep(.avatar-uploader .el-upload) {
+  border: 1px dashed var(--glass-stroke-base);
+  border-radius: var(--glass-radius-sm);
+  background: var(--glass-bg-muted);
+  transition: all 0.2s ease;
+}
+
+:deep(.avatar-uploader .el-upload:hover) {
+  border-color: var(--glass-accent-from);
+}
+
+:deep(.avatar-uploader-icon) {
+  color: var(--glass-text-tertiary);
+}
+
+/* Alert */
+:deep(.el-alert) {
+  background: var(--glass-tone-info-bg);
+  border: 1px solid transparent;
+  border-radius: var(--glass-radius-sm);
+}
+
+:deep(.el-alert__title) {
+  color: var(--glass-tone-info-fg);
+  font-size: 0.8125rem;
+}
+
+:deep(.el-alert__icon) {
+  color: var(--glass-tone-info-fg);
+}
+
+/* Checkbox */
+:deep(.el-checkbox__label) {
+  color: var(--glass-text-primary);
+}
+
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: var(--glass-accent-from);
+  border-color: var(--glass-accent-from);
+}
+
+/* Progress */
+:deep(.el-progress-bar__outer) {
+  background: var(--glass-bg-muted);
+  border-radius: var(--glass-radius-xs);
+}
+
+:deep(.el-progress-bar__inner) {
+  background: linear-gradient(90deg, var(--glass-accent-from), var(--glass-accent-to));
+  border-radius: var(--glass-radius-xs);
 }
 </style>
