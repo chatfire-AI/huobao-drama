@@ -2062,7 +2062,12 @@ const pollTaskStatus = async (taskId: string) => {
           pollTimer = null;
         }
         generatingShots.value = false;
-        ElMessage.error(task.error || "分镜拆分失败");
+        const failReason =
+          task.message ||
+          task.error ||
+          (typeof task.result === "string" ? task.result : "") ||
+          "分镜拆分失败";
+        ElMessage.error(failReason);
       }
       // 否则继续轮询
     } catch (error: any) {
