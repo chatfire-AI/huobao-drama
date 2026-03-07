@@ -136,15 +136,18 @@ func (c *ChatfireClient) GenerateVideo(imageURL, prompt string, opts ...VideoOpt
 	if options.Model != "" {
 		model = options.Model
 	}
+	model = strings.TrimSpace(model)
+	lowerModel := strings.ToLower(model)
 
 	// 根据模型名称选择请求格式
 	var jsonData []byte
 	var err error
 
-	if strings.Contains(model, "doubao") || strings.Contains(model, "seedance") {
+	if strings.Contains(lowerModel, "doubao") || strings.Contains(lowerModel, "seedance") {
+		normalizedModel := normalizeChatfireVideoModel(model)
 		// 豆包/火山格式
 		reqBody := ChatfireDoubaoRequest{
-			Model: model,
+			Model: normalizedModel,
 		}
 
 		// 构建prompt文本（包含duration和ratio参数）
@@ -238,7 +241,8 @@ func (c *ChatfireClient) GenerateVideo(imageURL, prompt string, opts ...VideoOpt
 		}
 
 		jsonData, err = json.Marshal(reqBody)
-	} else if strings.Contains(model, "sora") {
+	} else if strings.Contains(lowerModel, "sora") {
+		normalizedModel := normalizeChatfireVideoModel(model)
 		// Sora 格式
 		seconds := fmt.Sprintf("%d", options.Duration)
 		size := options.AspectRatio
@@ -249,7 +253,7 @@ func (c *ChatfireClient) GenerateVideo(imageURL, prompt string, opts ...VideoOpt
 		}
 
 		reqBody := ChatfireSoraRequest{
-			Model:          model,
+			Model:          normalizedModel,
 			Prompt:         prompt,
 			Seconds:        seconds,
 			Size:           size,
@@ -416,4 +420,15 @@ func (c *ChatfireClient) GetTaskStatus(taskID string) (*VideoResult, error) {
 	}
 
 	return videoResult, nil
+}
+
+func normalizeChatfireVideoModel(model string) string {
+	normalized := strings.ToLower(strings.TrimSpace(model))
+
+	replacer := strings.NewReplacer(
+		"seedance-1.0-", "seedance-1-0-",
+		"seedance-1.5-", "seedance-1-5-",
+	)
+
+	return replacer.Replace(normalized)
 }

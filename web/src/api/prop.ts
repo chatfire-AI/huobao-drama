@@ -14,7 +14,7 @@ export const propAPI = {
     delete(id: number) {
         return request.delete<void>('/props/' + id)
     },
-    extractFromScript(episodeId: number) {
+    extractFromScript(episodeId: number | string) {
         return request.post<{ task_id: string }>(`/episodes/${episodeId}/props/extract`)
     },
     generateImage(id: number) {

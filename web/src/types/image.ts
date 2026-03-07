@@ -34,7 +34,7 @@ export type ImageStatus = 'pending' | 'processing' | 'completed' | 'failed'
 export type ImageProvider = 'openai' | 'dalle' | 'midjourney' | 'stable_diffusion' | 'sd'
 
 export interface GenerateImageRequest {
-  scene_id?: number
+  scene_id?: number | string
   storyboard_id?: number
   drama_id: string
   image_type?: string

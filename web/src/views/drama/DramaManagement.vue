@@ -770,6 +770,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
   ArrowLeft,
@@ -793,6 +794,7 @@ import { getImageUrl, hasImage } from "@/utils/image";
 
 const router = useRouter();
 const route = useRoute();
+const { t } = useI18n();
 
 const drama = ref<Drama>();
 const activeTab = ref((route.query.tab as string) || "overview");
@@ -810,7 +812,7 @@ const extractScenesDialogVisible = ref(false);
 const editingCharacter = ref<any>(null);
 const editingScene = ref<any>(null);
 const editingProp = ref<any>(null);
-const selectedExtractEpisodeId = ref<number | null>(null);
+const selectedExtractEpisodeId = ref<string | number | null>(null);
 
 const newCharacter = ref({
   name: "",
@@ -976,7 +978,9 @@ const deleteEpisode = async (episode: any) => {
       }));
 
     // 保存更新后的章节列表
-    await dramaAPI.saveEpisodes(drama.value!.id, updatedEpisodes);
+    await dramaAPI.saveEpisodes(drama.value!.id, updatedEpisodes, {
+      replaceAbsent: true,
+    });
 
     ElMessage.success(`第${episode.episode_number}章删除成功`);
     await loadDramaData();
@@ -996,6 +1000,7 @@ const openAddCharacterDialog = () => {
     personality: "",
     description: "",
     image_url: "",
+    local_path: "",
   };
   addCharacterDialogVisible.value = true;
 };
@@ -1196,6 +1201,7 @@ const openAddSceneDialog = () => {
     location: "",
     prompt: "",
     image_url: "",
+    local_path: "",
   };
   addSceneDialogVisible.value = true;
 };

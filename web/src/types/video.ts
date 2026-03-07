@@ -1,7 +1,7 @@
 export interface VideoGeneration {
   id: number
   storyboard_id?: number
-  scene_id?: string  // 已废弃，保留用于兼容
+  scene_id?: string | number
   drama_id: string
   image_gen_id?: number
   provider: string
@@ -35,7 +35,7 @@ export type VideoProvider = 'runway' | 'pika' | 'doubao' | 'openai'
 
 export interface GenerateVideoRequest {
   storyboard_id?: number
-  scene_id?: string  // 已废弃，保留用于兼容
+  scene_id?: string | number
   drama_id: string
   image_gen_id?: number
   image_url?: string
@@ -49,35 +49,35 @@ export interface GenerateVideoRequest {
   motion_level?: number
   camera_motion?: string
   seed?: number
-  reference_mode?: string   // 参考图模式：single, first_last, multiple, none
-  first_frame_url?: string  // 首帧图片URL
-  last_frame_url?: string   // 尾帧图片URL
-  reference_image_urls?: string[]  // 多图参考模式
+  reference_mode?: string
+  first_frame_url?: string
+  last_frame_url?: string
+  reference_image_urls?: string[]
 }
 
 export interface VideoGenerationListParams {
   drama_id?: string
   storyboard_id?: string
-  scene_id?: string  // 已废弃，保留用于兼容
-  status?: string  // 支持单个状态或逗号分隔的多个状态，如 "pending,processing"
+  scene_id?: string | number
+  status?: string
   page?: number
   page_size?: number
 }
 
 export const VIDEO_ASPECT_RATIOS = [
-  { label: '16:9 (横屏)', value: '16:9' },
-  { label: '9:16 (竖屏)', value: '9:16' },
-  { label: '1:1 (正方形)', value: '1:1' },
-  { label: '4:3 (传统)', value: '4:3' }
+  { label: '16:9 (Landscape)', value: '16:9' },
+  { label: '9:16 (Portrait)', value: '9:16' },
+  { label: '1:1 (Square)', value: '1:1' },
+  { label: '4:3 (Classic)', value: '4:3' }
 ]
 
 export const CAMERA_MOTIONS = [
-  { label: '静止', value: 'static' },
-  { label: '推进', value: 'zoom_in' },
-  { label: '拉远', value: 'zoom_out' },
-  { label: '左移', value: 'pan_left' },
-  { label: '右移', value: 'pan_right' },
-  { label: '上移', value: 'tilt_up' },
-  { label: '下移', value: 'tilt_down' },
-  { label: '环绕', value: 'orbit' }
+  { label: 'Static', value: 'static' },
+  { label: 'Zoom In', value: 'zoom_in' },
+  { label: 'Zoom Out', value: 'zoom_out' },
+  { label: 'Pan Left', value: 'pan_left' },
+  { label: 'Pan Right', value: 'pan_right' },
+  { label: 'Tilt Up', value: 'tilt_up' },
+  { label: 'Tilt Down', value: 'tilt_down' },
+  { label: 'Orbit', value: 'orbit' }
 ]

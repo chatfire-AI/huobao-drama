@@ -131,7 +131,7 @@ export const useEpisodeStore = defineStore('episode', () => {
             if (character) {
               promises.push(
                 dramaAPI.generateSceneImage({
-                  scene_id: character.id.toString(),
+                  scene_id: Number(character.id),
                   prompt: character.appearance || character.description || character.name,
                   model: undefined
                 })
@@ -144,7 +144,7 @@ export const useEpisodeStore = defineStore('episode', () => {
           options.sceneIds.forEach(sceneId => {
             promises.push(
               dramaAPI.generateSceneImage({
-                scene_id: sceneId,
+                scene_id: Number(sceneId),
                 model: undefined
               })
             )

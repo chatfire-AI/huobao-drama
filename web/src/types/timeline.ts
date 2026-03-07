@@ -33,11 +33,18 @@ export interface TimelineTrack {
 export type TrackType = 'video' | 'audio' | 'text'
 
 export interface TimelineClip {
-  id: number
-  track_id: number
+  id: number | string
+  track_id: number | string
+  storyboard_id?: number | string
+  storyboard_number?: number
+  source_clip_id?: number | string
+  video_url?: string
+  audio_url?: string
+  position?: number
+  order?: number
   asset_id?: number
   asset?: Asset
-  scene_id?: number
+  scene_id?: number | string
   name: string
   start_time: number
   end_time: number
@@ -65,7 +72,32 @@ export interface ClipTransition {
   config?: Record<string, any>
 }
 
-export type TransitionType = 'fade' | 'crossfade' | 'slide' | 'wipe' | 'zoom' | 'dissolve'
+export type TransitionType =
+  | 'none'
+  | 'fade'
+  | 'fadeblack'
+  | 'fadewhite'
+  | 'fadegrays'
+  | 'slide'
+  | 'slideleft'
+  | 'slideright'
+  | 'slideup'
+  | 'slidedown'
+  | 'wipe'
+  | 'wipeleft'
+  | 'wiperight'
+  | 'wipeup'
+  | 'wipedown'
+  | 'zoom'
+  | 'circleopen'
+  | 'circleclose'
+  | 'horzopen'
+  | 'horzclose'
+  | 'vertopen'
+  | 'vertclose'
+  | 'crossfade'
+  | 'dissolve'
+  | 'distance'
 
 export interface ClipEffect {
   id: number

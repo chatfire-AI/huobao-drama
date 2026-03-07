@@ -78,8 +78,8 @@ export const characterLibraryAPI = {
   },
 
   // AI生成角色形象
-  generateCharacterImage(characterId: string, model?: string) {
-    return request.post<{ image_url: string }>(`/characters/${characterId}/generate-image`, {
+  generateCharacterImage(characterId: string | number, model?: string) {
+    return request.post<{ image_url?: string; image_generation?: { id?: number } }>(`/characters/${characterId}/generate-image`, {
       model
     })
   },
@@ -110,7 +110,7 @@ export const characterLibraryAPI = {
   },
 
   // 从剧本提取角色
-  extractFromEpisode(episodeId: number) {
+  extractFromEpisode(episodeId: number | string) {
     return request.post<{ task_id: string; message: string }>(`/episodes/${episodeId}/characters/extract`)
   }
 }

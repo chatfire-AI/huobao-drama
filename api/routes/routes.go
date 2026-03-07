@@ -205,6 +205,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, log *logger.Logger, localStora
 		{
 			storyboards.GET("/episode/:episode_id/generate", storyboardHandler.GenerateStoryboard)
 			storyboards.POST("", storyboardHandler.CreateStoryboard)
+			storyboards.POST("/narrations/generate", storyboardHandler.BatchGenerateNovelNarrations)
 			storyboards.PUT("/:id", storyboardHandler.UpdateStoryboard)
 			storyboards.DELETE("/:id", storyboardHandler.DeleteStoryboard)
 			storyboards.POST("/:id/props", propHandler.AssociateProps)

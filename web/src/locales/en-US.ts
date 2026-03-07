@@ -1,4 +1,4 @@
-export default {
+﻿export default {
   nav: {
     home: 'Home',
     characters: 'Characters',
@@ -9,7 +9,7 @@ export default {
     dramas: 'Drama Projects'
   },
   dashboard: {
-    title: '🎬 Drama Generator',
+    title: '馃幀 Drama Generator',
     welcome: 'Welcome to AI Drama Generation Platform',
     subtitle: 'One-stop drama creation tool from script to video',
     stats: {
@@ -376,6 +376,16 @@ export default {
     },
     scriptPlaceholder: 'Enter episode content...',
     saveChapter: 'Save Chapter',
+    chapterTitle: 'Chapter {number}',
+    chapterSavedSuccess: 'Chapter saved successfully',
+    extractTaskCreated: 'Task created and processing in background...',
+    characterImageComplete: 'Character image generation completed!',
+    characterImageStarted: 'Character image generation started',
+    shotUpdated: 'Shot updated successfully',
+    promptSaved: 'Saved successfully',
+    characterApplied: 'Character applied successfully!',
+    uploadSuccess: 'Upload succeeded!',
+    characterDeleted: 'Character deleted',
     chapterContent: 'Chapter {number} Content',
     saved: 'Saved',
     extractedData: 'Extracted Data',
@@ -568,7 +578,19 @@ export default {
     duration: 'Duration',
     seconds: 's',
     videoDuration: 'Video Duration',
-    downloadVideo: 'Download Video'
+    downloadVideo: 'Download Video',
+    referenceImage: 'Reference Image',
+    selectReferenceMode: 'Please select reference mode',
+    referenceMode: {
+      none: 'Text Only',
+      noneDesc: 'No reference image',
+      single: 'Single Image',
+      singleDesc: 'Use one reference image',
+      firstLast: 'First + Last',
+      firstLastDesc: 'Use first and last frames',
+      multiple: 'Multiple Images',
+      multipleDesc: 'Up to {count} images'
+    }
   },
   storyboard: {
     title: 'Storyboard',
@@ -684,6 +706,24 @@ export default {
     clearTrack: 'Clear Track',
     soundAndMusic: 'Sound & Music',
     soundMusicInDev: 'Sound & Music feature in development',
+    novelNarrationTitle: 'Novel-Style Narration',
+    novelNarrationSubtitle: 'Generate narration from each silent storyboard video and storyboard context, then save into the dialogue/narration field.',
+    overwriteExistingNarration: 'Overwrite Existing Narration',
+    generateAllNovelNarration: 'Generate All Narrations',
+    shotNumber: 'Shot #',
+    shotTitle: 'Shot Title',
+    videoStatus: 'Video Status',
+    silentVideoReady: 'Silent Video Ready',
+    silentVideoMissing: 'No Video Yet',
+    novelNarration: 'Narration',
+    noNarration: 'No narration yet',
+    dubbing: 'Dubbing',
+    dubbingInDevelopment: 'Dubbing is in development',
+    narrationGenerateSuccess: 'Narration generated successfully',
+    narrationGenerateFailed: 'Failed to generate narration',
+    narrationSkipped: 'Skipped (narration already exists)',
+    narrationBatchSuccess: 'Narration generation completed: {success} succeeded, {skipped} skipped',
+    narrationBatchPartial: 'Narration generation completed: {success} succeeded, {failed} failed, {skipped} skipped',
     noMergeYet: 'No videos merged yet',
     mergeInstructions: 'Arrange videos in the timeline editor and click "Merge Video" to proceed',
     selectVideoModel: 'Please select a video model',

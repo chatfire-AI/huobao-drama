@@ -248,14 +248,31 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
     {
       id: "volcengine",
       name: "火山引擎",
-      models: ["doubao-seed-1-8-251228"],
+      models: [
+        "doubao-seed-1-6",
+        "doubao-seed-1-6-lite",
+        "doubao-seed-1-6-flash",
+        "doubao-seed-1-6-thinking",
+        "doubao-seed-1-6-vision",
+        "doubao-seed-code",
+        "deepseek-v3-1",
+        "kimi-k2",
+        "doubao-seed-translation",
+        "doubao-embedding-vision",
+        "doubao-seed-1-8-251228",
+      ],
     },
   ],
   image: [
     {
       id: "volcengine",
       name: "火山引擎",
-      models: ["doubao-seedream-4-5-251128", "doubao-seedream-4-0-250828"],
+      models: [
+        "doubao-seedream-4-5",
+        "doubao-seedream-4-0",
+        "doubao-seedream-4-5-251128",
+        "doubao-seedream-4-0-250828",
+      ],
     },
     {
       id: "chatfire",
@@ -274,6 +291,10 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       id: "volces",
       name: "火山引擎",
       models: [
+        "doubao-seedance-2-0",
+        "doubao-seedance-1-0-pro",
+        "doubao-seedance-1-0-lite-i2v",
+        "doubao-seedance-1-0-lite-t2v",
         "doubao-seedance-1-5-pro-251215",
         "doubao-seedance-1-0-lite-i2v-250428",
         "doubao-seedance-1-0-lite-t2v-250428",
@@ -323,7 +344,8 @@ const availableModels = computed(() => {
   // 提取所有模型，去重
   const models = new Set<string>();
   activeConfigsForProvider.forEach((config) => {
-    config.model.forEach((m) => models.add(m));
+    const configModels = Array.isArray(config.model) ? config.model : [config.model];
+    configModels.filter(Boolean).forEach((m) => models.add(m));
   });
 
   // 如果当前 provider 没有已激活配置，回退到预定义模型列表

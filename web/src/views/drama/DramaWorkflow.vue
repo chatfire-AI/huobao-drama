@@ -507,7 +507,11 @@
               width="80"
               sortable
             />
-            <el-table-column prop="title" label="标题" width="200" />
+            <el-table-column prop="title" label="标题" width="200">
+              <template #default="{ row }">
+                {{ formatEpisodeTitle(row) }}
+              </template>
+            </el-table-column>
             <el-table-column
               prop="description"
               label="简介"
@@ -883,6 +887,19 @@ const getStatusText = (status?: DramaStatus) => {
   return status ? texts[status] : "未知";
 };
 
+const isMojibakeText = (text?: string) => {
+  if (!text) return true;
+  if (/[\u4e00-\u9fff]/.test(text)) return false;
+  return /�|Ã|Â|Ð|Ñ|Ò|Õ|âœ|ï¼|æ|ç|é|è/.test(text);
+};
+
+const formatEpisodeTitle = (episode: { title?: string; episode_number?: number }) => {
+  if (!episode.title || isMojibakeText(episode.title)) {
+    return t("workflow.chapterTitle", { number: episode.episode_number ?? "" });
+  }
+  return episode.title;
+};
+
 // 导航
 const goBack = () => {
   router.push("/dramas");
@@ -1101,12 +1118,8 @@ const generateShots = async () => {
     ElMessage.info("AI正在拆分镜头...");
 
     // 调用分镜拆分API
-    const result = await generationAPI.generateShots({
-      episode_id: currentEpisode.value.id,
-      script_content: currentEpisode.value.script_content,
-    });
-
-    ElMessage.success(`成功拆分 ${result.shots.length} 个镜头`);
+    await generationAPI.generateShots(String(currentEpisode.value.id));
+    ElMessage.success("分镜生成任务已提交");
     await loadDramaData();
   } catch (error: any) {
     ElMessage.error(error.response?.data?.message || "拆分失败");

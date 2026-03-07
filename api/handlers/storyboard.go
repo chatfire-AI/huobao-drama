@@ -110,3 +110,50 @@ func (h *StoryboardHandler) DeleteStoryboard(c *gin.Context) {
 
 	response.Success(c, nil)
 }
+
+type BatchGenerateNarrationRequest struct {
+	StoryboardIDs []uint `json:"storyboard_ids" binding:"required,min=1"`
+	Overwrite     bool   `json:"overwrite"`
+	Model         string `json:"model"`
+}
+
+// BatchGenerateNovelNarrations 批量生成分镜小说旁白
+func (h *StoryboardHandler) BatchGenerateNovelNarrations(c *gin.Context) {
+	var req BatchGenerateNarrationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request body")
+		return
+	}
+
+	results, err := h.storyboardService.GenerateNovelNarrations(req.StoryboardIDs, req.Overwrite, req.Model)
+	if err != nil {
+		h.log.Errorw("Failed to generate storyboard narrations", "error", err)
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	successCount := 0
+	failedCount := 0
+	skippedCount := 0
+	for _, item := range results {
+		if item.Error != "" {
+			failedCount++
+			continue
+		}
+		if item.Skipped {
+			skippedCount++
+			continue
+		}
+		if item.Updated {
+			successCount++
+		}
+	}
+
+	response.Success(c, gin.H{
+		"results":       results,
+		"total":         len(results),
+		"success_count": successCount,
+		"failed_count":  failedCount,
+		"skipped_count": skippedCount,
+	})
+}

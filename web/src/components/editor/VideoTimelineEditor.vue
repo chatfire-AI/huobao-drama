@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="video-timeline-editor">
     <!-- 顶部工具栏 -->
     <div class="editor-toolbar">
@@ -412,7 +412,7 @@ interface Scene {
   description?: string
   location?: string
   time?: string
-  video_url: string
+  video_url?: string
   asset_id?: string
   duration?: number
 }
@@ -421,7 +421,8 @@ interface TimelineClip {
   id: string
   storyboard_id: string
   storyboard_number: number
-  video_url: string
+  scene_id?: string | number
+  video_url?: string
   asset_id?: string // 素材库中的资源ID
   start_time: number
   end_time: number
@@ -843,7 +844,7 @@ const timeRulerTicks = computed(() => {
 })
 
 // 片段样式计算
-const getClipStyle = (clip: TimelineClip) => {
+const getClipStyle = (clip: { position: number; duration: number }) => {
   return {
     left: 100 + clip.position * pixelsPerSecond.value + 'px',
     width: clip.duration * pixelsPerSecond.value + 'px',
@@ -1102,21 +1103,42 @@ const removeClip = (clip: TimelineClip) => {
   }
 }
 
-const clearAllClips = () => {
+const clearAllClips = async () => {
   if (timelineClips.value.length === 0) return
+
+  try {
+    await ElMessageBox.confirm("确定清空时间线中的所有片段吗？", "清空确认", {
+      type: "warning",
+      confirmButtonText: "清空",
+      cancelButtonText: "取消",
+    })
+  } catch {
+    return
+  }
 
   timelineClips.value = []
   audioClips.value = []
   selectedClipId.value = null
   selectedAudioClipId.value = null
   currentTime.value = 0
-  ElMessage.success('已清空轨道')
+  ElMessage.success("时间线已清空")
 }
 
 const updateClipOrders = () => {
   timelineClips.value.forEach((clip, index) => {
     clip.order = index
   })
+}
+
+const getValidClips = (operationName: string) => {
+  const validClips = timelineClips.value.filter((clip) => !!clip.video_url)
+  const invalidCount = timelineClips.value.length - validClips.length
+
+  if (invalidCount > 0) {
+    ElMessage.warning(`${operationName}时已自动跳过 ${invalidCount} 个无视频链接片段`)
+  }
+
+  return validClips
 }
 
 // 音频片段管理
@@ -1135,8 +1157,13 @@ const extractAllAudio = async () => {
     // 清空现有音频
     audioClips.value = []
 
+    const validClips = getValidClips('提取音频')
+    if (validClips.length === 0) {
+      throw new Error('没有可提取音频的视频片段')
+    }
+
     // 收集所有视频URL
-    const videoUrls = timelineClips.value.map((clip) => clip.video_url)
+    const videoUrls = validClips.map((clip) => clip.video_url!)
 
     // 调用后端API批量提取音频
     const { audioAPI } = await import('@/api/audio')
@@ -1147,7 +1174,7 @@ const extractAllAudio = async () => {
     }
 
     // 为每个视频片段创建对应的音频片段
-    timelineClips.value.forEach((clip, index) => {
+    validClips.forEach((clip, index) => {
       const extractedAudio = response.results[index]
       if (!extractedAudio) {
         console.warn(`视频片段 ${index} 未能提取音频`)
@@ -1769,18 +1796,29 @@ const getPhaseText = (phase: string) => {
 
 // 导出功能
 const handleExport = async () => {
+  if (merging.value || serverMerging.value) {
+    ElMessage.warning('当前有进行中的合成任务，请稍后再试')
+    return
+  }
+
   if (timelineClips.value.length === 0) {
     ElMessage.warning('请至少添加一个视频片段')
     return
   }
 
   try {
+    const validClips = getValidClips('导出')
+    if (validClips.length === 0) {
+      ElMessage.warning('没有可导出的有效视频片段')
+      return
+    }
+
     // 计算总视频大小（粗略估算）
-    const totalSize = timelineClips.value.length * 20 // 假设每个片段约20MB
+    const totalSize = validClips.length * 20 // 假设每个片段约20MB
     const estimatedTime = Math.ceil(totalSize / 50) // 每50MB约1分钟
 
     await ElMessageBox.confirm(
-      `即将在浏览器中合并 ${timelineClips.value.length} 个视频片段。\n\n` +
+      `即将在浏览器中合并 ${validClips.length} 个视频片段。\n\n` +
         `预计处理时间：${estimatedTime}-${estimatedTime + 1} 分钟\n` +
         `预计内存占用：约 ${Math.round(totalSize * 1.5)}MB\n\n` +
         `处理期间请勿关闭页面。`,
@@ -1798,11 +1836,12 @@ const handleExport = async () => {
 
     // 初始化FFmpeg
     await videoMerger.initialize((progress) => {
-      mergeProgress.value = progress
+      mergeProgress.value = progress.progress
+      mergeProgressDetail.value = progress
     })
 
     // 准备视频片段数据（包含转场信息）
-    const clips = timelineClips.value.map((clip) => ({
+    const clips = validClips.map((clip) => ({
       url: clip.video_url,
       startTime: clip.start_time,
       endTime: clip.end_time,
@@ -1838,6 +1877,11 @@ const handleExport = async () => {
 // 提交时间线数据到后端进行合成
 // 浏览器端FFmpeg合成
 const mergeVideoInBrowser = async () => {
+  if (merging.value || serverMerging.value) {
+    ElMessage.warning('当前有进行中的合成任务，请稍后再试')
+    return
+  }
+
   if (timelineClips.value.length === 0) {
     ElMessage.warning('时间线上没有视频片段')
     return
@@ -1859,8 +1903,14 @@ const mergeVideoInBrowser = async () => {
 
     ElMessage.info('开始加载FFmpeg引擎...')
 
+    const validClips = getValidClips('浏览器合成')
+    if (validClips.length === 0) {
+      ElMessage.warning('没有可合成的有效视频片段')
+      return
+    }
+
     // 准备剪辑数据
-    const clips = timelineClips.value.map((clip) => ({
+    const clips = validClips.map((clip) => ({
       url: clip.video_url,
       startTime: clip.start_time,
       endTime: clip.end_time,
@@ -1899,6 +1949,11 @@ const mergeVideoInBrowser = async () => {
 
 // 服务器端合成
 const submitTimelineForMerge = async () => {
+  if (serverMerging.value || merging.value) {
+    ElMessage.warning('当前有进行中的合成任务，请稍后再试')
+    return
+  }
+
   if (timelineClips.value.length === 0) {
     ElMessage.warning('时间线上没有视频片段')
     return
@@ -1918,10 +1973,16 @@ const submitTimelineForMerge = async () => {
 
     serverMerging.value = true
 
+    const validClips = getValidClips('提交服务端合成')
+    if (validClips.length === 0) {
+      ElMessage.warning('没有可提交的有效视频片段')
+      return
+    }
+
     // 准备时间线数据
     const timelineData = {
       episode_id: props.episodeId,
-      clips: timelineClips.value.map((clip, index) => {
+      clips: validClips.map((clip, index) => {
         console.log(`📹 片段 ${index}:`, {
           storyboard_id: clip.storyboard_id,
           asset_id: clip.asset_id,

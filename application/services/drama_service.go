@@ -357,7 +357,19 @@ type SaveProgressRequest struct {
 }
 
 type SaveEpisodesRequest struct {
-	Episodes []models.Episode `json:"episodes" binding:"required"`
+	Episodes      []SaveEpisodeItem `json:"episodes" binding:"required"`
+	ReplaceAbsent bool              `json:"replace_absent"`
+}
+
+type SaveEpisodeItem struct {
+	EpisodeNum    int     `json:"episode_number" binding:"required,min=1"`
+	Title         *string `json:"title"`
+	ScriptContent *string `json:"script_content"`
+	Description   *string `json:"description"`
+	Duration      *int    `json:"duration"`
+	Status        *string `json:"status"`
+	VideoURL      *string `json:"video_url"`
+	Thumbnail     *string `json:"thumbnail"`
 }
 
 func (s *DramaService) SaveOutline(dramaID string, req *SaveOutlineRequest) error {
@@ -577,7 +589,6 @@ func (s *DramaService) SaveCharacters(dramaID string, req *SaveCharactersRequest
 }
 
 func (s *DramaService) SaveEpisodes(dramaID string, req *SaveEpisodesRequest) error {
-	// 转换dramaID
 	id, err := strconv.ParseUint(dramaID, 10, 32)
 	if err != nil {
 		return fmt.Errorf("invalid drama ID")
@@ -592,35 +603,133 @@ func (s *DramaService) SaveEpisodes(dramaID string, req *SaveEpisodesRequest) er
 		return err
 	}
 
-	// 删除旧剧集
-	if err := s.db.Where("drama_id = ?", dramaIDUint).Delete(&models.Episode{}).Error; err != nil {
-		s.log.Errorw("Failed to delete old episodes", "error", err)
+	tx := s.db.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r)
+		}
+	}()
+
+	var existingEpisodes []models.Episode
+	if err := tx.Where("drama_id = ?", dramaIDUint).Find(&existingEpisodes).Error; err != nil {
+		tx.Rollback()
 		return err
 	}
 
-	// 创建新剧集（不包含场景，场景由后续步骤生成）
-	for _, ep := range req.Episodes {
-		episode := models.Episode{
-			DramaID:       dramaIDUint,
-			EpisodeNum:    ep.EpisodeNum,
-			Title:         ep.Title,
-			Description:   ep.Description,
-			ScriptContent: ep.ScriptContent,
-			Duration:      ep.Duration,
-			Status:        "draft",
-		}
+	existingByNum := make(map[int]models.Episode, len(existingEpisodes))
+	for _, ep := range existingEpisodes {
+		existingByNum[ep.EpisodeNum] = ep
+	}
 
-		if err := s.db.Create(&episode).Error; err != nil {
-			s.log.Errorw("Failed to create episode", "error", err, "episode", ep.EpisodeNum)
+	seenEpisodeNums := make(map[int]struct{}, len(req.Episodes))
+	for _, ep := range req.Episodes {
+		if ep.EpisodeNum <= 0 {
+			tx.Rollback()
+			return fmt.Errorf("invalid episode number: %d", ep.EpisodeNum)
+		}
+		seenEpisodeNums[ep.EpisodeNum] = struct{}{}
+
+		if existing, ok := existingByNum[ep.EpisodeNum]; ok {
+			updates := map[string]interface{}{
+				"updated_at": time.Now(),
+			}
+			if ep.Title != nil {
+				updates["title"] = *ep.Title
+			}
+			if ep.ScriptContent != nil {
+				updates["script_content"] = *ep.ScriptContent
+			}
+			if ep.Description != nil {
+				updates["description"] = *ep.Description
+			}
+			if ep.Duration != nil {
+				updates["duration"] = *ep.Duration
+			}
+			if ep.Status != nil {
+				updates["status"] = *ep.Status
+			}
+			if ep.VideoURL != nil {
+				updates["video_url"] = *ep.VideoURL
+			}
+			if ep.Thumbnail != nil {
+				updates["thumbnail"] = *ep.Thumbnail
+			}
+
+			if err := tx.Model(&models.Episode{}).
+				Where("id = ? AND drama_id = ?", existing.ID, dramaIDUint).
+				Updates(updates).Error; err != nil {
+				tx.Rollback()
+				s.log.Errorw("Failed to update episode", "error", err, "episode", ep.EpisodeNum)
+				return err
+			}
 			continue
 		}
+
+		title := fmt.Sprintf("Episode %d", ep.EpisodeNum)
+		if ep.Title != nil && *ep.Title != "" {
+			title = *ep.Title
+		}
+		duration := 0
+		if ep.Duration != nil {
+			duration = *ep.Duration
+		}
+		status := "draft"
+		if ep.Status != nil && *ep.Status != "" {
+			status = *ep.Status
+		}
+
+		newEpisode := models.Episode{
+			DramaID:       dramaIDUint,
+			EpisodeNum:    ep.EpisodeNum,
+			Title:         title,
+			ScriptContent: ep.ScriptContent,
+			Description:   ep.Description,
+			Duration:      duration,
+			Status:        status,
+			VideoURL:      ep.VideoURL,
+			Thumbnail:     ep.Thumbnail,
+		}
+
+		if err := tx.Create(&newEpisode).Error; err != nil {
+			tx.Rollback()
+			s.log.Errorw("Failed to create episode", "error", err, "episode", ep.EpisodeNum)
+			return err
+		}
 	}
 
-	if err := s.db.Model(&drama).Update("updated_at", time.Now()).Error; err != nil {
+	if req.ReplaceAbsent {
+		episodeNums := make([]int, 0, len(seenEpisodeNums))
+		for num := range seenEpisodeNums {
+			episodeNums = append(episodeNums, num)
+		}
+
+		deleteQuery := tx.Where("drama_id = ?", dramaIDUint)
+		if len(episodeNums) > 0 {
+			deleteQuery = deleteQuery.Where("episode_number NOT IN ?", episodeNums)
+		}
+
+		if err := deleteQuery.Delete(&models.Episode{}).Error; err != nil {
+			tx.Rollback()
+			s.log.Errorw("Failed to delete absent episodes", "error", err)
+			return err
+		}
+	}
+
+	if err := tx.Model(&drama).Update("updated_at", time.Now()).Error; err != nil {
+		tx.Rollback()
 		s.log.Errorw("Failed to update drama timestamp", "error", err)
+		return err
 	}
 
-	s.log.Infow("Episodes saved", "drama_id", dramaID, "count", len(req.Episodes))
+	if err := tx.Commit().Error; err != nil {
+		return err
+	}
+
+	s.log.Infow("Episodes saved", "drama_id", dramaID, "count", len(req.Episodes), "replace_absent", req.ReplaceAbsent)
 	return nil
 }
 

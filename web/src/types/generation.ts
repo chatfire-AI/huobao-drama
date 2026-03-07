@@ -19,6 +19,15 @@ export interface ParseScriptResult {
   summary: string
 }
 
+export interface ParsedScene {
+  storyboard_number: number
+  title: string
+  location: string
+  time: string
+  characters: string
+  dialogue: string
+}
+
 export interface ParsedCharacter {
   name: string
   role: string
@@ -32,6 +41,7 @@ export interface ParsedEpisode {
   description: string
   script_content: string
   duration: number
+  scenes?: ParsedScene[]
   chapter_start?: number
   chapter_end?: number
   start_marker?: string

@@ -113,7 +113,7 @@ const generateImage = async (scene: Scene) => {
 
     const result = await imageAPI.generateImage({
       drama_id: dramaId,
-      scene_id: scene.id as number,
+      scene_id: Number(scene.id),
       image_type: "scene",
       prompt: prompt,
     });

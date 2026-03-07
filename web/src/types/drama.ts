@@ -89,6 +89,8 @@ export interface Storyboard {
   image_url?: string
   video_url?: string
   composed_image?: string
+  composed_url?: string
+  background_id?: string | number
   scene_id?: string
   scene?: Scene
   created_at: string

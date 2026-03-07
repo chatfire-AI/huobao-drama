@@ -1578,8 +1578,118 @@
 
           <!-- 音效与配乐标签 -->
           <el-tab-pane :label="$t('video.soundAndMusicTab')" name="audio">
-            <div class="tab-content">
-              <el-empty :description="$t('video.soundMusicInDev')" />
+            <div class="tab-content audio-narration-tab">
+              <div class="audio-narration-header">
+                <div>
+                  <div class="audio-narration-title">
+                    {{ $t("video.novelNarrationTitle") }}
+                  </div>
+                  <div class="audio-narration-subtitle">
+                    {{ $t("video.novelNarrationSubtitle") }}
+                  </div>
+                </div>
+                <div class="audio-narration-actions">
+                  <el-checkbox v-model="overwriteExistingNarration">
+                    {{ $t("video.overwriteExistingNarration") }}
+                  </el-checkbox>
+                  <el-button
+                    type="primary"
+                    :icon="MagicStick"
+                    :loading="generatingNarrations"
+                    :disabled="storyboards.length === 0"
+                    @click="generateNovelNarrationsForAll"
+                  >
+                    {{ $t("video.generateAllNovelNarration") }}
+                  </el-button>
+                </div>
+              </div>
+
+              <el-empty
+                v-if="storyboards.length === 0"
+                :description="$t('storyboard.noStoryboard')"
+              />
+              <el-table
+                v-else
+                :data="storyboards"
+                border
+                size="small"
+                class="audio-narration-table"
+              >
+                <el-table-column
+                  :label="$t('video.shotNumber')"
+                  width="86"
+                  align="center"
+                >
+                  <template #default="{ row }">
+                    {{ row.storyboard_number }}
+                  </template>
+                </el-table-column>
+
+                <el-table-column :label="$t('video.shotTitle')" min-width="120">
+                  <template #default="{ row }">
+                    {{ row.title || $t("storyboard.untitled") }}
+                  </template>
+                </el-table-column>
+
+                <el-table-column
+                  :label="$t('video.videoStatus')"
+                  width="120"
+                  align="center"
+                >
+                  <template #default="{ row }">
+                    <el-tag :type="row.video_url ? 'success' : 'info'" size="small">
+                      {{
+                        row.video_url
+                          ? $t("video.silentVideoReady")
+                          : $t("video.silentVideoMissing")
+                      }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+
+                <el-table-column
+                  :label="$t('video.novelNarration')"
+                  min-width="280"
+                  show-overflow-tooltip
+                >
+                  <template #default="{ row }">
+                    <span class="narration-preview">
+                      {{
+                        row.dialogue && String(row.dialogue).trim()
+                          ? row.dialogue
+                          : $t("video.noNarration")
+                      }}
+                    </span>
+                  </template>
+                </el-table-column>
+
+                <el-table-column
+                  :label="$t('video.generate')"
+                  width="180"
+                  align="center"
+                >
+                  <template #default="{ row }">
+                    <el-button
+                      size="small"
+                      type="primary"
+                      text
+                      :loading="Boolean(narrationGeneratingMap[Number(row.id)])"
+                      @click="generateNovelNarrationForOne(Number(row.id))"
+                    >
+                      {{ $t("video.generate") }}
+                    </el-button>
+                    <el-button
+                      size="small"
+                      type="primary"
+                      text
+                      :disabled="!(row.dialogue && String(row.dialogue).trim())"
+                      @click="handleNarrationDubbing(row)"
+                    >
+                      {{ $t("video.dubbing") }}
+                    </el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
             </div>
           </el-tab-pane>
 
@@ -2056,6 +2166,7 @@ import { aiAPI } from "@/api/ai";
 import { assetAPI } from "@/api/asset";
 import { videoMergeAPI } from "@/api/videoMerge";
 import { taskAPI } from "@/api/task";
+import { storyboardNarrationAPI } from "@/api/storyboardNarration";
 import type { ImageGeneration } from "@/types/image";
 import type { VideoGeneration } from "@/types/video";
 import type { AIServiceConfig } from "@/types/ai";
@@ -2157,6 +2268,9 @@ let mergePollingTimer: any = null; // 视频合成列表轮询定时器
 // 视频合成列表
 const videoMerges = ref<VideoMerge[]>([]);
 const loadingMerges = ref(false);
+const generatingNarrations = ref(false);
+const overwriteExistingNarration = ref(false);
+const narrationGeneratingMap = ref<Record<number, boolean>>({});
 
 // 视频模型能力配置
 interface VideoModelCapability {
@@ -4136,6 +4250,103 @@ const deleteMerge = async (mergeId: number) => {
 };
 
 // 格式化日期时间
+const applyNarrationResultToLocal = (storyboardId: number, narration: string) => {
+  const target = storyboards.value.find(
+    (s) => Number(s.id) === Number(storyboardId),
+  );
+  if (target) {
+    target.dialogue = narration;
+  }
+};
+
+const generateNovelNarrationForOne = async (storyboardId: number) => {
+  if (!storyboardId) return;
+
+  narrationGeneratingMap.value[storyboardId] = true;
+  try {
+    const result = await storyboardNarrationAPI.generateNovelNarrations({
+      storyboard_ids: [storyboardId],
+      overwrite: overwriteExistingNarration.value,
+    });
+
+    const item = result.results?.[0];
+    if (!item) {
+      ElMessage.warning($t("video.narrationGenerateFailed"));
+      return;
+    }
+
+    if (item.error) {
+      ElMessage.error(item.error);
+      return;
+    }
+
+    if (item.narration) {
+      applyNarrationResultToLocal(item.storyboard_id, item.narration);
+    }
+
+    if (item.skipped) {
+      ElMessage.info($t("video.narrationSkipped"));
+    } else {
+      ElMessage.success($t("video.narrationGenerateSuccess"));
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || $t("video.narrationGenerateFailed"));
+  } finally {
+    narrationGeneratingMap.value[storyboardId] = false;
+  }
+};
+
+const generateNovelNarrationsForAll = async () => {
+  const storyboardIds = storyboards.value
+    .map((s) => Number(s.id))
+    .filter((id) => Number.isFinite(id) && id > 0);
+
+  if (storyboardIds.length === 0) {
+    ElMessage.warning($t("storyboard.noStoryboard"));
+    return;
+  }
+
+  generatingNarrations.value = true;
+  try {
+    const result = await storyboardNarrationAPI.generateNovelNarrations({
+      storyboard_ids: storyboardIds,
+      overwrite: overwriteExistingNarration.value,
+    });
+
+    (result.results || []).forEach((item) => {
+      if (item.narration) {
+        applyNarrationResultToLocal(item.storyboard_id, item.narration);
+      }
+    });
+
+    if (result.failed_count > 0) {
+      ElMessage.warning(
+        $t("video.narrationBatchPartial", {
+          success: result.success_count,
+          failed: result.failed_count,
+          skipped: result.skipped_count,
+        }),
+      );
+      return;
+    }
+
+    ElMessage.success(
+      $t("video.narrationBatchSuccess", {
+        success: result.success_count,
+        skipped: result.skipped_count,
+      }),
+    );
+  } catch (error: any) {
+    ElMessage.error(error.message || $t("video.narrationGenerateFailed"));
+  } finally {
+    generatingNarrations.value = false;
+  }
+};
+
+const handleNarrationDubbing = (_storyboard: Storyboard) => {
+  ElMessage.info($t("video.dubbingInDevelopment"));
+};
+
 const formatDateTime = (dateStr: string) => {
   const date = new Date(dateStr);
   const now = new Date();
@@ -6383,5 +6594,50 @@ onBeforeUnmount(() => {
   max-width: 100%;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.audio-narration-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.audio-narration-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.audio-narration-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.audio-narration-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.audio-narration-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.audio-narration-table {
+  :deep(.el-table__cell) {
+    vertical-align: middle;
+  }
+}
+
+.narration-preview {
+  color: var(--text-primary);
+  line-height: 1.6;
 }
 </style>
