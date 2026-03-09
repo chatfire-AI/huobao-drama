@@ -290,30 +290,43 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       ],
     },
     { id: "openai", name: "OpenAI", models: ["sora-2", "sora-2-pro"] },
+    {
+      id: "gemini",
+      name: "Google Gemini",
+      models: [
+        "veo-3.1-generate-preview",
+        "veo-3.1-fast-generate-preview",
+        "veo-2.0-generate-001",
+      ],
+    },
     //    { id: 'minimax', name: 'MiniMax', models: ['MiniMax-Hailuo-2.3', 'MiniMax-Hailuo-2.3-Fast', 'MiniMax-Hailuo-02'] }
   ],
 };
 
-// 当前可用的厂商列表（只显示有激活配置的）
+// 当前可用的厂商列表
 const availableProviders = computed(() => {
-  // 获取当前service_type下所有激活的配置
-  const activeConfigs = configs.value.filter(
-    (c) => c.service_type === form.service_type && c.is_active,
-  );
-
-  // 提取所有激活配置的provider，去重
-  const activeProviderIds = new Set(activeConfigs.map((c) => c.provider));
-
-  // 从providerConfigs中筛选出有激活配置的provider
-  const allProviders = providerConfigs[form.service_type] || [];
-  return allProviders.filter((p) => activeProviderIds.has(p.id));
+  // 返回当前服务类型的所有可用厂商
+  const providers = providerConfigs[form.service_type] || [];
+  console.log('🔍 [AIConfig] availableProviders computed:', {
+    serviceType: form.service_type,
+    providersCount: providers.length,
+    providers: providers.map(p => ({ id: p.id, name: p.name })),
+    hasGemini: providers.some(p => p.id === 'gemini')
+  });
+  return providers;
 });
 
-// 当前可用的模型列表（从已激活的配置中获取）
+// 当前可用的模型列表
 const availableModels = computed(() => {
   if (!form.provider) return [];
 
-  // 从已激活的配置中提取该 provider 的所有模型
+  // 先从 providerConfigs 中获取预定义的模型列表
+  const providerConfig = providerConfigs[form.service_type]?.find(
+    (p) => p.id === form.provider
+  );
+  const predefinedModels = providerConfig?.models || [];
+
+  // 再从已激活的配置中提取该 provider 的所有模型
   const activeConfigsForProvider = configs.value.filter(
     (c) =>
       c.provider === form.provider &&
@@ -322,7 +335,7 @@ const availableModels = computed(() => {
   );
 
   // 提取所有模型，去重
-  const models = new Set<string>();
+  const models = new Set<string>(predefinedModels);
   activeConfigsForProvider.forEach((config) => {
     config.model.forEach((m) => models.add(m));
   });
@@ -351,7 +364,9 @@ const fullEndpointExample = computed(() => {
       endpoint = "/images/generations";
     }
   } else if (serviceType === "video") {
-    if (provider === "chatfire") {
+    if (provider === "gemini" || provider === "google") {
+      endpoint = "/v1beta/models/{model}:generateVideos";
+    } else if (provider === "chatfire") {
       endpoint = "/video/generations";
     } else if (
       provider === "doubao" ||
@@ -416,6 +431,9 @@ const generateConfigName = (
     openai: "OpenAI",
     gemini: "Gemini",
     google: "Google",
+    volces: "火山引擎",
+    volcengine: "火山引擎",
+    doubao: "豆包",
   };
 
   const serviceNames: Record<AIServiceType, string> = {
@@ -579,7 +597,9 @@ const handleProviderChange = () => {
 
   // 根据厂商自动设置默认 base_url
   if (form.provider === "gemini" || form.provider === "google") {
-    form.base_url = "https://api.chatfire.site";
+    form.base_url = "https://generativelanguage.googleapis.com";
+  } else if (form.provider === "volces" || form.provider === "volcengine" || form.provider === "doubao") {
+    form.base_url = "https://ark.cn-beijing.volces.com";
   } else {
     // openai, chatfire 等其他厂商
     form.base_url = "https://api.chatfire.site/v1";

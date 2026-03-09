@@ -389,6 +389,15 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       ],
     },
     { id: "openai", name: "OpenAI", models: ["sora-2", "sora-2-pro"] },
+    {
+      id: "gemini",
+      name: "Google Gemini",
+      models: [
+        "veo-3.1-generate-preview",
+        "veo-3.1-fast-generate-preview",
+        "veo-2.0-generate-001",
+      ],
+    },
   ],
 };
 
@@ -430,7 +439,9 @@ const fullEndpointExample = computed(() => {
       endpoint = "/images/generations";
     }
   } else if (serviceType === "video") {
-    if (provider === "chatfire") {
+    if (provider === "gemini" || provider === "google") {
+      endpoint = "/v1beta/models/{model}:generateVideos";
+    } else if (provider === "chatfire") {
       endpoint = "/video/generations";
     } else if (
       provider === "doubao" ||
@@ -496,6 +507,10 @@ const generateConfigName = (
     openai: "OpenAI",
     gemini: "Gemini",
     google: "Google",
+    volces: "火山引擎",
+    volcengine: "火山引擎",
+    doubao: "豆包",
+    minimax: "MiniMax",
   };
 
   const serviceNames: Record<AIServiceType, string> = {
