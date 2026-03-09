@@ -229,7 +229,7 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
     {
       id: "openai",
       name: "OpenAI",
-      models: ["gpt-5.2", "gemini-3-flash-preview"],
+      models: ["gpt-5.2", "gpt-5", "gpt-4o", "gpt-4.1-mini"],
     },
     {
       id: "chatfire",
@@ -244,6 +244,26 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       id: "gemini",
       name: "Google Gemini",
       models: ["gemini-2.5-pro", "gemini-3-flash-preview"],
+    },
+    {
+      id: "volcengine",
+      name: "VolcEngine",
+      models: ["Doubao-Seed-1.8", "doubao-seed-1-8-250615"],
+    },
+    {
+      id: "dashscope",
+      name: "DashScope (Aliyun)",
+      models: ["qwen-max", "qwen-plus", "qwen-turbo", "qwen2.5-72b-instruct"],
+    },
+    {
+      id: "deepseek",
+      name: "DeepSeek",
+      models: ["deepseek-chat", "deepseek-reasoner"],
+    },
+    {
+      id: "anthropic",
+      name: "Anthropic",
+      models: ["claude-sonnet-4-5-20250929", "claude-3-7-sonnet-latest"],
     },
   ],
   image: [
@@ -263,6 +283,11 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       models: ["gemini-3-pro-image-preview"],
     },
     { id: "openai", name: "OpenAI", models: ["dall-e-3", "dall-e-2"] },
+    {
+      id: "dashscope",
+      name: "DashScope (Aliyun)",
+      models: ["wanx2.1-t2i-turbo", "wanx2.1-t2i-plus", "qwen-image"],
+    },
   ],
   video: [
     {
@@ -289,31 +314,44 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
         "sora-2-pro",
       ],
     },
+    {
+      id: "minimax",
+      name: "MiniMax",
+      models: [
+        "MiniMax-Hailuo-2.3",
+        "MiniMax-Hailuo-2.3-Fast",
+        "MiniMax-Hailuo-02",
+      ],
+    },
+    {
+      id: "runway",
+      name: "Runway",
+      models: ["gen4_turbo", "gen3a_turbo"],
+    },
+    {
+      id: "pika",
+      name: "Pika",
+      models: ["pika-2.2", "pika-2.1"],
+    },
     { id: "openai", name: "OpenAI", models: ["sora-2", "sora-2-pro"] },
-    //    { id: 'minimax', name: 'MiniMax', models: ['MiniMax-Hailuo-2.3', 'MiniMax-Hailuo-2.3-Fast', 'MiniMax-Hailuo-02'] }
   ],
 };
 
 // 当前可用的厂商列表（只显示有激活配置的）
 const availableProviders = computed(() => {
-  // 获取当前service_type下所有激活的配置
-  const activeConfigs = configs.value.filter(
-    (c) => c.service_type === form.service_type && c.is_active,
-  );
-
-  // 提取所有激活配置的provider，去重
-  const activeProviderIds = new Set(activeConfigs.map((c) => c.provider));
-
-  // 从providerConfigs中筛选出有激活配置的provider
-  const allProviders = providerConfigs[form.service_type] || [];
-  return allProviders.filter((p) => activeProviderIds.has(p.id));
+  return providerConfigs[form.service_type] || [];
 });
 
 // 当前可用的模型列表（从已激活的配置中获取）
 const availableModels = computed(() => {
   if (!form.provider) return [];
 
-  // 从已激活的配置中提取该 provider 的所有模型
+  const models = new Set<string>();
+  const providerConfig = providerConfigs[form.service_type]?.find(
+    (p) => p.id === form.provider,
+  );
+  providerConfig?.models.forEach((m) => models.add(m));
+
   const activeConfigsForProvider = configs.value.filter(
     (c) =>
       c.provider === form.provider &&
@@ -321,8 +359,6 @@ const availableModels = computed(() => {
       c.is_active,
   );
 
-  // 提取所有模型，去重
-  const models = new Set<string>();
   activeConfigsForProvider.forEach((config) => {
     config.model.forEach((m) => models.add(m));
   });
@@ -416,6 +452,14 @@ const generateConfigName = (
     openai: "OpenAI",
     gemini: "Gemini",
     google: "Google",
+    dashscope: "DashScope",
+    deepseek: "DeepSeek",
+    anthropic: "Anthropic",
+    minimax: "MiniMax",
+    runway: "Runway",
+    pika: "Pika",
+    volcengine: "VolcEngine",
+    volces: "Volces",
   };
 
   const serviceNames: Record<AIServiceType, string> = {
@@ -579,9 +623,20 @@ const handleProviderChange = () => {
 
   // 根据厂商自动设置默认 base_url
   if (form.provider === "gemini" || form.provider === "google") {
-    form.base_url = "https://api.chatfire.site";
+    form.base_url = "https://generativelanguage.googleapis.com";
+  } else if (form.provider === "dashscope") {
+    form.base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+  } else if (form.provider === "deepseek") {
+    form.base_url = "https://api.deepseek.com/v1";
+  } else if (form.provider === "anthropic") {
+    form.base_url = "https://api.anthropic.com/v1";
+  } else if (form.provider === "minimax") {
+    form.base_url = "https://api.minimaxi.com/v1";
+  } else if (form.provider === "volces" || form.provider === "volcengine") {
+    form.base_url = "https://ark.cn-beijing.volces.com/api/v3";
+  } else if (form.provider === "openai") {
+    form.base_url = "https://api.openai.com/v1";
   } else {
-    // openai, chatfire 等其他厂商
     form.base_url = "https://api.chatfire.site/v1";
   }
 
