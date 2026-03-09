@@ -921,6 +921,22 @@
               :rows="3"
               :placeholder="$t('workflow.imagePromptPlaceholder')"
             />
+            <el-button
+              size="small"
+              style="margin-top: 8px"
+              :loading="optimizingShotPromptField === 'image_prompt'"
+              :disabled="
+                !editingShot?.image_prompt ||
+                optimizingShotPromptField === 'image_prompt'
+              "
+              @click="optimizeShotPrompt('image_prompt', 'image')"
+            >
+              {{
+                optimizingShotPromptField === "image_prompt"
+                  ? $t("workflow.optimizingPrompt")
+                  : $t("workflow.optimizePrompt")
+              }}
+            </el-button>
           </el-form-item>
 
           <el-form-item :label="$t('workflow.videoPrompt')">
@@ -930,6 +946,22 @@
               :rows="3"
               :placeholder="$t('workflow.videoPromptPlaceholder')"
             />
+            <el-button
+              size="small"
+              style="margin-top: 8px"
+              :loading="optimizingShotPromptField === 'video_prompt'"
+              :disabled="
+                !editingShot?.video_prompt ||
+                optimizingShotPromptField === 'video_prompt'
+              "
+              @click="optimizeShotPrompt('video_prompt', 'video')"
+            >
+              {{
+                optimizingShotPromptField === "video_prompt"
+                  ? $t("workflow.optimizingPrompt")
+                  : $t("workflow.optimizePrompt")
+              }}
+            </el-button>
           </el-form-item>
 
           <el-row :gutter="16">
@@ -939,6 +971,22 @@
                   v-model="editingShot.bgm_prompt"
                   :placeholder="$t('workflow.bgmAtmosphere')"
                 />
+                <el-button
+                  size="small"
+                  style="margin-top: 8px"
+                  :loading="optimizingShotPromptField === 'bgm_prompt'"
+                  :disabled="
+                    !editingShot?.bgm_prompt ||
+                    optimizingShotPromptField === 'bgm_prompt'
+                  "
+                  @click="optimizeShotPrompt('bgm_prompt', 'video')"
+                >
+                  {{
+                    optimizingShotPromptField === "bgm_prompt"
+                      ? $t("workflow.optimizingPrompt")
+                      : $t("workflow.optimizePrompt")
+                  }}
+                </el-button>
               </el-form-item>
             </el-col>
             <el-col :span="12">
@@ -999,6 +1047,19 @@
               :rows="6"
               :placeholder="$t('workflow.imagePromptPlaceholder')"
             />
+            <el-button
+              size="small"
+              style="margin-top: 8px"
+              :loading="optimizingEditPrompt"
+              :disabled="!editPrompt || optimizingEditPrompt"
+              @click="optimizeEditPromptContent"
+            >
+              {{
+                optimizingEditPrompt
+                  ? $t("workflow.optimizingPrompt")
+                  : $t("workflow.optimizePrompt")
+              }}
+            </el-button>
           </el-form-item>
         </el-form>
         <template #footer>
@@ -1177,6 +1238,19 @@
               :rows="4"
               :placeholder="$t('workflow.sceneDescriptionPlaceholder')"
             />
+            <el-button
+              size="small"
+              style="margin-top: 8px"
+              :loading="optimizingNewScenePrompt"
+              :disabled="!newScene.prompt || optimizingNewScenePrompt"
+              @click="optimizeNewScenePromptContent"
+            >
+              {{
+                optimizingNewScenePrompt
+                  ? $t("workflow.optimizingPrompt")
+                  : $t("workflow.optimizePrompt")
+              }}
+            </el-button>
           </el-form-item>
         </el-form>
         <template #footer>
@@ -1246,6 +1320,7 @@ import { characterLibraryAPI } from "@/api/character-library";
 import { aiAPI } from "@/api/ai";
 import type { AIServiceConfig } from "@/types/ai";
 import { imageAPI } from "@/api/image";
+import { promptAPI } from "@/api/prompt";
 import type { Drama } from "@/types/drama";
 import { AppHeader } from "@/components/common";
 import { getImageUrl, hasImage } from "@/utils/image";
@@ -1290,6 +1365,8 @@ const extractScenesDialogVisible = ref(false);
 const currentEditItem = ref<any>({ name: "" });
 const currentEditType = ref<"character" | "scene">("character");
 const editPrompt = ref("");
+const optimizingEditPrompt = ref(false);
+const optimizingShotPromptField = ref<"" | "image_prompt" | "video_prompt" | "bgm_prompt">("");
 const libraryItems = ref<any[]>([]);
 const currentUploadTarget = ref<any>(null);
 
@@ -1302,6 +1379,7 @@ const newScene = ref<any>({
   local_path: "",
 });
 const extractingScenes = ref(false);
+const optimizingNewScenePrompt = ref(false);
 const uploadAction = computed(() => "/api/v1/upload/image");
 const uploadHeaders = computed(() => ({
   Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -1762,13 +1840,7 @@ const extractCharactersAndBackgrounds = async () => {
 
     // 并行创建异步任务
     const [characterTask, backgroundTask] = await Promise.all([
-      generationAPI.generateCharacters({
-        drama_id: dramaId.toString(),
-        episode_id: Number(episodeId),
-        outline: currentEpisode.value.script_content || "",
-        count: 0,
-        model: selectedTextModel.value, // 传递用户选择的文本模�?
-      }),
+      characterLibraryAPI.extractFromEpisode(episodeId),
       dramaAPI.extractBackgrounds(
         episodeId.toString(),
         selectedTextModel.value,
@@ -1826,20 +1898,6 @@ const pollExtractTask = async (
 
       if (task.status === "completed") {
         // 任务完成
-        if (type === "character" && task.result) {
-          // 解析角色数据并保�?
-          const result =
-            typeof task.result === "string"
-              ? JSON.parse(task.result)
-              : task.result;
-          if (result.characters && result.characters.length > 0) {
-            await dramaAPI.saveCharacters(
-              dramaId,
-              result.characters,
-              currentEpisode.value?.id,
-            );
-          }
-        }
         return;
       } else if (task.status === "failed") {
         // 任务失败
@@ -2183,6 +2241,48 @@ const saveShotEdit = async () => {
 };
 
 // 对话框相关方�?
+const optimizeShotPrompt = async (
+  field: "image_prompt" | "video_prompt" | "bgm_prompt",
+  useCase: "image" | "video",
+) => {
+  if (!editingShot.value?.[field]) return;
+
+  try {
+    optimizingShotPromptField.value = field;
+    const result = await promptAPI.optimize({
+      prompt: String(editingShot.value[field]).trim(),
+      use_case: useCase,
+      language: "auto",
+    });
+    editingShot.value[field] = result.optimized_prompt || editingShot.value[field];
+    ElMessage.success($t("workflow.promptOptimized"));
+  } catch (error: any) {
+    ElMessage.error(error.message || $t("workflow.optimizePromptFailed"));
+  } finally {
+    optimizingShotPromptField.value = "";
+  }
+};
+
+const optimizeEditPromptContent = async () => {
+  const sourcePrompt = editPrompt.value?.trim();
+  if (!sourcePrompt) return;
+
+  try {
+    optimizingEditPrompt.value = true;
+    const useCase = currentEditType.value === "scene" ? "image" : "image";
+    const result = await promptAPI.optimize({
+      prompt: sourcePrompt,
+      use_case: useCase,
+      language: "auto",
+    });
+    editPrompt.value = result.optimized_prompt || sourcePrompt;
+    ElMessage.success($t("workflow.promptOptimized"));
+  } catch (error: any) {
+    ElMessage.error(error.message || $t("workflow.optimizePromptFailed"));
+  } finally {
+    optimizingEditPrompt.value = false;
+  }
+};
 const openPromptDialog = (item: any, type: "character" | "scene") => {
   currentEditItem.value = item;
   currentEditItem.value.name = item.name || item.location;
@@ -2381,6 +2481,25 @@ const openAddSceneDialog = () => {
 };
 
 // 保存场景
+const optimizeNewScenePromptContent = async () => {
+  const sourcePrompt = newScene.value.prompt?.trim();
+  if (!sourcePrompt) return;
+
+  try {
+    optimizingNewScenePrompt.value = true;
+    const result = await promptAPI.optimize({
+      prompt: sourcePrompt,
+      use_case: "image",
+      language: "auto",
+    });
+    newScene.value.prompt = result.optimized_prompt || sourcePrompt;
+    ElMessage.success($t("workflow.promptOptimized"));
+  } catch (error: any) {
+    ElMessage.error(error.message || $t("workflow.optimizePromptFailed"));
+  } finally {
+    optimizingNewScenePrompt.value = false;
+  }
+};
 const saveScene = async () => {
   if (!newScene.value.location) {
     ElMessage.warning($t("workflow.pleaseEnterSceneName"));

@@ -407,6 +407,21 @@
                     :rows="2"
                     @blur="saveStoryboardField('bgm_prompt')"
                   />
+                  <el-button
+                    size="small"
+                    style="margin-top: 8px"
+                    :loading="optimizingStoryboardBgmPrompt"
+                    :disabled="
+                      !currentStoryboard?.bgm_prompt || optimizingStoryboardBgmPrompt
+                    "
+                    @click="optimizeStoryboardBgmPromptField"
+                  >
+                    {{
+                      optimizingStoryboardBgmPrompt
+                        ? $t("editor.optimizingPrompt")
+                        : $t("editor.optimizePrompt")
+                    }}
+                  </el-button>
                 </div>
               </div>
 
@@ -493,6 +508,19 @@
                       style="margin-left: 10px"
                     >
                       {{ $t("editor.extractPrompt") }}
+                    </el-button>
+                    <el-button
+                      size="small"
+                      :loading="optimizingFramePrompt"
+                      :disabled="!currentFramePrompt || optimizingFramePrompt"
+                      @click="optimizeCurrentFramePrompt"
+                      style="margin-left: 8px"
+                    >
+                      {{
+                        optimizingFramePrompt
+                          ? $t("editor.optimizingPrompt")
+                          : $t("editor.optimizePrompt")
+                      }}
                     </el-button>
                   </div>
                   <el-input
@@ -2173,6 +2201,7 @@ import { assetAPI } from "@/api/asset";
 import { videoMergeAPI } from "@/api/videoMerge";
 import { taskAPI } from "@/api/task";
 import { storyboardNarrationAPI } from "@/api/storyboardNarration";
+import { promptAPI } from "@/api/prompt";
 import type { ImageGeneration } from "@/types/image";
 import type { VideoGeneration } from "@/types/video";
 import type { AIServiceConfig } from "@/types/ai";
@@ -2233,6 +2262,8 @@ const framePrompts = ref<Record<string, string>>({
   panel: "",
 });
 const currentFramePrompt = ref("");
+const optimizingFramePrompt = ref(false);
+const optimizingStoryboardBgmPrompt = ref(false);
 const generatingImage = ref(false);
 const generatedImages = ref<ImageGeneration[]>([]);
 const isSwitchingFrameType = ref(false); // 标志位：是否正在切换帧类型
@@ -3367,6 +3398,48 @@ const handleImageSelect = (imageId: number) => {
 
     default:
       ElMessage.warning("未知的参考图模式");
+  }
+};
+
+const optimizeCurrentFramePrompt = async () => {
+  const sourcePrompt = currentFramePrompt.value?.trim();
+  if (!sourcePrompt) return;
+
+  try {
+    optimizingFramePrompt.value = true;
+    const result = await promptAPI.optimize({
+      prompt: sourcePrompt,
+      use_case: "image",
+      language: "auto",
+    });
+    currentFramePrompt.value = result.optimized_prompt || sourcePrompt;
+    ElMessage.success($t("editor.promptOptimized"));
+  } catch (error: any) {
+    ElMessage.error(error.message || $t("editor.optimizePromptFailed"));
+  } finally {
+    optimizingFramePrompt.value = false;
+  }
+};
+
+const optimizeStoryboardBgmPromptField = async () => {
+  const sourcePrompt = currentStoryboard.value?.bgm_prompt?.trim();
+  if (!sourcePrompt || !currentStoryboard.value) return;
+
+  try {
+    optimizingStoryboardBgmPrompt.value = true;
+    const result = await promptAPI.optimize({
+      prompt: sourcePrompt,
+      use_case: "video",
+      language: "auto",
+    });
+    const optimized = result.optimized_prompt || sourcePrompt;
+    currentStoryboard.value.bgm_prompt = optimized;
+    await saveStoryboardField("bgm_prompt");
+    ElMessage.success($t("editor.promptOptimized"));
+  } catch (error: any) {
+    ElMessage.error(error.message || $t("editor.optimizePromptFailed"));
+  } finally {
+    optimizingStoryboardBgmPrompt.value = false;
   }
 };
 

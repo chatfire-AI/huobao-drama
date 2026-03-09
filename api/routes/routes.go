@@ -52,6 +52,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, log *logger.Logger, localStora
 	taskHandler := handlers2.NewTaskHandler(db, log)
 	framePromptService := services2.NewFramePromptService(db, cfg, log)
 	framePromptHandler := handlers2.NewFramePromptHandler(framePromptService, log)
+	promptOptimizerHandler := handlers2.NewPromptOptimizerHandler(aiService, log)
 	audioExtractionHandler := handlers2.NewAudioExtractionHandler(log, cfg.Storage.LocalPath)
 	settingsHandler := handlers2.NewSettingsHandler(cfg, log)
 	propHandler := handlers2.NewPropHandler(db, cfg, log, aiService, imageGenService)
@@ -217,6 +218,11 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, log *logger.Logger, localStora
 		{
 			audio.POST("/extract", audioExtractionHandler.ExtractAudio)
 			audio.POST("/extract/batch", audioExtractionHandler.BatchExtractAudio)
+		}
+
+		prompts := api.Group("/prompts")
+		{
+			prompts.POST("/optimize", promptOptimizerHandler.OptimizePrompt)
 		}
 
 		settings := api.Group("/settings")
