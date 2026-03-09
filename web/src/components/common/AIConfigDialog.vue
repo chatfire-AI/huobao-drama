@@ -352,7 +352,11 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       name: "Google Gemini",
       models: ["gemini-3-pro-image-preview"],
     },
-    { id: "openai", name: "OpenAI", models: ["dall-e-3", "dall-e-2"] },
+    {
+      id: "openai",
+      name: "OpenAI",
+      models: ["gpt-image-1.5", "gpt-image-1", "gpt-image-1-mini", "dall-e-3", "dall-e-2"],
+    },
   ],
   video: [
     {

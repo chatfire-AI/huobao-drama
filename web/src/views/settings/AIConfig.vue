@@ -262,7 +262,11 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       name: "Google Gemini",
       models: ["gemini-3-pro-image-preview"],
     },
-    { id: "openai", name: "OpenAI", models: ["dall-e-3", "dall-e-2"] },
+    {
+      id: "openai",
+      name: "OpenAI",
+      models: ["gpt-image-1.5", "gpt-image-1", "gpt-image-1-mini", "dall-e-3", "dall-e-2"],
+    },
   ],
   video: [
     {
@@ -580,8 +584,10 @@ const handleProviderChange = () => {
   // 根据厂商自动设置默认 base_url
   if (form.provider === "gemini" || form.provider === "google") {
     form.base_url = "https://api.chatfire.site";
+  } else if (form.provider === "openai") {
+    form.base_url = "https://api.openai.com/v1";
   } else {
-    // openai, chatfire 等其他厂商
+    // chatfire 等其他厂商
     form.base_url = "https://api.chatfire.site/v1";
   }
 
