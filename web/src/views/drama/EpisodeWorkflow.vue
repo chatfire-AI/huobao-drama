@@ -524,6 +524,154 @@
                 </div>
               </div>
             </div>
+
+            <el-divider />
+
+            <!-- 关键道具图片生成 -->
+            <div class="image-gen-section">
+              <div class="section-header">
+                <div class="section-title">
+                  <h3>
+                    <el-icon><Box /></el-icon>
+                    {{ $t("workflow.propImages") }}
+                  </h3>
+                  <el-alert type="info" :closable="false" style="margin: 0">
+                    {{ $t("workflow.propCount", { count: propsCount }) }}
+                  </el-alert>
+                </div>
+                <div class="section-actions">
+                  <el-checkbox
+                    v-model="selectAllProps"
+                    @change="toggleSelectAllProps"
+                    style="margin-right: 12px"
+                  >
+                    {{ $t("workflow.selectAll") }}
+                  </el-checkbox>
+                  <el-button
+                    type="primary"
+                    @click="batchGeneratePropImages"
+                    :loading="batchGeneratingProps"
+                    :disabled="selectedPropIds.length === 0"
+                    size="default"
+                  >
+                    {{ $t("workflow.batchGenerateSelectedProps") }} ({{
+                      selectedPropIds.length
+                    }})
+                  </el-button>
+                </div>
+              </div>
+
+              <div class="prop-image-list">
+                <div v-for="prop in propsList" :key="prop.id" class="prop-item">
+                  <el-card shadow="hover" class="fixed-card">
+                    <div class="card-header">
+                      <el-checkbox
+                        v-model="selectedPropIds"
+                        :value="prop.id"
+                        style="margin-right: 8px"
+                      />
+                      <div class="header-left">
+                        <h4>{{ prop.name }}</h4>
+                        <el-tag size="small" v-if="prop.type">{{
+                          prop.type
+                        }}</el-tag>
+                      </div>
+                    </div>
+
+                    <div class="card-image-container">
+                      <div v-if="hasImage(prop)" class="prop-image">
+                        <el-image :src="getImageUrl(prop)" fit="cover" />
+                      </div>
+                      <div
+                        v-else-if="
+                          prop.image_generation_status === 'pending' ||
+                          prop.image_generation_status === 'processing' ||
+                          generatingPropImages[prop.id]
+                        "
+                        class="prop-placeholder generating"
+                      >
+                        <el-icon :size="64" class="rotating"
+                          ><Loading
+                        /></el-icon>
+                        <span>{{ $t("common.generating") }}</span>
+                        <el-tag
+                          type="warning"
+                          size="small"
+                          style="margin-top: 8px"
+                          >{{
+                            prop.image_generation_status === "pending"
+                              ? $t("common.queuing")
+                              : $t("common.processing")
+                          }}</el-tag
+                        >
+                      </div>
+                      <div
+                        v-else-if="prop.image_generation_status === 'failed'"
+                        class="prop-placeholder failed"
+                        @click="generatePropImage(prop)"
+                        style="cursor: pointer"
+                      >
+                        <el-icon :size="64"><WarningFilled /></el-icon>
+                        <span>{{ $t("common.generateFailed") }}</span>
+                        <el-tag
+                          type="danger"
+                          size="small"
+                          style="margin-top: 8px"
+                          >{{ $t("common.clickToRegenerate") }}</el-tag
+                        >
+                      </div>
+                      <div v-else class="prop-placeholder">
+                        <el-icon :size="64"><Box /></el-icon>
+                        <span>{{ $t("common.notGenerated") }}</span>
+                      </div>
+                    </div>
+
+                    <div class="card-actions">
+                      <el-tooltip
+                        :content="$t('tooltip.editPrompt')"
+                        placement="top"
+                      >
+                        <el-button
+                          size="small"
+                          @click="openPromptDialog(prop, 'prop')"
+                          :icon="Edit"
+                          circle
+                        />
+                      </el-tooltip>
+                      <el-tooltip
+                        :content="$t('tooltip.aiGenerate')"
+                        placement="top"
+                      >
+                        <el-button
+                          type="primary"
+                          size="small"
+                          @click="generatePropImage(prop)"
+                          :loading="generatingPropImages[prop.id]"
+                          :icon="MagicStick"
+                          circle
+                        />
+                      </el-tooltip>
+                      <el-tooltip
+                        :content="$t('tooltip.uploadImage')"
+                        placement="top"
+                      >
+                        <el-button
+                          size="small"
+                          @click="uploadPropImage(prop.id)"
+                          :icon="Upload"
+                          circle
+                        />
+                      </el-tooltip>
+                    </div>
+                  </el-card>
+                </div>
+              </div>
+
+              <el-empty
+                v-if="propsList.length === 0"
+                :description="$t('drama.management.noProps')"
+              />
+            </div>
           </div>
         </el-card>
 
@@ -1312,6 +1460,7 @@ import {
   Loading,
   WarningFilled,
   Document,
+  Box,
   Plus,
 } from "@element-plus/icons-vue";
 import { dramaAPI } from "@/api/drama";
@@ -1321,6 +1470,8 @@ import { aiAPI } from "@/api/ai";
 import type { AIServiceConfig } from "@/types/ai";
 import { imageAPI } from "@/api/image";
 import { promptAPI } from "@/api/prompt";
+import { propAPI } from "@/api/prop";
+import { taskAPI } from "@/api/task";
 import type { Drama } from "@/types/drama";
 import { AppHeader } from "@/components/common";
 import { getImageUrl, hasImage } from "@/utils/image";
@@ -1346,14 +1497,18 @@ const generatingShots = ref(false);
 const extractingCharactersAndBackgrounds = ref(false);
 const batchGeneratingCharacters = ref(false);
 const batchGeneratingScenes = ref(false);
+const batchGeneratingProps = ref(false);
 const generatingCharacterImages = ref<Record<number, boolean>>({});
 const generatingSceneImages = ref<Record<string, boolean>>({});
+const generatingPropImages = ref<Record<number, boolean>>({});
 
 // 閫夋嫨鐘舵�?
 const selectedCharacterIds = ref<number[]>([]);
 const selectedSceneIds = ref<number[]>([]);
+const selectedPropIds = ref<number[]>([]);
 const selectAllCharacters = ref(false);
 const selectAllScenes = ref(false);
+const selectAllProps = ref(false);
 
 // 瀵硅瘽妗嗙姸鎬?
 const promptDialogVisible = ref(false);
@@ -1363,7 +1518,7 @@ const modelConfigDialogVisible = ref(false);
 const addSceneDialogVisible = ref(false);
 const extractScenesDialogVisible = ref(false);
 const currentEditItem = ref<any>({ name: "" });
-const currentEditType = ref<"character" | "scene">("character");
+const currentEditType = ref<"character" | "scene" | "prop">("character");
 const editPrompt = ref("");
 const optimizingEditPrompt = ref(false);
 const optimizingShotPromptField = ref<"" | "image_prompt" | "video_prompt" | "bgm_prompt">("");
@@ -1421,36 +1576,40 @@ const charactersCount = computed(() => {
   return currentEpisode.value?.characters?.length || 0;
 });
 
+const propsList = computed(() => drama.value?.props || []);
+const propsCount = computed(() => propsList.value.length);
+
 const hasExtractedData = computed(() => {
   const hasScenes =
     currentEpisode.value?.scenes && currentEpisode.value.scenes.length > 0;
-  // 鍙鏈夎鑹叉垨鍦烘櫙锛屽氨璁や负宸茬粡鎻愬彇杩囨暟鎹?
-  return hasCharacters.value || hasScenes;
+  const hasProps = propsList.value.length > 0;
+  // 只要有角色或场景或道具，就认为已经提取过数据
+  return hasCharacters.value || hasScenes || hasProps;
 });
 
 const allImagesGenerated = computed(() => {
-  // 濡傛灉娌℃湁鎻愬彇浠讳綍鏁版嵁锛屽厑璁歌烦杩囷紙鍙兘鏄┖绔犺妭鎴栫敤鎴锋兂鐩存帴杩涘叆鎷嗚В鍒嗛暅锛?
+  // 如果没有提取任何数据，允许跳过（可能是空章节或用户想直接进入拆解分镜）
   if (!hasExtractedData.value) return true;
 
   const characters = currentEpisode.value?.characters || [];
   const scenes = currentEpisode.value?.scenes || [];
+  const props = propsList.value || [];
 
-  // 濡傛灉瑙掕壊鍜屽満鏅兘涓虹┖锛屽厑璁歌烦杩?
-  if (characters.length === 0 && scenes.length === 0) return true;
+  // 如果角色、场景、道具都为空，允许跳过
+  if (characters.length === 0 && scenes.length === 0 && props.length === 0) {
+    return true;
+  }
 
-  // 妫�鏌ユ墍鏈夋湁鏁版嵁鐨勯」鏄惁閮藉凡鐢熸垚鍥剧墖
+  // 检查所有有数据的项是否都已生成图片
   const allCharsHaveImages =
     characters.length === 0 || characters.every((char) => char.image_url);
   const allScenesHaveImages =
     scenes.length === 0 || scenes.every((scene) => scene.image_url);
+  const allPropsHaveImages =
+    props.length === 0 || props.every((prop) => prop.image_url);
 
-  return allCharsHaveImages && allScenesHaveImages;
+  return allCharsHaveImages && allScenesHaveImages && allPropsHaveImages;
 });
-
-const goBack = () => {
-  // 浣跨敤 replace 閬垮厤鍦ㄥ巻鍙茶褰曚腑鐣欎笅褰撳墠椤甸潰
-  router.replace(`/dramas/${dramaId}`);
-};
 
 // 鍔犺浇AI妯″瀷閰嶇疆
 const loadAIConfigs = async () => {
@@ -1717,6 +1876,40 @@ const checkAndStartPolling = async () => {
       }
     }
   }
+
+  // 检查道具的生成状态
+  for (const prop of propsList.value || []) {
+    if (generatingPropImages.value[prop.id]) continue;
+    if (
+      prop.image_generation_status === "pending" ||
+      prop.image_generation_status === "processing"
+    ) {
+      try {
+        const imageGenList = await imageAPI.listImages({
+          drama_id: dramaId,
+          status: prop.image_generation_status as any,
+        });
+
+        const propImageGen = imageGenList.items.find(
+          (img) =>
+            img.prop_id === prop.id &&
+            (img.status === "pending" || img.status === "processing"),
+        );
+
+        if (propImageGen) {
+          generatingPropImages.value[prop.id] = true;
+          pollImageStatus(propImageGen.id, async () => {
+            await loadDramaData();
+            ElMessage.success($t("workflow.propImageComplete"));
+          }).finally(() => {
+            generatingPropImages.value[prop.id] = false;
+          });
+        }
+      } catch (error) {
+        console.error("[轮询] 查询道具图片生成记录失败:", error);
+      }
+    }
+  }
 };
 
 const saveChapterScript = async () => {
@@ -1825,6 +2018,36 @@ const pollImageStatus = async (
 
   // 瓒呮椂
   ElMessage.warning("鍥剧墖鐢熸垚瓒呮椂锛岃绋嶅悗鍒锋柊椤甸潰鏌ョ湅缁撴灉");
+};
+
+// 轮询任务状态（道具图片生成）
+const pollPropTaskStatus = async (
+  taskId: string,
+  onComplete: () => Promise<void>,
+) => {
+  const maxAttempts = 120;
+  const pollInterval = 2000;
+
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise((resolve) => setTimeout(resolve, pollInterval));
+    try {
+      const task = await taskAPI.getStatus(taskId);
+      if (task.status === "completed") {
+        await onComplete();
+        return;
+      }
+      if (task.status === "failed") {
+        const reason = task.error || task.message || "任务执行失败";
+        throw new Error(reason);
+      }
+    } catch (error: any) {
+      if (error?.message) {
+        throw error;
+      }
+    }
+  }
+
+  throw new Error("任务超时，请稍后刷新查看结果");
 };
 
 const extractCharactersAndBackgrounds = async () => {
@@ -1970,6 +2193,14 @@ const toggleSelectAllScenes = () => {
   }
 };
 
+const toggleSelectAllProps = () => {
+  if (selectAllProps.value) {
+    selectedPropIds.value = propsList.value.map((prop) => prop.id);
+  } else {
+    selectedPropIds.value = [];
+  }
+};
+
 const batchGenerateCharacterImages = async () => {
   if (selectedCharacterIds.value.length === 0) {
     ElMessage.warning("璇峰厛閫夋嫨瑕佺敓鎴愮殑瑙掕壊");
@@ -2026,6 +2257,41 @@ const generateSceneImage = async (sceneId: string) => {
   }
 };
 
+const generatePropImage = async (prop: any): Promise<boolean> => {
+  if (!prop?.id) return false;
+
+  if (!prop.prompt) {
+    ElMessage.warning("请先设置道具的图片提示词");
+    openPromptDialog(prop, "prop");
+    return false;
+  }
+
+  generatingPropImages.value[prop.id] = true;
+
+  try {
+    const res = await propAPI.generateImage(prop.id);
+    const taskId = res?.task_id;
+
+    if (taskId) {
+      ElMessage.info($t("workflow.propImageGenerating"));
+      await pollPropTaskStatus(taskId, async () => {
+        await loadDramaData();
+        ElMessage.success($t("workflow.propImageComplete"));
+      });
+    } else {
+      ElMessage.success($t("workflow.propImageStarted"));
+      await loadDramaData();
+    }
+
+    return true;
+  } catch (error: any) {
+    ElMessage.error(error.message || "生成失败");
+    return false;
+  } finally {
+    generatingPropImages.value[prop.id] = false;
+  }
+};
+
 const batchGenerateSceneImages = async () => {
   if (selectedSceneIds.value.length === 0) {
     ElMessage.warning("璇峰厛閫夋嫨瑕佺敓鎴愮殑鍦烘櫙");
@@ -2058,6 +2324,44 @@ const batchGenerateSceneImages = async () => {
     ElMessage.error(error.message || $t("workflow.batchGenerateFailed"));
   } finally {
     batchGeneratingScenes.value = false;
+  }
+};
+
+const batchGeneratePropImages = async () => {
+  if (selectedPropIds.value.length === 0) {
+    ElMessage.warning("请先选择要生成的道具");
+    return;
+  }
+
+  batchGeneratingProps.value = true;
+  try {
+    const props = propsList.value.filter((p) =>
+      selectedPropIds.value.includes(p.id),
+    );
+    const promises = props.map((prop) => generatePropImage(prop));
+    const results = await Promise.allSettled(promises);
+    const outcomes = results.map((result) =>
+      result.status === "fulfilled" ? result.value : false,
+    );
+    const successCount = outcomes.filter(Boolean).length;
+    const failCount = outcomes.length - successCount;
+
+    if (failCount === 0) {
+      ElMessage.success(
+        $t("workflow.batchCompleteSuccess", { count: successCount }),
+      );
+    } else {
+      ElMessage.warning(
+        $t("workflow.batchCompletePartial", {
+          success: successCount,
+          fail: failCount,
+        }),
+      );
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || $t("workflow.batchGenerateFailed"));
+  } finally {
+    batchGeneratingProps.value = false;
   }
 };
 
@@ -2283,7 +2587,7 @@ const optimizeEditPromptContent = async () => {
     optimizingEditPrompt.value = false;
   }
 };
-const openPromptDialog = (item: any, type: "character" | "scene") => {
+const openPromptDialog = (item: any, type: "character" | "scene" | "prop") => {
   currentEditItem.value = item;
   currentEditItem.value.name = item.name || item.location;
   currentEditType.value = type;
@@ -2298,8 +2602,14 @@ const savePrompt = async () => {
         appearance: editPrompt.value,
       });
       await generateCharacterImage(currentEditItem.value.id);
+    } else if (currentEditType.value === "prop") {
+      await propAPI.update(currentEditItem.value.id, {
+        prompt: editPrompt.value,
+      });
+      ElMessage.success($t("workflow.promptSaved"));
+      await loadDramaData();
     } else {
-      // 淇濆瓨鍦烘櫙鎻愮ず璇嶅拰鏃堕棿锛堝悎骞跺埌涓�涓?API 璋冪敤锛?
+      // 保存场景提示词和时间（合并到一个 API 调用）
       await dramaAPI.updateScene(currentEditItem.value.id.toString(), {
         prompt: editPrompt.value,
         time: currentEditItem.value.time || "",
@@ -2310,7 +2620,7 @@ const savePrompt = async () => {
     }
     promptDialogVisible.value = false;
   } catch (error: any) {
-    ElMessage.error(error.message || "淇濆瓨澶辫触");
+    ElMessage.error(error.message || "保存失败");
   }
 };
 
@@ -2321,6 +2631,11 @@ const uploadCharacterImage = (characterId: number) => {
 
 const uploadSceneImage = (sceneId: string) => {
   currentUploadTarget.value = { id: sceneId, type: "scene" };
+  uploadDialogVisible.value = true;
+};
+
+const uploadPropImage = (propId: number) => {
+  currentUploadTarget.value = { id: propId, type: "prop" };
   uploadDialogVisible.value = true;
 };
 
@@ -2383,7 +2698,7 @@ const handleUploadSuccess = async (response: any) => {
     const localPath = response.local_path || response.data?.local_path;
 
     if (!imageUrl && !localPath) {
-      ElMessage.error("涓婁紶澶辫触锛氭湭鑾峰彇鍒板浘鐗囧湴鍧�");
+      ElMessage.error("上传失败：未获取到图片地址");
       return;
     }
 
@@ -2397,18 +2712,24 @@ const handleUploadSuccess = async (response: any) => {
       );
       ElMessage.success($t("workflow.uploadSuccess"));
     } else if (currentUploadTarget.value?.type === "scene") {
-      // 鏇存柊鍦烘櫙鍥剧墖
+      // 更新场景图片
       await dramaAPI.updateScene(currentUploadTarget.value.id.toString(), {
         image_url: imageUrl,
         local_path: localPath,
       });
       ElMessage.success($t("workflow.sceneImageUploadSuccess"));
+    } else if (currentUploadTarget.value?.type === "prop") {
+      await propAPI.update(currentUploadTarget.value.id, {
+        image_url: imageUrl,
+        local_path: localPath,
+      });
+      ElMessage.success($t("workflow.imageUploadSuccess"));
     }
 
     await loadDramaData();
     uploadDialogVisible.value = false;
   } catch (error: any) {
-    ElMessage.error(error.message || "涓婁紶澶辫触");
+    ElMessage.error(error.message || "上传失败");
   }
 };
 
@@ -3014,7 +3335,8 @@ onBeforeUnmount(() => {
     background: var(--bg-secondary);
 
     .char-image,
-    .scene-image {
+    .scene-image,
+    .prop-image {
       width: 100%;
       height: 100%;
       position: relative;
@@ -3028,7 +3350,8 @@ onBeforeUnmount(() => {
     }
 
     .char-placeholder,
-    .scene-placeholder {
+    .scene-placeholder,
+    .prop-placeholder {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -3078,7 +3401,8 @@ onBeforeUnmount(() => {
 }
 
 .character-image-list,
-.scene-image-list {
+.scene-image-list,
+.prop-image-list {
   padding: 5px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -3086,7 +3410,8 @@ onBeforeUnmount(() => {
   margin-top: 16px;
 
   .character-item,
-  .scene-item {
+  .scene-item,
+  .prop-item {
     min-height: 360px;
   }
 }
@@ -3231,6 +3556,9 @@ onBeforeUnmount(() => {
   border-color: var(--border-primary);
 }
 </style>
+
+
+
 
 
 

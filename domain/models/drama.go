@@ -165,6 +165,10 @@ type Prop struct {
 	UpdatedAt       time.Time      `gorm:"not null;autoUpdateTime" json:"updated_at"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
 
+	// Runtime fields (not persisted)
+	ImageGenerationStatus *string `gorm:"-" json:"image_generation_status,omitempty"`
+	ImageGenerationError  *string `gorm:"-" json:"image_generation_error,omitempty"`
+
 	// Relationships
 	Drama       Drama        `gorm:"foreignKey:DramaID" json:"drama,omitempty"`
 	Storyboards []Storyboard `gorm:"many2many:storyboard_props;" json:"storyboards,omitempty"`

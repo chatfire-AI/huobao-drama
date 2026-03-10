@@ -182,6 +182,28 @@ func (s *DramaService) GetDrama(dramaID string) (*models.Drama, error) {
 		}
 	}
 
+	// 查询道具的图片生成任务状态（pending/processing/failed）
+	for i := range drama.Props {
+		var imageGen models.ImageGeneration
+		err := s.db.Where("prop_id = ?", drama.Props[i].ID).
+			Order("created_at DESC").
+			First(&imageGen).Error
+		if err != nil {
+			continue
+		}
+
+		if imageGen.Status == models.ImageStatusPending || imageGen.Status == models.ImageStatusProcessing {
+			statusStr := string(imageGen.Status)
+			drama.Props[i].ImageGenerationStatus = &statusStr
+		} else if imageGen.Status == models.ImageStatusFailed {
+			statusStr := string(models.ImageStatusFailed)
+			drama.Props[i].ImageGenerationStatus = &statusStr
+			if imageGen.ErrorMsg != nil {
+				drama.Props[i].ImageGenerationError = imageGen.ErrorMsg
+			}
+		}
+	}
+
 	// 整合所有剧集的场景到Drama级别的Scenes字段
 	sceneMap := make(map[uint]*models.Scene) // 用于去重
 	for i := range drama.Episodes {

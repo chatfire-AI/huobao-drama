@@ -3164,6 +3164,17 @@ const generateFrameImage = async () => {
       });
     }
 
+    // 3. 添加当前镜头关联的道具图片（使用 local_path）
+    const storyboardProps = currentStoryboardProps.value;
+    if (storyboardProps && storyboardProps.length > 0) {
+      storyboardProps.forEach((prop: any) => {
+        if (prop.local_path) {
+          referenceImages.push(prop.local_path);
+        }
+      });
+    }
+
+    const uniqueReferenceImages = Array.from(new Set(referenceImages));
     const result = await imageAPI.generateImage({
       drama_id: dramaId.toString(),
       prompt: currentFramePrompt.value,
@@ -3171,15 +3182,15 @@ const generateFrameImage = async () => {
       image_type: "storyboard",
       frame_type: selectedFrameType.value,
       reference_images:
-        referenceImages.length > 0 ? referenceImages : undefined,
+        uniqueReferenceImages.length > 0 ? uniqueReferenceImages : undefined,
     });
 
     generatedImages.value.unshift(result);
 
     // 提示信息
     const refMsg =
-      referenceImages.length > 0
-        ? ` (已添加${referenceImages.length}张参考图)`
+      uniqueReferenceImages.length > 0
+        ? ` (已添加${uniqueReferenceImages.length}张参考图)`
         : "";
     ElMessage.success(`图片生成任务已提交${refMsg}`);
 
