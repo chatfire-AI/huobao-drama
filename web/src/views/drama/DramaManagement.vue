@@ -384,6 +384,7 @@
                     <el-button
                       size="small"
                       @click="generatePropImage(prop)"
+                      :loading="generatingPropImages[prop.id]"
                       :disabled="!prop.prompt"
                       >{{ $t("prop.generateImage") }}</el-button
                     >
@@ -770,6 +771,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
   ArrowLeft,
@@ -782,6 +784,7 @@ import {
 import { dramaAPI } from "@/api/drama";
 import { characterLibraryAPI } from "@/api/character-library";
 import { propAPI } from "@/api/prop";
+import { taskAPI } from "@/api/task";
 import type { Drama } from "@/types/drama";
 import {
   AppHeader,
@@ -793,12 +796,15 @@ import { getImageUrl, hasImage } from "@/utils/image";
 
 const router = useRouter();
 const route = useRoute();
+const { t } = useI18n();
 
 const drama = ref<Drama>();
 const activeTab = ref((route.query.tab as string) || "overview");
 const scenes = ref<any[]>([]);
 
 let pollingTimer: any = null; // Add polling timer definition
+const propTaskPollingTimers = new Map<number, any>();
+const generatingPropImages = ref<Record<number, boolean>>({});
 
 const addCharacterDialogVisible = ref(false);
 const addSceneDialogVisible = ref(false);
@@ -810,7 +816,7 @@ const extractScenesDialogVisible = ref(false);
 const editingCharacter = ref<any>(null);
 const editingScene = ref<any>(null);
 const editingProp = ref<any>(null);
-const selectedExtractEpisodeId = ref<number | null>(null);
+const selectedExtractEpisodeId = ref<string | number | null>(null);
 
 const newCharacter = ref({
   name: "",
@@ -873,6 +879,8 @@ const startPolling = (
 import { onUnmounted } from "vue";
 onUnmounted(() => {
   if (pollingTimer) clearInterval(pollingTimer);
+  propTaskPollingTimers.forEach((timer) => clearInterval(timer));
+  propTaskPollingTimers.clear();
 });
 
 const loadDramaData = async () => {
@@ -976,7 +984,9 @@ const deleteEpisode = async (episode: any) => {
       }));
 
     // 保存更新后的章节列表
-    await dramaAPI.saveEpisodes(drama.value!.id, updatedEpisodes);
+    await dramaAPI.saveEpisodes(drama.value!.id, updatedEpisodes, {
+      replaceAbsent: true,
+    });
 
     ElMessage.success(`第${episode.episode_number}章删除成功`);
     await loadDramaData();
@@ -996,6 +1006,7 @@ const openAddCharacterDialog = () => {
     personality: "",
     description: "",
     image_url: "",
+    local_path: "",
   };
   addCharacterDialogVisible.value = true;
 };
@@ -1196,6 +1207,7 @@ const openAddSceneDialog = () => {
     location: "",
     prompt: "",
     image_url: "",
+    local_path: "",
   };
   addSceneDialogVisible.value = true;
 };
@@ -1398,9 +1410,68 @@ const generatePropImage = async (prop: any) => {
   }
 
   try {
-    await propAPI.generateImage(prop.id);
+    const res = await propAPI.generateImage(prop.id);
     ElMessage.success("图片生成任务已提交");
-    startPolling(loadDramaData);
+
+    const taskId = res?.task_id;
+    if (!taskId) {
+      startPolling(loadDramaData);
+      return;
+    }
+
+    if (propTaskPollingTimers.has(prop.id)) {
+      clearInterval(propTaskPollingTimers.get(prop.id));
+      propTaskPollingTimers.delete(prop.id);
+    }
+
+    generatingPropImages.value[prop.id] = true;
+    ElMessage.info("图片生成中");
+
+    let attempts = 0;
+    let checking = false;
+    const maxAttempts = 120;
+    const timer = setInterval(async () => {
+      if (checking) return;
+      checking = true;
+      attempts++;
+      try {
+        const task = await taskAPI.getStatus(taskId);
+        if (task.status === "completed") {
+          clearInterval(timer);
+          propTaskPollingTimers.delete(prop.id);
+          generatingPropImages.value[prop.id] = false;
+          ElMessage.success("图片生成成功");
+          await loadDramaData();
+          return;
+        }
+
+        if (task.status === "failed") {
+          clearInterval(timer);
+          propTaskPollingTimers.delete(prop.id);
+          generatingPropImages.value[prop.id] = false;
+          const reason = task.error || task.message || "未知错误";
+          ElMessage.error(`图片生成失败：${reason}`);
+          await loadDramaData();
+          return;
+        }
+
+        if (attempts >= maxAttempts) {
+          clearInterval(timer);
+          propTaskPollingTimers.delete(prop.id);
+          generatingPropImages.value[prop.id] = false;
+          ElMessage.error("图片生成失败：任务超时");
+        }
+      } catch (e: any) {
+        clearInterval(timer);
+        propTaskPollingTimers.delete(prop.id);
+        generatingPropImages.value[prop.id] = false;
+        ElMessage.error(`图片生成失败：${e?.message || "未知错误"}`);
+      } finally {
+        checking = false;
+      }
+    }, 2000);
+
+    propTaskPollingTimers.set(prop.id, timer);
   } catch (error: any) {
     ElMessage.error(error.message || "生成失败");
   }

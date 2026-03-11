@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -89,6 +91,7 @@ func (c *VolcEngineImageClient) GenerateImage(prompt string, opts ...ImageOption
 			size = "1K"
 		}
 	}
+	size = ensureMinPixelSize(size)
 
 	reqBody := VolcEngineImageRequest{
 		Model:                     model,
@@ -151,6 +154,39 @@ func (c *VolcEngineImageClient) GenerateImage(prompt string, opts ...ImageOption
 		ImageURL:  result.Data[0].URL,
 		Completed: true,
 	}, nil
+}
+
+func ensureMinPixelSize(size string) string {
+	if size == "" {
+		return size
+	}
+
+	trimmed := strings.TrimSpace(size)
+	if trimmed == "" {
+		return size
+	}
+
+	lower := strings.ToLower(trimmed)
+	if lower == "1k" {
+		return "2560x1440"
+	}
+
+	parts := strings.Split(lower, "x")
+	if len(parts) != 2 {
+		return size
+	}
+
+	w, errW := strconv.Atoi(parts[0])
+	h, errH := strconv.Atoi(parts[1])
+	if errW != nil || errH != nil || w <= 0 || h <= 0 {
+		return size
+	}
+
+	if w*h < 3686400 {
+		return "2560x1440"
+	}
+
+	return size
 }
 
 func (c *VolcEngineImageClient) GetTaskStatus(taskID string) (*ImageResult, error) {

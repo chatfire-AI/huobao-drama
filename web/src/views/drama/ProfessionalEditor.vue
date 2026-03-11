@@ -407,6 +407,21 @@
                     :rows="2"
                     @blur="saveStoryboardField('bgm_prompt')"
                   />
+                  <el-button
+                    size="small"
+                    style="margin-top: 8px"
+                    :loading="optimizingStoryboardBgmPrompt"
+                    :disabled="
+                      !currentStoryboard?.bgm_prompt || optimizingStoryboardBgmPrompt
+                    "
+                    @click="optimizeStoryboardBgmPromptField"
+                  >
+                    {{
+                      optimizingStoryboardBgmPrompt
+                        ? $t("editor.optimizingPrompt")
+                        : $t("editor.optimizePrompt")
+                    }}
+                  </el-button>
                 </div>
               </div>
 
@@ -493,6 +508,19 @@
                       style="margin-left: 10px"
                     >
                       {{ $t("editor.extractPrompt") }}
+                    </el-button>
+                    <el-button
+                      size="small"
+                      :loading="optimizingFramePrompt"
+                      :disabled="!currentFramePrompt || optimizingFramePrompt"
+                      @click="optimizeCurrentFramePrompt"
+                      style="margin-left: 8px"
+                    >
+                      {{
+                        optimizingFramePrompt
+                          ? $t("editor.optimizingPrompt")
+                          : $t("editor.optimizePrompt")
+                      }}
                     </el-button>
                   </div>
                   <el-input
@@ -804,7 +832,10 @@
                             :key="'prev-' + img.id"
                             class="reference-item"
                             :class="{
-                              selected: selectedImagesForVideo.includes(img.id),
+                              selected:
+                                selectedReferenceMode === 'first_last'
+                                  ? selectedImagesForVideo[0] === img.id
+                                  : selectedImagesForVideo.includes(img.id),
                             }"
                             style="
                               position: relative;
@@ -813,7 +844,11 @@
                               overflow: hidden;
                               cursor: pointer;
                             "
-                            @click="selectPreviousLastFrame(img)"
+                            @click="
+                              selectedReferenceMode === 'first_last'
+                                ? selectFirstFrameImage(img.id)
+                                : selectPreviousLastFrame(img)
+                            "
                           >
                             <el-image
                               :src="getImageUrl(img)"
@@ -863,10 +898,17 @@
                           :key="img.id"
                           class="reference-item"
                           :class="{
-                            selected: selectedImagesForVideo.includes(img.id),
+                            selected:
+                              selectedReferenceMode === 'first_last'
+                                ? selectedImagesForVideo[0] === img.id
+                                : selectedImagesForVideo.includes(img.id),
                           }"
                           style="position: relative"
-                          @click="handleImageSelect(img.id)"
+                          @click="
+                            selectedReferenceMode === 'first_last'
+                              ? selectFirstFrameImage(img.id)
+                              : handleImageSelect(img.id)
+                          "
                         >
                           <el-image
                             :src="getImageUrl(img)"
@@ -945,10 +987,17 @@
                           :key="img.id"
                           class="reference-item"
                           :class="{
-                            selected: selectedImagesForVideo.includes(img.id),
+                            selected:
+                              selectedReferenceMode === 'first_last'
+                                ? selectedLastImageForVideo === img.id
+                                : selectedImagesForVideo.includes(img.id),
                           }"
                           style="position: relative"
-                          @click="handleImageSelect(img.id)"
+                          @click="
+                            selectedReferenceMode === 'first_last'
+                              ? selectLastFrameImage(img.id)
+                              : handleImageSelect(img.id)
+                          "
                         >
                           <el-image
                             :src="getImageUrl(img)"
@@ -1266,13 +1315,7 @@
                     >
                       <div class="reference-mode-title">单图参考</div>
                       <div style="display: inline-block">
-                        <div
-                          class="image-slot"
-                          @click="
-                            selectedImagesForVideo.length > 0 &&
-                            removeSelectedImage(selectedImagesForVideo[0])
-                          "
-                        >
+                          <div class="image-slot">
                           <img
                             v-if="selectedImageObjects[0]"
                             :src="getImageUrl(selectedImageObjects[0])"
@@ -1283,11 +1326,12 @@
                             <el-icon :size="32" color="#c0c4cc">
                               <Plus />
                             </el-icon>
-                            <div class="slot-hint">点击上方选择图片</div>
+                            <div class="slot-hint">请在上方图片中选择</div>
                           </div>
                           <div
                             v-if="selectedImageObjects[0]"
                             class="image-slot-remove"
+                            @click.stop="removeSelectedImage(selectedImagesForVideo[0])"
                           >
                             <el-icon :size="16" color="#fff">
                               <Close />
@@ -1313,13 +1357,7 @@
                       >
                         <div>
                           <div class="frame-label">首帧</div>
-                          <div
-                            class="image-slot"
-                            @click="
-                              firstFrameSlotImage &&
-                              removeSelectedImage(firstFrameSlotImage.id)
-                            "
-                          >
+                          <div class="image-slot">
                             <img
                               v-if="firstFrameSlotImage"
                               :src="firstFrameSlotImage.image_url"
@@ -1334,11 +1372,12 @@
                               <el-icon :size="32" color="#c0c4cc">
                                 <Plus />
                               </el-icon>
-                              <div class="slot-hint">选择首帧</div>
+                              <div class="slot-hint">请在上方“首帧”中选择</div>
                             </div>
                             <div
                               v-if="firstFrameSlotImage"
                               class="image-slot-remove"
+                              @click.stop="removeSelectedImage(firstFrameSlotImage.id)"
                             >
                               <el-icon :size="16" color="#fff">
                                 <Close />
@@ -1351,13 +1390,7 @@
                         </el-icon>
                         <div>
                           <div class="frame-label">尾帧</div>
-                          <div
-                            class="image-slot"
-                            @click="
-                              lastFrameSlotImage &&
-                              removeSelectedImage(lastFrameSlotImage.id)
-                            "
-                          >
+                          <div class="image-slot">
                             <img
                               v-if="lastFrameSlotImage"
                               :src="lastFrameSlotImage.image_url"
@@ -1372,11 +1405,12 @@
                               <el-icon :size="32" color="#c0c4cc">
                                 <Plus />
                               </el-icon>
-                              <div class="slot-hint">选择尾帧</div>
+                              <div class="slot-hint">请在上方“尾帧”中选择</div>
                             </div>
                             <div
                               v-if="lastFrameSlotImage"
                               class="image-slot-remove"
+                              @click.stop="removeSelectedImage(lastFrameSlotImage.id)"
                             >
                               <el-icon :size="16" color="#fff">
                                 <Close />
@@ -1578,8 +1612,118 @@
 
           <!-- 音效与配乐标签 -->
           <el-tab-pane :label="$t('video.soundAndMusicTab')" name="audio">
-            <div class="tab-content">
-              <el-empty :description="$t('video.soundMusicInDev')" />
+            <div class="tab-content audio-narration-tab">
+              <div class="audio-narration-header">
+                <div>
+                  <div class="audio-narration-title">
+                    {{ $t("video.novelNarrationTitle") }}
+                  </div>
+                  <div class="audio-narration-subtitle">
+                    {{ $t("video.novelNarrationSubtitle") }}
+                  </div>
+                </div>
+                <div class="audio-narration-actions">
+                  <el-checkbox v-model="overwriteExistingNarration">
+                    {{ $t("video.overwriteExistingNarration") }}
+                  </el-checkbox>
+                  <el-button
+                    type="primary"
+                    :icon="MagicStick"
+                    :loading="generatingNarrations"
+                    :disabled="storyboards.length === 0"
+                    @click="generateNovelNarrationsForAll"
+                  >
+                    {{ $t("video.generateAllNovelNarration") }}
+                  </el-button>
+                </div>
+              </div>
+
+              <el-empty
+                v-if="storyboards.length === 0"
+                :description="$t('storyboard.noStoryboard')"
+              />
+              <el-table
+                v-else
+                :data="storyboards"
+                border
+                size="small"
+                class="audio-narration-table"
+              >
+                <el-table-column
+                  :label="$t('video.shotNumber')"
+                  width="86"
+                  align="center"
+                >
+                  <template #default="{ row }">
+                    {{ row.storyboard_number }}
+                  </template>
+                </el-table-column>
+
+                <el-table-column :label="$t('video.shotTitle')" min-width="120">
+                  <template #default="{ row }">
+                    {{ row.title || $t("storyboard.untitled") }}
+                  </template>
+                </el-table-column>
+
+                <el-table-column
+                  :label="$t('video.videoStatus')"
+                  width="120"
+                  align="center"
+                >
+                  <template #default="{ row }">
+                    <el-tag :type="row.video_url ? 'success' : 'info'" size="small">
+                      {{
+                        row.video_url
+                          ? $t("video.silentVideoReady")
+                          : $t("video.silentVideoMissing")
+                      }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+
+                <el-table-column
+                  :label="$t('video.novelNarration')"
+                  min-width="280"
+                  show-overflow-tooltip
+                >
+                  <template #default="{ row }">
+                    <span class="narration-preview">
+                      {{
+                        row.dialogue && String(row.dialogue).trim()
+                          ? row.dialogue
+                          : $t("video.noNarration")
+                      }}
+                    </span>
+                  </template>
+                </el-table-column>
+
+                <el-table-column
+                  :label="$t('video.generate')"
+                  width="180"
+                  align="center"
+                >
+                  <template #default="{ row }">
+                    <el-button
+                      size="small"
+                      type="primary"
+                      text
+                      :loading="Boolean(narrationGeneratingMap[Number(row.id)])"
+                      @click="generateNovelNarrationForOne(Number(row.id))"
+                    >
+                      {{ $t("video.generate") }}
+                    </el-button>
+                    <el-button
+                      size="small"
+                      type="primary"
+                      text
+                      :disabled="!(row.dialogue && String(row.dialogue).trim())"
+                      @click="handleNarrationDubbing(row)"
+                    >
+                      {{ $t("video.dubbing") }}
+                    </el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
             </div>
           </el-tab-pane>
 
@@ -2056,6 +2200,8 @@ import { aiAPI } from "@/api/ai";
 import { assetAPI } from "@/api/asset";
 import { videoMergeAPI } from "@/api/videoMerge";
 import { taskAPI } from "@/api/task";
+import { storyboardNarrationAPI } from "@/api/storyboardNarration";
+import { promptAPI } from "@/api/prompt";
 import type { ImageGeneration } from "@/types/image";
 import type { VideoGeneration } from "@/types/video";
 import type { AIServiceConfig } from "@/types/ai";
@@ -2116,6 +2262,8 @@ const framePrompts = ref<Record<string, string>>({
   panel: "",
 });
 const currentFramePrompt = ref("");
+const optimizingFramePrompt = ref(false);
+const optimizingStoryboardBgmPrompt = ref(false);
 const generatingImage = ref(false);
 const generatedImages = ref<ImageGeneration[]>([]);
 const isSwitchingFrameType = ref(false); // 标志位：是否正在切换帧类型
@@ -2157,6 +2305,9 @@ let mergePollingTimer: any = null; // 视频合成列表轮询定时器
 // 视频合成列表
 const videoMerges = ref<VideoMerge[]>([]);
 const loadingMerges = ref(false);
+const generatingNarrations = ref(false);
+const overwriteExistingNarration = ref(false);
+const narrationGeneratingMap = ref<Record<number, boolean>>({});
 
 // 视频模型能力配置
 interface VideoModelCapability {
@@ -3013,6 +3164,17 @@ const generateFrameImage = async () => {
       });
     }
 
+    // 3. 添加当前镜头关联的道具图片（使用 local_path）
+    const storyboardProps = currentStoryboardProps.value;
+    if (storyboardProps && storyboardProps.length > 0) {
+      storyboardProps.forEach((prop: any) => {
+        if (prop.local_path) {
+          referenceImages.push(prop.local_path);
+        }
+      });
+    }
+
+    const uniqueReferenceImages = Array.from(new Set(referenceImages));
     const result = await imageAPI.generateImage({
       drama_id: dramaId.toString(),
       prompt: currentFramePrompt.value,
@@ -3020,15 +3182,15 @@ const generateFrameImage = async () => {
       image_type: "storyboard",
       frame_type: selectedFrameType.value,
       reference_images:
-        referenceImages.length > 0 ? referenceImages : undefined,
+        uniqueReferenceImages.length > 0 ? uniqueReferenceImages : undefined,
     });
 
     generatedImages.value.unshift(result);
 
     // 提示信息
     const refMsg =
-      referenceImages.length > 0
-        ? ` (已添加${referenceImages.length}张参考图)`
+      uniqueReferenceImages.length > 0
+        ? ` (已添加${uniqueReferenceImages.length}张参考图)`
         : "";
     ElMessage.success(`图片生成任务已提交${refMsg}`);
 
@@ -3248,6 +3410,86 @@ const handleImageSelect = (imageId: number) => {
     default:
       ElMessage.warning("未知的参考图模式");
   }
+};
+
+const optimizeCurrentFramePrompt = async () => {
+  const sourcePrompt = currentFramePrompt.value?.trim();
+  if (!sourcePrompt) return;
+
+  try {
+    optimizingFramePrompt.value = true;
+    const result = await promptAPI.optimize({
+      prompt: sourcePrompt,
+      use_case: "image",
+      language: "auto",
+    });
+    currentFramePrompt.value = result.optimized_prompt || sourcePrompt;
+    ElMessage.success($t("editor.promptOptimized"));
+  } catch (error: any) {
+    ElMessage.error(error.message || $t("editor.optimizePromptFailed"));
+  } finally {
+    optimizingFramePrompt.value = false;
+  }
+};
+
+const optimizeStoryboardBgmPromptField = async () => {
+  const sourcePrompt = currentStoryboard.value?.bgm_prompt?.trim();
+  if (!sourcePrompt || !currentStoryboard.value) return;
+
+  try {
+    optimizingStoryboardBgmPrompt.value = true;
+    const result = await promptAPI.optimize({
+      prompt: sourcePrompt,
+      use_case: "video",
+      language: "auto",
+    });
+    const optimized = result.optimized_prompt || sourcePrompt;
+    currentStoryboard.value.bgm_prompt = optimized;
+    await saveStoryboardField("bgm_prompt");
+    ElMessage.success($t("editor.promptOptimized"));
+  } catch (error: any) {
+    ElMessage.error(error.message || $t("editor.optimizePromptFailed"));
+  } finally {
+    optimizingStoryboardBgmPrompt.value = false;
+  }
+};
+
+const selectFirstFrameImage = (imageId: number) => {
+  if (!selectedReferenceMode.value) {
+    ElMessage.warning("请先选择参考图模式");
+    return;
+  }
+
+  if (!currentModelCapability.value) {
+    ElMessage.warning("请先选择视频生成模型");
+    return;
+  }
+
+  if (selectedImagesForVideo.value[0] === imageId) {
+    selectedImagesForVideo.value = [];
+    return;
+  }
+
+  selectedImagesForVideo.value = [imageId];
+};
+
+const selectLastFrameImage = (imageId: number) => {
+  if (!selectedReferenceMode.value) {
+    ElMessage.warning("请先选择参考图模式");
+    return;
+  }
+
+  if (!currentModelCapability.value) {
+    ElMessage.warning("请先选择视频生成模型");
+    return;
+  }
+
+  if (selectedLastImageForVideo.value === imageId) {
+    selectedLastImageForVideo.value = null;
+    return;
+  }
+
+  selectedLastImageForVideo.value = imageId;
 };
 
 // 预览图片（使用已导入的 getImageUrl 工具函数来获取正确的图片URL）
@@ -4136,6 +4378,103 @@ const deleteMerge = async (mergeId: number) => {
 };
 
 // 格式化日期时间
+const applyNarrationResultToLocal = (storyboardId: number, narration: string) => {
+  const target = storyboards.value.find(
+    (s) => Number(s.id) === Number(storyboardId),
+  );
+  if (target) {
+    target.dialogue = narration;
+  }
+};
+
+const generateNovelNarrationForOne = async (storyboardId: number) => {
+  if (!storyboardId) return;
+
+  narrationGeneratingMap.value[storyboardId] = true;
+  try {
+    const result = await storyboardNarrationAPI.generateNovelNarrations({
+      storyboard_ids: [storyboardId],
+      overwrite: overwriteExistingNarration.value,
+    });
+
+    const item = result.results?.[0];
+    if (!item) {
+      ElMessage.warning($t("video.narrationGenerateFailed"));
+      return;
+    }
+
+    if (item.error) {
+      ElMessage.error(item.error);
+      return;
+    }
+
+    if (item.narration) {
+      applyNarrationResultToLocal(item.storyboard_id, item.narration);
+    }
+
+    if (item.skipped) {
+      ElMessage.info($t("video.narrationSkipped"));
+    } else {
+      ElMessage.success($t("video.narrationGenerateSuccess"));
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || $t("video.narrationGenerateFailed"));
+  } finally {
+    narrationGeneratingMap.value[storyboardId] = false;
+  }
+};
+
+const generateNovelNarrationsForAll = async () => {
+  const storyboardIds = storyboards.value
+    .map((s) => Number(s.id))
+    .filter((id) => Number.isFinite(id) && id > 0);
+
+  if (storyboardIds.length === 0) {
+    ElMessage.warning($t("storyboard.noStoryboard"));
+    return;
+  }
+
+  generatingNarrations.value = true;
+  try {
+    const result = await storyboardNarrationAPI.generateNovelNarrations({
+      storyboard_ids: storyboardIds,
+      overwrite: overwriteExistingNarration.value,
+    });
+
+    (result.results || []).forEach((item) => {
+      if (item.narration) {
+        applyNarrationResultToLocal(item.storyboard_id, item.narration);
+      }
+    });
+
+    if (result.failed_count > 0) {
+      ElMessage.warning(
+        $t("video.narrationBatchPartial", {
+          success: result.success_count,
+          failed: result.failed_count,
+          skipped: result.skipped_count,
+        }),
+      );
+      return;
+    }
+
+    ElMessage.success(
+      $t("video.narrationBatchSuccess", {
+        success: result.success_count,
+        skipped: result.skipped_count,
+      }),
+    );
+  } catch (error: any) {
+    ElMessage.error(error.message || $t("video.narrationGenerateFailed"));
+  } finally {
+    generatingNarrations.value = false;
+  }
+};
+
+const handleNarrationDubbing = (_storyboard: Storyboard) => {
+  ElMessage.info($t("video.dubbingInDevelopment"));
+};
+
 const formatDateTime = (dateStr: string) => {
   const date = new Date(dateStr);
   const now = new Date();
@@ -6383,5 +6722,50 @@ onBeforeUnmount(() => {
   max-width: 100%;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.audio-narration-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.audio-narration-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.audio-narration-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.audio-narration-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.audio-narration-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.audio-narration-table {
+  :deep(.el-table__cell) {
+    vertical-align: middle;
+  }
+}
+
+.narration-preview {
+  color: var(--text-primary);
+  line-height: 1.6;
 }
 </style>

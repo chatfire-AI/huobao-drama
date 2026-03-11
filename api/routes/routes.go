@@ -17,6 +17,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, log *logger.Logger, localStora
 	r.Use(gin.Recovery())
 	r.Use(middlewares2.LoggerMiddleware(log))
 	r.Use(middlewares2.CORSMiddleware(cfg.Server.CORSOrigins))
+	r.Use(middlewares2.OperationLogMiddleware(db, log))
 
 	// 静态文件服务（用户上传的文件）
 	r.Static("/static", cfg.Storage.LocalPath)
@@ -52,9 +53,11 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, log *logger.Logger, localStora
 	taskHandler := handlers2.NewTaskHandler(db, log)
 	framePromptService := services2.NewFramePromptService(db, cfg, log)
 	framePromptHandler := handlers2.NewFramePromptHandler(framePromptService, log)
+	promptOptimizerHandler := handlers2.NewPromptOptimizerHandler(aiService, log)
 	audioExtractionHandler := handlers2.NewAudioExtractionHandler(log, cfg.Storage.LocalPath)
 	settingsHandler := handlers2.NewSettingsHandler(cfg, log)
 	propHandler := handlers2.NewPropHandler(db, cfg, log, aiService, imageGenService)
+	operationLogHandler := handlers2.NewOperationLogHandler(db, log)
 
 	api := r.Group("/api/v1")
 	{
@@ -82,6 +85,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, log *logger.Logger, localStora
 			aiConfigs.GET("", aiConfigHandler.ListConfigs)
 			aiConfigs.POST("", aiConfigHandler.CreateConfig)
 			aiConfigs.POST("/test", aiConfigHandler.TestConnection)
+			aiConfigs.POST("/alive", aiConfigHandler.CheckAPIAlive)
 			aiConfigs.GET("/:id", aiConfigHandler.GetConfig)
 			aiConfigs.PUT("/:id", aiConfigHandler.UpdateConfig)
 			aiConfigs.DELETE("/:id", aiConfigHandler.DeleteConfig)
@@ -204,6 +208,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, log *logger.Logger, localStora
 		{
 			storyboards.GET("/episode/:episode_id/generate", storyboardHandler.GenerateStoryboard)
 			storyboards.POST("", storyboardHandler.CreateStoryboard)
+			storyboards.POST("/narrations/generate", storyboardHandler.BatchGenerateNovelNarrations)
 			storyboards.PUT("/:id", storyboardHandler.UpdateStoryboard)
 			storyboards.DELETE("/:id", storyboardHandler.DeleteStoryboard)
 			storyboards.POST("/:id/props", propHandler.AssociateProps)
@@ -217,10 +222,20 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, log *logger.Logger, localStora
 			audio.POST("/extract/batch", audioExtractionHandler.BatchExtractAudio)
 		}
 
+		prompts := api.Group("/prompts")
+		{
+			prompts.POST("/optimize", promptOptimizerHandler.OptimizePrompt)
+		}
+
 		settings := api.Group("/settings")
 		{
 			settings.GET("/language", settingsHandler.GetLanguage)
 			settings.PUT("/language", settingsHandler.UpdateLanguage)
+		}
+
+		operationLogs := api.Group("/operation-logs")
+		{
+			operationLogs.GET("", operationLogHandler.ListOperationLogs)
 		}
 	}
 

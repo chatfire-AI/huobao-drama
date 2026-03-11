@@ -49,6 +49,58 @@ func truncateImageURL(url string) string {
 	return url
 }
 
+const minImagePixels = 3686400
+const minImageSize = "2560x1440"
+
+func shouldEnforceMinImageSize(provider string) bool {
+	switch strings.ToLower(strings.TrimSpace(provider)) {
+	case "volcengine", "volces", "doubao":
+		return true
+	default:
+		return false
+	}
+}
+
+func normalizeImageSize(provider, size string) (string, bool) {
+	if !shouldEnforceMinImageSize(provider) {
+		return size, false
+	}
+
+	if size == "" {
+		return size, false
+	}
+
+	trimmed := strings.TrimSpace(size)
+	if trimmed == "" {
+		return size, false
+	}
+
+	lower := strings.ToLower(trimmed)
+	switch lower {
+	case "1k":
+		return minImageSize, true
+	case "2k":
+		return size, false
+	}
+
+	parts := strings.Split(lower, "x")
+	if len(parts) != 2 {
+		return size, false
+	}
+
+	w, errW := strconv.Atoi(parts[0])
+	h, errH := strconv.Atoi(parts[1])
+	if errW != nil || errH != nil || w <= 0 || h <= 0 {
+		return size, false
+	}
+
+	if w*h < minImagePixels {
+		return minImageSize, true
+	}
+
+	return size, false
+}
+
 func NewImageGenerationService(db *gorm.DB, cfg *config.Config, transferService *ResourceTransferService, localStorage *storage.LocalStorage, log *logger.Logger) *ImageGenerationService {
 	return &ImageGenerationService{
 		db:              db,
@@ -170,6 +222,19 @@ func (s *ImageGenerationService) ProcessImageGeneration(imageGenID uint) {
 	}
 
 	s.db.Model(&imageGen).Update("status", models.ImageStatusProcessing)
+
+	if imageGen.Size != "" {
+		if normalized, changed := normalizeImageSize(imageGen.Provider, imageGen.Size); changed {
+			s.log.Infow("Image size below minimum, normalized",
+				"id", imageGenID,
+				"provider", imageGen.Provider,
+				"from", imageGen.Size,
+				"to", normalized,
+				"min_pixels", minImagePixels)
+			imageGen.Size = normalized
+			s.db.Model(&imageGen).Update("size", normalized)
+		}
+	}
 
 	// 如果关联了background，同步更新background为generating状态
 	if imageGen.StoryboardID != nil {

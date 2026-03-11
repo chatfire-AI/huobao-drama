@@ -59,8 +59,11 @@ export const dramaAPI = {
     return request.put(`/characters/${id}`, data)
   },
 
-  saveEpisodes(id: string, data: any[]) {
-    return request.put(`/dramas/${id}/episodes`, { episodes: data })
+  saveEpisodes(id: string, data: any[], options?: { replaceAbsent?: boolean }) {
+    return request.put(`/dramas/${id}/episodes`, {
+      episodes: data,
+      replace_absent: options?.replaceAbsent === true
+    })
   },
 
   saveProgress(id: string, data: { current_step: string; step_data?: any }) {
@@ -116,7 +119,7 @@ export const dramaAPI = {
   },
 
   createScene(data: {
-    drama_id: number;
+    drama_id: number | string;
     episode_id?: number;
     location: string;
     time?: string;

@@ -6,6 +6,9 @@ export interface Prop {
     description?: string
     prompt?: string
     image_url?: string
+    local_path?: string
+    image_generation_status?: 'pending' | 'processing' | 'failed'
+    image_generation_error?: string
     reference_images?: any
     created_at: string
     updated_at: string
@@ -18,6 +21,7 @@ export interface CreatePropRequest {
     description?: string
     prompt?: string
     image_url?: string
+    local_path?: string
 }
 
 export interface UpdatePropRequest {
@@ -26,4 +30,5 @@ export interface UpdatePropRequest {
     description?: string
     prompt?: string
     image_url?: string
+    local_path?: string
 }

@@ -1,4 +1,6 @@
 import type {
+    APIAliveRequest,
+    APIAliveResponse,
     AIServiceConfig,
     AIServiceType,
     CreateAIConfigRequest,
@@ -32,5 +34,9 @@ export const aiAPI = {
 
   testConnection(data: TestConnectionRequest) {
     return request.post('/ai-configs/test', data)
+  },
+
+  checkAlive(data: APIAliveRequest) {
+    return request.post<APIAliveResponse>('/ai-configs/alive', data)
   }
 }

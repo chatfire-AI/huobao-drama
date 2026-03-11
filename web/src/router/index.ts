@@ -66,6 +66,11 @@ const routes: RouteRecordRaw[] = [
     path: '/settings/ai-config',
     name: 'AIConfig',
     component: () => import('../views/settings/AIConfig.vue')
+  },
+  {
+    path: '/settings/operation-logs',
+    name: 'OperationLogs',
+    component: () => import('../views/settings/OperationLogs.vue')
   }
 ]
 

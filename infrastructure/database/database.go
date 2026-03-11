@@ -95,5 +95,6 @@ func AutoMigrate(db *gorm.DB) error {
 
 		// 任务管理
 		&models.AsyncTask{},
+		&models.OperationLog{},
 	)
 }

@@ -171,7 +171,7 @@ func (s *PropService) processPropImageGeneration(taskID string, prop models.Prop
 
 	// 准备生成参数
 	imageStyle := "Modern Japanese anime style"
-	imageSize := "1024x1024"
+	imageSize := "1024x1024" // 默认尺寸，VolcEngine最低像素要求由图像服务层处理
 
 	// 创建生成请求
 	req := &GenerateImageRequest{

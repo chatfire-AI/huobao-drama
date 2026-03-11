@@ -3,6 +3,8 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/drama-generator/backend/domain/models"
 	"github.com/drama-generator/backend/pkg/ai"
@@ -56,6 +58,43 @@ type TestConnectionRequest struct {
 	Model    models.ModelField `json:"model" binding:"required"`
 	Provider string            `json:"provider"`
 	Endpoint string            `json:"endpoint"`
+}
+
+type APIAliveRequest struct {
+	BaseURL  string `json:"base_url" binding:"required,url"`
+	APIKey   string `json:"api_key" binding:"required"`
+	Model    string `json:"model"`
+	Provider string `json:"provider" binding:"required"`
+	Endpoint string `json:"endpoint"`
+	Prompt   string `json:"prompt"`
+}
+
+type APIAliveResponse struct {
+	Alive      bool   `json:"alive"`
+	Provider   string `json:"provider"`
+	Model      string `json:"model"`
+	Endpoint   string `json:"endpoint"`
+	Reply      string `json:"reply"`
+	LatencyMS  int64  `json:"latency_ms"`
+	RequestID  string `json:"request_id,omitempty"`
+	Message    string `json:"message"`
+}
+
+func normalizeModelForProvider(provider, model string) string {
+	p := strings.ToLower(strings.TrimSpace(provider))
+	m := strings.TrimSpace(model)
+	if m == "" {
+		return m
+	}
+
+	if p == "doubao" || p == "volcengine" || p == "volces" {
+		switch strings.ToLower(m) {
+		case "doubao-seed-1.8":
+			return "doubao-seed-1-8-251228"
+		}
+	}
+
+	return m
 }
 
 func (s *AIService) CreateConfig(req *CreateAIConfigRequest) (*models.AIServiceConfig, error) {
@@ -273,7 +312,7 @@ func (s *AIService) TestConnection(req *TestConnectionRequest) error {
 	// 使用第一个模型进行测试
 	model := ""
 	if len(req.Model) > 0 {
-		model = req.Model[0]
+		model = normalizeModelForProvider(req.Provider, req.Model[0])
 	}
 	s.log.Infow("Using model for test", "model", model, "provider", req.Provider)
 
@@ -313,6 +352,65 @@ func (s *AIService) TestConnection(req *TestConnectionRequest) error {
 		s.log.Infow("TestConnection succeeded")
 	}
 	return err
+}
+
+func (s *AIService) CheckAPIAlive(req *APIAliveRequest) (*APIAliveResponse, error) {
+	provider := strings.TrimSpace(strings.ToLower(req.Provider))
+	model := normalizeModelForProvider(provider, strings.TrimSpace(req.Model))
+	endpoint := strings.TrimSpace(req.Endpoint)
+	prompt := strings.TrimSpace(req.Prompt)
+	if prompt == "" {
+		prompt = "Hello"
+	}
+
+	// Fallback models for API-key liveness checks.
+	if model == "" {
+		switch provider {
+		case "gemini", "google":
+			model = "gemini-2.5-pro"
+		case "doubao", "volcengine", "volces":
+			model = "doubao-seed-1-6-251015"
+		default:
+			model = "gpt-4o-mini"
+		}
+	}
+
+	var client ai.AIClient
+	switch provider {
+	case "gemini", "google":
+		if endpoint == "" {
+			endpoint = "/v1beta/models/{model}:generateContent"
+		}
+		client = ai.NewGeminiClient(req.BaseURL, req.APIKey, model, endpoint)
+	default:
+		// OpenAI-compatible providers: openai/chatfire/volcengine/doubao/etc.
+		if endpoint == "" {
+			endpoint = "/chat/completions"
+		}
+		client = ai.NewOpenAIClient(req.BaseURL, req.APIKey, model, endpoint)
+	}
+
+	start := time.Now()
+	reply, err := client.GenerateText(prompt, "", ai.WithMaxTokens(50))
+	latencyMS := time.Since(start).Milliseconds()
+	if err != nil {
+		return nil, err
+	}
+
+	reply = strings.TrimSpace(reply)
+	if len(reply) > 300 {
+		reply = reply[:300] + "..."
+	}
+
+	return &APIAliveResponse{
+		Alive:     true,
+		Provider:  provider,
+		Model:     model,
+		Endpoint:  endpoint,
+		Reply:     reply,
+		LatencyMS: latencyMS,
+		Message:   "API测活成功",
+	}, nil
 }
 
 func (s *AIService) GetDefaultConfig(serviceType string) (*models.AIServiceConfig, error) {

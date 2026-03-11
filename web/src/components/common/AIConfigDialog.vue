@@ -16,6 +16,10 @@
             <el-icon><MagicStick /></el-icon>
             <span>一键配置火宝</span>
           </el-button>
+          <el-button size="small" @click="goToOperationLogs">
+            <el-icon><Document /></el-icon>
+            <span>{{ $t("operationLog.title") }}</span>
+          </el-button>
           <el-button type="primary" size="small" @click="showCreateDialog">
             <el-icon><Plus /></el-icon>
             <span>{{ $t("aiConfig.addConfig") }}</span>
@@ -250,13 +254,14 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from "vue";
+import { useRouter } from "vue-router";
 import {
   ElMessage,
   ElMessageBox,
   type FormInstance,
   type FormRules,
 } from "element-plus";
-import { Plus, MagicStick } from "@element-plus/icons-vue";
+import { Plus, MagicStick, Document } from "@element-plus/icons-vue";
 import { aiAPI } from "@/api/ai";
 import type {
   AIServiceConfig,
@@ -279,6 +284,8 @@ const visible = computed({
   get: () => props.modelValue,
   set: (val) => emit("update:modelValue", val),
 });
+
+const router = useRouter();
 
 const activeTab = ref<AIServiceType>("text");
 const loading = ref(false);
@@ -335,12 +342,34 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       name: "Google Gemini",
       models: ["gemini-2.5-pro", "gemini-3-flash-preview"],
     },
+    {
+      id: "volcengine",
+      name: "火山引擎",
+      models: [
+        "doubao-seed-1-6",
+        "doubao-seed-1-6-lite",
+        "doubao-seed-1-6-flash",
+        "doubao-seed-1-6-thinking",
+        "doubao-seed-1-6-vision",
+        "doubao-seed-code",
+        "deepseek-v3-1",
+        "kimi-k2",
+        "doubao-seed-translation",
+        "doubao-embedding-vision",
+        "doubao-seed-1-8-251228",
+      ],
+    },
   ],
   image: [
     {
       id: "volcengine",
       name: "火山引擎",
-      models: ["doubao-seedream-4-5-251128", "doubao-seedream-4-0-250828"],
+      models: [
+        "doubao-seedream-4-5",
+        "doubao-seedream-4-0",
+        "doubao-seedream-4-5-251128",
+        "doubao-seedream-4-0-250828",
+      ],
     },
     {
       id: "chatfire",
@@ -359,6 +388,10 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       id: "volces",
       name: "火山引擎",
       models: [
+        "doubao-seedance-2-0",
+        "doubao-seedance-1-0-pro",
+        "doubao-seedance-1-0-lite-i2v",
+        "doubao-seedance-1-0-lite-t2v",
         "doubao-seedance-1-5-pro-251215",
         "doubao-seedance-1-0-lite-i2v-250428",
         "doubao-seedance-1-0-lite-t2v-250428",
@@ -496,6 +529,7 @@ const generateConfigName = (
     openai: "OpenAI",
     gemini: "Gemini",
     google: "Google",
+    volcengine: "火山引擎",
   };
 
   const serviceNames: Record<AIServiceType, string> = {
@@ -652,6 +686,13 @@ const handleSubmit = async () => {
 const handleTabChange = (tabName: string | number) => {
   activeTab.value = tabName as AIServiceType;
   loadConfigs();
+};
+
+const goToOperationLogs = () => {
+  visible.value = false;
+  editDialogVisible.value = false;
+  quickSetupVisible.value = false;
+  router.push("/settings/operation-logs");
 };
 
 const handleProviderChange = () => {

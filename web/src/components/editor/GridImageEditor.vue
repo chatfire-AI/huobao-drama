@@ -123,7 +123,7 @@ interface GridImage {
 
 interface ImageGeneration {
   id: number;
-  frame_type: string;
+  frame_type?: string;
   image_url?: string;
   local_path?: string;
   [key: string]: any;

@@ -342,6 +342,15 @@ func (s *VideoGenerationService) ProcessVideoGeneration(videoGenID uint) {
 		return
 	}
 
+	if isFailedVideoStatus(result.Status) {
+		failReason := strings.TrimSpace(result.Error)
+		if failReason == "" {
+			failReason = fmt.Sprintf("video task failed (status: %s)", result.Status)
+		}
+		s.updateVideoGenError(videoGenID, failReason)
+		return
+	}
+
 	// CRITICAL FIX: Validate TaskID before starting polling goroutine
 	// Empty TaskID would cause polling to fail silently or cause issues
 	if result.TaskID != "" {
@@ -411,9 +420,22 @@ func (s *VideoGenerationService) pollTaskStatus(videoGenID uint, taskID string, 
 		result, err := client.GetTaskStatus(taskID)
 		if err != nil {
 			s.log.Errorw("Failed to get task status", "error", err, "task_id", taskID, "attempt", attempt+1)
+			if shouldStopPollingOnStatusError(err) {
+				s.updateVideoGenError(videoGenID, err.Error())
+				return
+			}
 			// Continue polling on error - might be transient network issue
 			// Will eventually timeout after maxAttempts if error persists
 			continue
+		}
+
+		if isFailedVideoStatus(result.Status) {
+			failReason := strings.TrimSpace(result.Error)
+			if failReason == "" {
+				failReason = fmt.Sprintf("video task failed (status: %s)", result.Status)
+			}
+			s.updateVideoGenError(videoGenID, failReason)
+			return
 		}
 
 		// Check if task completed successfully
@@ -569,6 +591,35 @@ func (s *VideoGenerationService) updateVideoGenError(videoGenID uint, errorMsg s
 		"error_msg": errorMsg,
 	}).Error; err != nil {
 		s.log.Errorw("Failed to update video generation error", "error", err, "id", videoGenID)
+	}
+}
+
+func isFailedVideoStatus(status string) bool {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "failed", "error", "cancelled", "canceled":
+		return true
+	default:
+		return false
+	}
+}
+
+func shouldStopPollingOnStatusError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	errText := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(errText, "status 400"),
+		strings.Contains(errText, "status 401"),
+		strings.Contains(errText, "status 403"),
+		strings.Contains(errText, "status 404"),
+		strings.Contains(errText, "status 422"),
+		strings.Contains(errText, "task not found"),
+		strings.Contains(errText, "invalid task"):
+		return true
+	default:
+		return false
 	}
 }
 

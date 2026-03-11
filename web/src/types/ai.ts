@@ -63,3 +63,23 @@ export interface AIServiceProvider {
   created_at: string
   updated_at: string
 }
+
+export interface APIAliveRequest {
+  base_url: string
+  api_key: string
+  provider: string
+  model?: string
+  endpoint?: string
+  prompt?: string
+}
+
+export interface APIAliveResponse {
+  alive: boolean
+  provider: string
+  model: string
+  endpoint: string
+  reply: string
+  latency_ms: number
+  request_id?: string
+  message: string
+}

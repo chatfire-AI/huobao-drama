@@ -15,6 +15,15 @@
         </template>
         <template #right>
           <el-button
+            @click="goToOperationLogs"
+            class="header-btn"
+          >
+            <el-icon>
+              <Document />
+            </el-icon>
+            <span class="btn-text">{{ $t("operationLog.title") }}</span>
+          </el-button>
+          <el-button
             type="primary"
             @click="handleCreate"
             class="header-btn primary"
@@ -208,6 +217,7 @@ import {
   View,
   Delete,
   InfoFilled,
+  Document,
 } from "@element-plus/icons-vue";
 import { dramaAPI } from "@/api/drama";
 import type { Drama, DramaListQuery } from "@/types/drama";
@@ -249,6 +259,7 @@ const loadDramas = async () => {
 // Navigation handlers / 导航处理
 const handleCreate = () => (createDialogVisible.value = true);
 const viewDrama = (id: string) => router.push(`/dramas/${id}`);
+const goToOperationLogs = () => router.push('/settings/operation-logs');
 
 // Edit dialog state / 编辑对话框状态
 const editDialogVisible = ref(false);

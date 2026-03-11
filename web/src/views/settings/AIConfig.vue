@@ -9,6 +9,10 @@
         :back-text="$t('common.back')"
       >
         <template #actions>
+          <el-button @click="goToOperationLogs">
+            <el-icon><Document /></el-icon>
+            <span>{{ $t("operationLog.title") }}</span>
+          </el-button>
           <el-button type="primary" @click="showCreateDialog">
             <el-icon><Plus /></el-icon>
             <span>{{ $t("aiConfig.addConfig") }}</span>
@@ -180,7 +184,7 @@ import {
   type FormInstance,
   type FormRules,
 } from "element-plus";
-import { Plus, ArrowLeft } from "@element-plus/icons-vue";
+import { Plus, Document } from "@element-plus/icons-vue";
 import { aiAPI } from "@/api/ai";
 import { PageHeader } from "@/components/common";
 import type {
@@ -245,12 +249,34 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       name: "Google Gemini",
       models: ["gemini-2.5-pro", "gemini-3-flash-preview"],
     },
+    {
+      id: "volcengine",
+      name: "火山引擎",
+      models: [
+        "doubao-seed-1-6",
+        "doubao-seed-1-6-lite",
+        "doubao-seed-1-6-flash",
+        "doubao-seed-1-6-thinking",
+        "doubao-seed-1-6-vision",
+        "doubao-seed-code",
+        "deepseek-v3-1",
+        "kimi-k2",
+        "doubao-seed-translation",
+        "doubao-embedding-vision",
+        "doubao-seed-1-8-251228",
+      ],
+    },
   ],
   image: [
     {
       id: "volcengine",
       name: "火山引擎",
-      models: ["doubao-seedream-4-5-251128", "doubao-seedream-4-0-250828"],
+      models: [
+        "doubao-seedream-4-5",
+        "doubao-seedream-4-0",
+        "doubao-seedream-4-5-251128",
+        "doubao-seedream-4-0-250828",
+      ],
     },
     {
       id: "chatfire",
@@ -269,6 +295,10 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
       id: "volces",
       name: "火山引擎",
       models: [
+        "doubao-seedance-2-0",
+        "doubao-seedance-1-0-pro",
+        "doubao-seedance-1-0-lite-i2v",
+        "doubao-seedance-1-0-lite-t2v",
         "doubao-seedance-1-5-pro-251215",
         "doubao-seedance-1-0-lite-i2v-250428",
         "doubao-seedance-1-0-lite-t2v-250428",
@@ -296,22 +326,16 @@ const providerConfigs: Record<AIServiceType, ProviderConfig[]> = {
 
 // 当前可用的厂商列表（只显示有激活配置的）
 const availableProviders = computed(() => {
-  // 获取当前service_type下所有激活的配置
-  const activeConfigs = configs.value.filter(
-    (c) => c.service_type === form.service_type && c.is_active,
-  );
-
-  // 提取所有激活配置的provider，去重
-  const activeProviderIds = new Set(activeConfigs.map((c) => c.provider));
-
-  // 从providerConfigs中筛选出有激活配置的provider
-  const allProviders = providerConfigs[form.service_type] || [];
-  return allProviders.filter((p) => activeProviderIds.has(p.id));
+  return providerConfigs[form.service_type] || [];
 });
 
 // 当前可用的模型列表（从已激活的配置中获取）
 const availableModels = computed(() => {
   if (!form.provider) return [];
+
+  const providerConfig = providerConfigs[form.service_type]?.find(
+    (p) => p.id === form.provider,
+  );
 
   // 从已激活的配置中提取该 provider 的所有模型
   const activeConfigsForProvider = configs.value.filter(
@@ -324,8 +348,14 @@ const availableModels = computed(() => {
   // 提取所有模型，去重
   const models = new Set<string>();
   activeConfigsForProvider.forEach((config) => {
-    config.model.forEach((m) => models.add(m));
+    const configModels = Array.isArray(config.model) ? config.model : [config.model];
+    configModels.filter(Boolean).forEach((m) => models.add(m));
   });
+
+  // 如果当前 provider 没有已激活配置，回退到预定义模型列表
+  if (models.size === 0 && providerConfig) {
+    providerConfig.models.forEach((m) => models.add(m));
+  }
 
   return Array.from(models);
 });
@@ -416,6 +446,7 @@ const generateConfigName = (
     openai: "OpenAI",
     gemini: "Gemini",
     google: "Google",
+    volcengine: "火山引擎",
   };
 
   const serviceNames: Record<AIServiceType, string> = {
@@ -580,6 +611,8 @@ const handleProviderChange = () => {
   // 根据厂商自动设置默认 base_url
   if (form.provider === "gemini" || form.provider === "google") {
     form.base_url = "https://api.chatfire.site";
+  } else if (form.provider === "volcengine" || form.provider === "volces") {
+    form.base_url = "https://ark.cn-beijing.volces.com/api/v3";
   } else {
     // openai, chatfire 等其他厂商
     form.base_url = "https://api.chatfire.site/v1";
@@ -623,6 +656,10 @@ const resetForm = () => {
 
 const goBack = () => {
   router.back();
+};
+
+const goToOperationLogs = () => {
+  router.push("/settings/operation-logs");
 };
 
 onMounted(() => {
