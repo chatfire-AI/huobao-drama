@@ -580,7 +580,14 @@
                           fit="cover"
                           preview-teleported
                         />
-                        <div v-else class="image-placeholder">
+                        <div
+                          v-else
+                          class="image-placeholder"
+                          :class="{
+                            'is-processing': img.status === 'processing',
+                            'is-failed': img.status === 'failed',
+                          }"
+                        >
                           <el-icon :size="32">
                             <Picture />
                           </el-icon>
@@ -1527,7 +1534,14 @@
                             </el-icon>
                           </div>
                         </div>
-                        <div v-else class="image-placeholder">
+                        <div
+                          v-else
+                          class="image-placeholder"
+                          :class="{
+                            'is-processing': video.status === 'processing',
+                            'is-failed': video.status === 'failed',
+                          }"
+                        >
                           <el-icon :size="32">
                             <VideoCamera />
                           </el-icon>
@@ -5332,6 +5346,42 @@ onBeforeUnmount(() => {
             position: relative;
             z-index: 1;
           }
+
+          // processing状态：黄色
+          &.is-processing {
+            &::before {
+              background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(230, 162, 60, 0.15) 50%,
+                transparent 70%
+              );
+            }
+            .el-icon {
+              color: #e6a23c;
+            }
+            p {
+              color: #e6a23c;
+
+              &::after {
+                content: "";
+                animation: dots 1.5s steps(4, end) infinite;
+              }
+            }
+          }
+
+          // failed状态：红色，无loading动画
+          &.is-failed {
+            &::before {
+              display: none;
+            }
+            .el-icon {
+              color: #f56c6c;
+            }
+            p {
+              color: #f56c6c;
+            }
+          }
         }
 
         .image-actions {
@@ -5391,6 +5441,20 @@ onBeforeUnmount(() => {
 
       100% {
         transform: translateX(100%) translateY(100%) rotate(45deg);
+      }
+    }
+
+    @keyframes dots {
+      0%,
+      20% {
+        content: ".";
+      }
+      40% {
+        content: "..";
+      }
+      60%,
+      100% {
+        content: "...";
       }
     }
   }
@@ -5513,6 +5577,42 @@ onBeforeUnmount(() => {
             font-weight: 500;
             position: relative;
             z-index: 1;
+          }
+
+          // processing状态：黄色
+          &.is-processing {
+            &::before {
+              background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(230, 162, 60, 0.15) 50%,
+                transparent 70%
+              );
+            }
+            .el-icon {
+              color: #e6a23c;
+            }
+            p {
+              color: #e6a23c;
+
+              &::after {
+                content: "";
+                animation: dots 1.5s steps(4, end) infinite;
+              }
+            }
+          }
+
+          // failed状态：红色，无loading动画
+          &.is-failed {
+            &::before {
+              display: none;
+            }
+            .el-icon {
+              color: #f56c6c;
+            }
+            p {
+              color: #f56c6c;
+            }
           }
         }
 
