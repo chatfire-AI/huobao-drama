@@ -9,15 +9,15 @@ import (
 )
 
 const (
-	SceneExtractorAgentName = "场景提取专家"
-	SceneExtractorAgentDesc = "从剧本中提取场景空间布局、环境参数和核心道具，使用合适的技能完成场景分析"
+	ScriptTranslatorAgentName = "剧本翻译专家"
+	ScriptTranslatorAgentDesc = "将网文内容无损转化为高冲击力的60-90秒短剧剧本，使用合适的技能完成剧本翻译"
 )
 
-type SceneExtractorAgent struct {
+type ScriptTranslatorAgent struct {
 	Runner *adk.Runner
 }
 
-func NewSceneExtractorAgent(modelFactory *agentmodel.ChatModelFactory, provider string, skillsBaseDir string) (*SceneExtractorAgent, error) {
+func NewScriptTranslatorAgent(modelFactory *agentmodel.ChatModelFactory, provider string, skillsBaseDir string) (*ScriptTranslatorAgent, error) {
 	ctx := context.Background()
 
 	chatModel, err := modelFactory.NewChatModelByProvider(provider)
@@ -31,8 +31,8 @@ func NewSceneExtractorAgent(modelFactory *agentmodel.ChatModelFactory, provider 
 	}
 
 	agent, err := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
-		Name:        SceneExtractorAgentName,
-		Description: SceneExtractorAgentDesc,
+		Name:        ScriptTranslatorAgentName,
+		Description: ScriptTranslatorAgentDesc,
 		Model:       chatModel,
 		Handlers:    []adk.ChatModelAgentMiddleware{skillMiddleware},
 	})
@@ -45,5 +45,5 @@ func NewSceneExtractorAgent(modelFactory *agentmodel.ChatModelFactory, provider 
 		EnableStreaming: true,
 	})
 
-	return &SceneExtractorAgent{Runner: runner}, nil
+	return &ScriptTranslatorAgent{Runner: runner}, nil
 }
