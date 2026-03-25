@@ -564,6 +564,22 @@ A: GORM automatically creates tables on first startup, check logs to confirm mig
 
 ---
 
+## 📤 Publishing Your Videos
+
+Once your drama video is generated, publish it to TikTok, YouTube Shorts, Douyin (抖音), and Instagram Reels using [Upload-Post](https://upload-post.com):
+
+```bash
+curl -X POST https://api.upload-post.com/upload \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "video=@output/drama_final.mp4" \
+  -F "title=AI Generated Mini Drama" \
+  -F "platforms=tiktok,youtube,instagram"
+```
+
+Upload-Post provides a single API to publish videos across all major platforms, completing your end-to-end drama production workflow. [Get your API key here](https://upload-post.com).
+
+---
+
 ## 📋 Changelog
 
 ### v1.0.5 (2026-02-06)
