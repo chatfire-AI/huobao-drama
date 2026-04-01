@@ -14,7 +14,7 @@ server:
 
 database:
   type: "sqlite"
-  path: "./data/drama_generator.db"
+  path: "./data/huobao_drama.db"
   max_idle: 10
   max_open: 100
 

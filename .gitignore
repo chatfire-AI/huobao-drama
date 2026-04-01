@@ -1,24 +1,8 @@
-# Binaries
-bin/
-drama-generator
-backend
-*.exe
-*.dll
-*.so
-*.dylib
-drama-generator.exe
+# Dependencies
+node_modules/
 
-# Test binary
-*.test
-
-# Output of the go coverage tool
-*.out
-
-# Dependency directories
-vendor/
-
-# Go workspace file
-go.work
+# Build output
+dist/
 
 # IDE
 .idea/
@@ -38,31 +22,24 @@ go.work
 .DS_Store
 Thumbs.db
 
-# Build
-dist/
-build/
-
-# Temporary files
-tmp/
-temp/
-
 # Data (database and uploaded files)
 data/drama_generator.db
-data/storage/videos/*
-!data/storage/videos/.gitkeep
+data/drama_generator.db-wal
+data/drama_generator.db-shm
+data/huobao_drama.db
+data/huobao_drama.db-wal
+data/huobao_drama.db-shm
+data/public.sql
+data/*.bak*
+data/static/
+data/storage/
 
-# Frontend build output
-web/dist/
-web/node_modules/
-web/.vite/
-web/.env.local
-
-# Config file (use config.example.yaml as template)
+# Config
 configs/config.yaml
 
-# Docker publish documentation (optional)
-DOCKER_PUBLISH.md
-build.sh
-/data/storage/
-/web/package-lock.json
-.DS_Store
+# Misc
+tmp/
+temp/
+.superpowers/
+/CLAUDE.md
+/AGENTS.md
