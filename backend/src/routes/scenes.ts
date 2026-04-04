@@ -4,6 +4,7 @@ import { db, schema } from '../db/index.js'
 import { success, created, badRequest, now } from '../utils/response.js'
 import { generateImage } from '../services/image-generation.js'
 import { logTaskError, logTaskStart, logTaskSuccess } from '../utils/task-logger.js'
+import { parseStoredPathArray } from '../utils/json-refs.js'
 
 const app = new Hono()
 
@@ -37,6 +38,9 @@ app.put('/:id', async (c) => {
     updates.imageUrl = body.image_url ?? body.imageUrl
   }
   if (body.status !== undefined) updates.status = body.status
+  if (body.reference_images !== undefined || body.referenceImages !== undefined) {
+    updates.referenceImages = body.reference_images ?? body.referenceImages
+  }
   db.update(schema.scenes).set(updates).where(eq(schema.scenes.id, id)).run()
   return success(c)
 })
@@ -51,11 +55,21 @@ app.post('/:id/generate-image', async (c) => {
   const [ep] = db.select().from(schema.episodes).where(eq(schema.episodes.id, Number(body.episode_id))).all()
   if (!ep) return badRequest(c, 'Episode not found')
 
-  const prompt = scene.prompt || `${scene.location}, ${scene.time || ''}, 高质量场景, 电影感`
+  const defaultPrompt = scene.prompt || `${scene.location}, ${scene.time || ''}, 高质量场景, 电影感`
+  const override =
+    typeof body.prompt === 'string' && body.prompt.trim().length > 0 ? body.prompt.trim() : null
+  const prompt = override ?? defaultPrompt
   try {
     logTaskStart('SceneImage', 'generate', { sceneId: id, episodeId: ep.id, dramaId: scene.dramaId, location: scene.location })
     db.update(schema.scenes).set({ status: 'processing', updatedAt: now() }).where(eq(schema.scenes.id, id)).run()
-    const genId = await generateImage({ sceneId: id, dramaId: scene.dramaId, prompt, configId: ep.imageConfigId ?? undefined })
+    const refPaths = parseStoredPathArray(scene.referenceImages)
+    const genId = await generateImage({
+      sceneId: id,
+      dramaId: scene.dramaId,
+      prompt,
+      configId: ep.imageConfigId ?? undefined,
+      referenceImages: refPaths.length ? refPaths : undefined,
+    })
     logTaskSuccess('SceneImage', 'generate', { sceneId: id, generationId: genId })
     return success(c, { image_generation_id: genId })
   } catch (err: any) {

@@ -75,13 +75,21 @@ export const storyboardAPI = {
 export const characterAPI = {
   update: (id: number, data: any) => api.put(`/characters/${id}`, data),
   voiceSample: (id: number, episodeId: number) => api.post(`/characters/${id}/generate-voice-sample`, { episode_id: episodeId }),
-  generateImage: (id: number, episodeId: number) => api.post(`/characters/${id}/generate-image`, { episode_id: episodeId }),
+  generateImage: (id: number, episodeId: number, extra?: { prompt?: string }) =>
+    api.post(`/characters/${id}/generate-image`, {
+      episode_id: episodeId,
+      ...(extra?.prompt !== undefined ? { prompt: extra.prompt } : {}),
+    }),
   batchImages: (ids: number[], episodeId: number) => api.post('/characters/batch-generate-images', { character_ids: ids, episode_id: episodeId }),
 }
 
 export const sceneAPI = {
   update: (id: number, data: any) => api.put(`/scenes/${id}`, data),
-  generateImage: (id: number, episodeId: number) => api.post(`/scenes/${id}/generate-image`, { episode_id: episodeId }),
+  generateImage: (id: number, episodeId: number, extra?: { prompt?: string }) =>
+    api.post(`/scenes/${id}/generate-image`, {
+      episode_id: episodeId,
+      ...(extra?.prompt !== undefined ? { prompt: extra.prompt } : {}),
+    }),
 }
 
 export const imageAPI = {
