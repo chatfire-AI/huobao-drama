@@ -153,6 +153,13 @@ const showBrandImage = ref(true)
 .film-frame:nth-child(2) { background: var(--accent); opacity: 0.6; }
 .film-frame:nth-child(3) { opacity: 0.3; }
 
-/* Content */
-.content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+/* Content：可纵向滚动（简易剪辑等长页）；min-height:0 避免 flex 子项被内容撑开却无法出现滚动条 */
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
 </style>

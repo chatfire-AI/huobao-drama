@@ -117,6 +117,27 @@
         </div>
       </div>
 
+      <!-- ===== 工作台流水线 ===== -->
+      <div v-else-if="tab === 'workflow'" class="settings-scroll">
+        <div class="settings-head">
+          <h2 class="settings-title">工作台流水线</h2>
+          <p class="settings-desc">可按习惯省略「视频合成」环节：镜头视频生成完成后可直接进入「拼接导出」。</p>
+        </div>
+        <section class="card setup-panel workflow-pref-card">
+          <div class="workflow-pref-row">
+            <div>
+              <div class="setup-title">跳过「视频合成」步骤</div>
+              <div class="setup-desc workflow-pref-desc">开启后侧边栏与制作顶栏不再显示该步，总进度按 10 步计。拼接仍优先使用已合成成片，否则使用已生成视频。</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" :checked="skipVideoCompose" @change="setSkipVideoCompose($event.target.checked)">
+              <span />
+            </label>
+          </div>
+          <p class="setup-desc workflow-env-hint">构建前端时可设环境变量 <code class="mono">NUXT_PUBLIC_SKIP_VIDEO_COMPOSE=true</code> 作为默认；一旦在浏览器里切换过本开关，以本地保存为准。</p>
+        </section>
+      </div>
+
       <!-- ===== Agent 配置 ===== -->
       <div v-else-if="tab === 'agents'" class="settings-scroll">
         <div class="settings-head">
@@ -391,7 +412,7 @@
 </template>
 
 <script setup>
-import { Plus, Pencil, Trash2, FileText, ChevronDown, Check, Loader2, Bot, Cpu, Sparkles } from 'lucide-vue-next'
+import { Plus, Pencil, Trash2, FileText, ChevronDown, Check, Loader2, Bot, Cpu, Sparkles, Clapperboard } from 'lucide-vue-next'
 import BaseSelect from '~/components/BaseSelect.vue'
 import { toast } from 'vue-sonner'
 import { aiConfigAPI, agentConfigAPI, skillsAPI } from '~/composables/useApi'
@@ -400,8 +421,10 @@ import brandLogo from '~/assets/huobao-logo.png'
 const showBrandImage = ref(true)
 const tab = ref('ai')
 const showAdvanced = ref(false)
+const { skipVideoCompose, setSkipVideoCompose } = usePipelinePrefs()
 const baseTabs = [
   { id: 'ai', label: 'AI 服务', icon: Cpu },
+  { id: 'workflow', label: '工作台', icon: Clapperboard },
 ]
 const advancedTabs = [
   { id: 'agents', label: 'Agent 配置', icon: Bot },
@@ -1044,6 +1067,12 @@ onMounted(() => { loadCfgs(); loadAgents(); loadAllSkills() })
 .toggle span::before { content: ''; position: absolute; width: 13px; height: 13px; left: 2px; bottom: 2px; background: var(--bg-0); border-radius: 50%; transition: 0.2s; box-shadow: var(--shadow); }
 .toggle input:checked + span { background: var(--accent); }
 .toggle input:checked + span::before { transform: translateX(13px); }
+
+.workflow-pref-card { padding: 18px 16px; }
+.workflow-pref-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.workflow-pref-desc { margin-top: 6px; max-width: 560px; }
+.workflow-env-hint { margin-top: 14px; margin-bottom: 0; font-size: 11px; color: var(--text-3); }
+.workflow-env-hint .mono { font-family: var(--font-mono, monospace); font-size: 11px; background: var(--bg-2); padding: 2px 6px; border-radius: 4px; }
 
 /* Agent */
 .agent-list { display: flex; flex-direction: column; gap: 8px; }

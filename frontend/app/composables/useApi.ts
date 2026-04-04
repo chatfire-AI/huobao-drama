@@ -35,6 +35,19 @@ export const api = {
   del: <T = any>(p: string) => req<T>('DELETE', p),
 }
 
+/** 上传图片到 `data/static/uploads/`，返回 `path`（如 `static/uploads/xxx.png`）供写入数据库 */
+export async function uploadImageFile(file: File): Promise<{ path: string; url: string }> {
+  const form = new FormData()
+  form.append('file', file)
+  const resp = await fetch(`${BASE}/upload/image`, { method: 'POST', body: form })
+  const json = await resp.json()
+  if (!resp.ok || (json.code && json.code >= 400)) {
+    throw new Error(json.message || `上传失败 ${resp.status}`)
+  }
+  const data = json.data ?? json
+  return { path: data.path, url: data.url }
+}
+
 export const dramaAPI = {
   list: () => api.get<{ items: any[] }>('/dramas'),
   get: (id: number) => api.get(`/dramas/${id}`),
@@ -67,6 +80,7 @@ export const characterAPI = {
 }
 
 export const sceneAPI = {
+  update: (id: number, data: any) => api.put(`/scenes/${id}`, data),
   generateImage: (id: number, episodeId: number) => api.post(`/scenes/${id}/generate-image`, { episode_id: episodeId }),
 }
 
@@ -97,6 +111,76 @@ export const composeAPI = {
 export const mergeAPI = {
   merge: (epId: number) => api.post(`/merge/episodes/${epId}/merge`),
   status: (epId: number) => api.get(`/merge/episodes/${epId}/merge`),
+  /** 删除本集全部拼接记录，并删除 static/merged 下对应成片 */
+  clear: (epId: number) =>
+    api.del<{ removed_files: number; removed_rows: number; cleared_episode_video: boolean }>(
+      `/merge/episodes/${epId}/merge`,
+    ),
+}
+
+export type TimelineRenderBody = {
+  video_segments: { path: string; in_sec: number; duration_sec: number }[]
+  audio_segments?: { path: string; in_sec: number; duration_sec: number }[] | null
+}
+
+/** 简易时间轴：音轨提取、裁切拼接导出（服务端 ffmpeg） */
+export const timelineAPI = {
+  extractAudio: (path: string) => api.post<{ path: string }>('/timeline/extract-audio', { path }),
+  render: (body: TimelineRenderBody) => api.post<{ path: string }>('/timeline/render', body),
+  /** NDJSON 流：多行 JSON，含 `{ progress }` 与最终 `{ path }` */
+  renderStream: async (body: TimelineRenderBody, onProgress: (pct: number) => void): Promise<{ path: string }> => {
+    const resp = await fetch(`${BASE}/timeline/render-stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const jsonErr = async () => {
+      const j = await resp.json().catch(() => ({} as { message?: string }))
+      return j.message || `${resp.status}`
+    }
+    if (!resp.ok) throw new Error(await jsonErr())
+    if (!resp.body) throw new Error('无响应体')
+
+    const reader = resp.body.getReader()
+    const dec = new TextDecoder()
+    let buf = ''
+    let outPath = ''
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buf += dec.decode(value, { stream: true })
+      const lines = buf.split('\n')
+      buf = lines.pop() ?? ''
+      for (const line of lines) {
+        const t = line.trim()
+        if (!t) continue
+        let o: { progress?: number; path?: string; error?: string }
+        try {
+          o = JSON.parse(t) as { progress?: number; path?: string; error?: string }
+        } catch {
+          continue
+        }
+        if (typeof o.progress === 'number') onProgress(o.progress)
+        if (o.error) throw new Error(o.error)
+        if (o.path) outPath = o.path
+      }
+    }
+    const tail = buf.trim()
+    if (tail) {
+      try {
+        const o = JSON.parse(tail) as { progress?: number; path?: string; error?: string }
+        if (typeof o.progress === 'number') onProgress(o.progress)
+        if (o.error) throw new Error(o.error)
+        if (o.path) outPath = o.path
+      } catch (e) {
+        if (e instanceof SyntaxError) {
+          /* ignore */
+        } else throw e
+      }
+    }
+    if (!outPath) throw new Error('导出未完成')
+    return { path: outPath }
+  },
 }
 export const aiConfigAPI = {
   list: (t?: string) => api.get(`/ai-configs${t ? `?service_type=${t}` : ''}`),

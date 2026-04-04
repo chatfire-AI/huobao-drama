@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db, schema } from '../db/index.js'
 import { success, badRequest } from '../utils/response.js'
 import { mergeEpisodeVideos } from '../services/ffmpeg-merge.js'
+import { clearEpisodeMergeArtifacts } from '../services/merge-cleanup.js'
 import { toSnakeCase } from '../utils/transform.js'
 import { logTaskError, logTaskStart, logTaskSuccess } from '../utils/task-logger.js'
 
@@ -36,6 +37,19 @@ app.get('/episodes/:id/merge', async (c) => {
   if (!latest) return success(c, null)
 
   return success(c, toSnakeCase(latest))
+})
+
+// DELETE /episodes/:id/merge — 删除本集全部拼接记录，并删除 static/merged 下对应成片；若剧集 video_url 指向该片则清空
+app.delete('/episodes/:id/merge', async (c) => {
+  const episodeId = Number(c.req.param('id'))
+  try {
+    const result = clearEpisodeMergeArtifacts(episodeId)
+    logTaskSuccess('MergeAPI', 'episode-merge-clear', { episodeId, ...result })
+    return success(c, result)
+  } catch (err: any) {
+    logTaskError('MergeAPI', 'episode-merge-clear', { episodeId, error: err.message })
+    return badRequest(c, err.message)
+  }
 })
 
 export default app

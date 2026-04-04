@@ -33,6 +33,10 @@ app.put('/:id', async (c) => {
   if (body.location !== undefined) updates.location = body.location
   if (body.time !== undefined) updates.time = body.time
   if (body.prompt !== undefined) updates.prompt = body.prompt
+  if (body.image_url !== undefined || body.imageUrl !== undefined) {
+    updates.imageUrl = body.image_url ?? body.imageUrl
+  }
+  if (body.status !== undefined) updates.status = body.status
   db.update(schema.scenes).set(updates).where(eq(schema.scenes.id, id)).run()
   return success(c)
 })
