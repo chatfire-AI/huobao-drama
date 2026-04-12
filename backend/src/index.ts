@@ -18,6 +18,7 @@ import agentConfigs from './routes/agentConfigs.js'
 import agent from './routes/agent.js'
 import compose from './routes/compose.js'
 import merge from './routes/merge.js'
+import timeline from './routes/timeline.js'
 import grid from './routes/grid.js'
 import skills from './routes/skills.js'
 import webhooks from './routes/webhooks.js'
@@ -56,6 +57,7 @@ api.route('/agent-configs', agentConfigs)
 api.route('/agent', agent)
 api.route('/compose', compose)
 api.route('/merge', merge)
+api.route('/timeline', timeline)
 api.route('/grid', grid)
 api.route('/skills', skills)
 api.route('/ai-voices', aiVoices)

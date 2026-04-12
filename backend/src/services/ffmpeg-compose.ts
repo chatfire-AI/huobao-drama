@@ -6,6 +6,12 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { execFileSync } from 'child_process'
+import { resolveFfmpegPath, resolveFfprobePath, ensureFfmpegOrThrow, FFMPEG_MISSING_MESSAGE } from '../utils/ffmpeg-bin.js'
+
+const _ffmpegBin = resolveFfmpegPath()
+if (_ffmpegBin) ffmpeg.setFfmpegPath(_ffmpegBin)
+const _ffprobeBin = resolveFfprobePath()
+if (_ffprobeBin) ffmpeg.setFfprobePath(_ffprobeBin)
 import { v4 as uuid } from 'uuid'
 import { db, schema } from '../db/index.js'
 import { eq } from 'drizzle-orm'
@@ -28,8 +34,13 @@ function toAbsPath(relativePath: string): string {
 
 function supportsSubtitleFilter(): boolean {
   if (subtitleFilterSupport != null) return subtitleFilterSupport
+  const bin = resolveFfmpegPath()
+  if (!bin) {
+    subtitleFilterSupport = false
+    return false
+  }
   try {
-    const output = execFileSync('ffmpeg', ['-hide_banner', '-filters'], { encoding: 'utf8' })
+    const output = execFileSync(bin, ['-hide_banner', '-filters'], { encoding: 'utf8' })
     subtitleFilterSupport = /\bsubtitles\b/.test(output)
   } catch {
     subtitleFilterSupport = false
@@ -54,6 +65,7 @@ export async function composeStoryboard(storyboardId: number): Promise<string> {
   const [sb] = db.select().from(schema.storyboards).where(eq(schema.storyboards.id, storyboardId)).all()
   if (!sb) throw new Error(`Storyboard ${storyboardId} not found`)
   if (!sb.videoUrl) throw new Error(`Storyboard ${storyboardId} has no video`)
+  ensureFfmpegOrThrow()
   db.update(schema.storyboards)
     .set({ status: 'compose_processing', composedVideoUrl: null, updatedAt: now() })
     .where(eq(schema.storyboards.id, storyboardId))
@@ -179,11 +191,13 @@ export async function composeStoryboard(storyboardId: number): Promise<string> {
       output: composedRelative,
     })
     return composedRelative
-  } catch (err) {
+  } catch (err: any) {
     db.update(schema.storyboards)
       .set({ status: 'compose_failed', composedVideoUrl: null, updatedAt: now() })
       .where(eq(schema.storyboards.id, storyboardId))
       .run()
-    throw err
+    const raw = String(err?.message || err)
+    const friendly = /cannot find ffmpeg/i.test(raw) ? FFMPEG_MISSING_MESSAGE : raw
+    throw new Error(friendly)
   }
 }

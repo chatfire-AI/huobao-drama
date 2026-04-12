@@ -60,6 +60,7 @@ sqlite.exec(`
     description TEXT,
     appearance TEXT,
     personality TEXT,
+    image_prompt TEXT,
     voice_style TEXT,
     image_url TEXT,
     reference_images TEXT,
@@ -84,6 +85,7 @@ sqlite.exec(`
     image_url TEXT,
     status TEXT DEFAULT 'pending',
     local_path TEXT,
+    reference_images TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     deleted_at TEXT
@@ -358,6 +360,8 @@ function ensureColumn(table: string, column: string, definition: string) {
 ensureColumn('episodes', 'image_config_id', 'INTEGER')
 ensureColumn('episodes', 'video_config_id', 'INTEGER')
 ensureColumn('episodes', 'audio_config_id', 'INTEGER')
+ensureColumn('characters', 'image_prompt', 'TEXT')
+ensureColumn('scenes', 'reference_images', 'TEXT')
 
 export const db = drizzle(sqlite, { schema })
 export { schema }

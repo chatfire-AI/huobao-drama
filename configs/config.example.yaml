@@ -23,6 +23,12 @@ storage:
   local_path: "./data/storage"
   base_url: "http://localhost:5678/static"
 
+# 前端工作台「跳过视频合成」请在设置页切换，或构建时设置环境变量：
+# NUXT_PUBLIC_SKIP_VIDEO_COMPOSE=true
+# （本文件仅为说明，后端当前不读取该项）
+pipeline:
+  skip_video_compose: false
+
 ai:
   default_text_provider: "openai"
   default_image_provider: "openai"

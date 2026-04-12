@@ -49,6 +49,8 @@ export const characters = sqliteTable('characters', {
   description: text('description'),
   appearance: text('appearance'),
   personality: text('personality'),
+  /** 自定义角色立绘提示词；为空时服务端按姓名+外貌拼装 */
+  imagePrompt: text('image_prompt'),
   voiceStyle: text('voice_style'),
   imageUrl: text('image_url'),
   referenceImages: text('reference_images'),
@@ -89,6 +91,8 @@ export const scenes = sqliteTable('scenes', {
   imageUrl: text('image_url'),
   status: text('status').default('pending'),
   localPath: text('local_path'),
+  /** 场景图生图用的参考图路径 JSON 数组 */
+  referenceImages: text('reference_images'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
   deletedAt: text('deleted_at'),

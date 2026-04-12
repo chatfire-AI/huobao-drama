@@ -1,8 +1,10 @@
+import fs from 'fs'
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
 import { db, schema } from '../db/index.js'
 import { success, created, now, badRequest } from '../utils/response.js'
 import { toSnakeCase } from '../utils/transform.js'
+import { getAbsolutePath } from '../utils/storage.js'
 import { generateTTS } from '../services/tts-generation.js'
 import { logTaskError, logTaskPayload, logTaskProgress, logTaskStart, logTaskSuccess } from '../utils/task-logger.js'
 
@@ -123,6 +125,9 @@ app.put('/:id', async (c) => {
     image_prompt: 'imagePrompt', scene_id: 'sceneId', location: 'location',
     time: 'time', atmosphere: 'atmosphere', result: 'result',
     bgm_prompt: 'bgmPrompt', sound_effect: 'soundEffect',
+    first_frame_image: 'firstFrameImage', last_frame_image: 'lastFrameImage',
+    composed_image: 'composedImage',
+    reference_images: 'referenceImages',
   }
 
   const updates: Record<string, any> = { updatedAt: now() }
@@ -133,6 +138,26 @@ app.put('/:id', async (c) => {
   if ('dialogue' in body) {
     updates.ttsAudioUrl = null
     updates.subtitleUrl = null
+  }
+
+  /** 清空合成成片：删库字段并删除 static/composed 下对应文件，重置 compose_* 状态 */
+  if ('composed_video_url' in body && body.composed_video_url === null) {
+    const oldUrl = storyboard.composedVideoUrl
+    if (oldUrl) {
+      const rel = String(oldUrl).replace(/^\//, '')
+      if (rel.startsWith('static/composed/')) {
+        try {
+          const abs = getAbsolutePath(rel)
+          if (fs.existsSync(abs)) fs.unlinkSync(abs)
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    updates.composedVideoUrl = null
+    if (String(storyboard.status || '').startsWith('compose_')) {
+      updates.status = null
+    }
   }
 
   validateStoryboardBindings(

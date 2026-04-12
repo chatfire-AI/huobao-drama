@@ -5,6 +5,12 @@ import ffmpeg from 'fluent-ffmpeg'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { resolveFfmpegPath, resolveFfprobePath, ensureFfmpegOrThrow, FFMPEG_MISSING_MESSAGE } from '../utils/ffmpeg-bin.js'
+
+const _ffmpegBin = resolveFfmpegPath()
+if (_ffmpegBin) ffmpeg.setFfmpegPath(_ffmpegBin)
+const _ffprobeBin = resolveFfprobePath()
+if (_ffprobeBin) ffmpeg.setFfprobePath(_ffprobeBin)
 import { v4 as uuid } from 'uuid'
 import { db, schema } from '../db/index.js'
 import { eq } from 'drizzle-orm'
@@ -22,7 +28,8 @@ function toAbsPath(relativePath: string): string {
 }
 
 /**
- * 拼接一集的所有合成镜头视频
+ * 拼接一集镜头为全集视频。
+ * 每个镜头优先使用「已合成」成片（composed_video_url），否则使用「已生成」视频（video_url），便于跳过可选的合成步骤。
  */
 export async function mergeEpisodeVideos(episodeId: number, dramaId: number): Promise<number> {
   const storyboards = db.select().from(schema.storyboards)
@@ -30,15 +37,16 @@ export async function mergeEpisodeVideos(episodeId: number, dramaId: number): Pr
     .orderBy(schema.storyboards.storyboardNumber)
     .all()
 
-  const composedStoryboards = storyboards.filter(sb => !!sb.composedVideoUrl)
-  if (composedStoryboards.length !== storyboards.length) {
-    throw new Error(`Only composed storyboards can be merged (${composedStoryboards.length}/${storyboards.length} ready)`)
-  }
-  const videos = composedStoryboards
-    .map(sb => sb.composedVideoUrl)
-    .filter(Boolean) as string[]
+  if (storyboards.length === 0) throw new Error('No storyboards')
 
-  if (videos.length === 0) throw new Error('No videos to merge')
+  const videos = storyboards.map((sb) => sb.composedVideoUrl || sb.videoUrl).filter(Boolean) as string[]
+  if (videos.length !== storyboards.length) {
+    throw new Error(
+      `每个镜头需要已有视频才可拼接（优先已合成成片，否则使用已生成视频）。当前 ${videos.length}/${storyboards.length}`,
+    )
+  }
+
+  ensureFfmpegOrThrow()
 
   logTaskStart('MergeTask', 'episode-merge', { episodeId, dramaId, clips: videos.length })
 
@@ -57,11 +65,13 @@ export async function mergeEpisodeVideos(episodeId: number, dramaId: number): Pr
   const mergeId = Number(res.lastInsertRowid)
 
   // 异步执行
-  doMerge(mergeId, episodeId, videos).catch(err => {
-    logTaskError('MergeTask', 'episode-merge', { mergeId, episodeId, error: err.message })
+  doMerge(mergeId, episodeId, videos).catch((err: any) => {
+    const raw = String(err?.message || err)
+    const friendly = /cannot find ffmpeg/i.test(raw) ? FFMPEG_MISSING_MESSAGE : raw
+    logTaskError('MergeTask', 'episode-merge', { mergeId, episodeId, error: friendly })
     console.error(`[Merge] Failed:`, err)
     db.update(schema.videoMerges)
-      .set({ status: 'failed', errorMsg: err.message })
+      .set({ status: 'failed', errorMsg: friendly })
       .where(eq(schema.videoMerges.id, mergeId)).run()
   })
 

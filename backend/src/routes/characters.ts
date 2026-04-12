@@ -5,6 +5,7 @@ import { success, badRequest, now } from '../utils/response.js'
 import { generateVoiceSample } from '../services/tts-generation.js'
 import { generateImage } from '../services/image-generation.js'
 import { logTaskError, logTaskStart, logTaskSuccess } from '../utils/task-logger.js'
+import { parseStoredPathArray } from '../utils/json-refs.js'
 
 const app = new Hono()
 
@@ -13,7 +14,7 @@ app.put('/:id', async (c) => {
   const id = Number(c.req.param('id'))
   const body = await c.req.json()
   const updates: Record<string, any> = { updatedAt: now() }
-  for (const key of ['name', 'role', 'description', 'appearance', 'personality', 'voiceStyle', 'voiceProvider', 'imageUrl', 'localPath']) {
+  for (const key of ['name', 'role', 'description', 'appearance', 'personality', 'imagePrompt', 'voiceStyle', 'voiceProvider', 'imageUrl', 'localPath', 'referenceImages']) {
     const snakeKey = key.replace(/[A-Z]/g, m => '_' + m.toLowerCase())
     if (snakeKey in body) updates[key] = body[snakeKey]
     else if (key in body) updates[key] = body[key]
@@ -69,10 +70,21 @@ app.post('/:id/generate-image', async (c) => {
   const [ep] = db.select().from(schema.episodes).where(eq(schema.episodes.id, Number(body.episode_id))).all()
   if (!ep) return badRequest(c, 'Episode not found')
 
-  const prompt = `${char.name}, ${char.appearance || char.description || '人物立绘'}, 高质量, 正面, 白色背景`
+  const defaultPrompt = `${char.name}, ${char.appearance || char.description || '人物立绘'}, 高质量, 正面, 白色背景`
+  const stored = char.imagePrompt?.trim()
+  const override =
+    typeof body.prompt === 'string' && body.prompt.trim().length > 0 ? body.prompt.trim() : null
+  const prompt = override ?? (stored && stored.length > 0 ? stored : defaultPrompt)
   try {
     logTaskStart('CharacterImage', 'generate', { characterId: id, episodeId: ep.id, dramaId: char.dramaId })
-    const genId = await generateImage({ characterId: id, dramaId: char.dramaId, prompt, configId: ep.imageConfigId ?? undefined })
+    const refPaths = parseStoredPathArray(char.referenceImages)
+    const genId = await generateImage({
+      characterId: id,
+      dramaId: char.dramaId,
+      prompt,
+      configId: ep.imageConfigId ?? undefined,
+      referenceImages: refPaths.length ? refPaths : undefined,
+    })
     logTaskSuccess('CharacterImage', 'generate', { characterId: id, generationId: genId })
     return success(c, { image_generation_id: genId })
   } catch (err: any) {
@@ -92,9 +104,20 @@ app.post('/batch-generate-images', async (c) => {
   for (const cid of ids) {
     const [char] = db.select().from(schema.characters).where(eq(schema.characters.id, cid)).all()
     if (!char) continue
-    const prompt = `${char.name}, ${char.appearance || char.description || '人物立绘'}, 高质量, 正面, 白色背景`
+    const stored = char.imagePrompt?.trim()
+    const prompt =
+      stored && stored.length > 0
+        ? stored
+        : `${char.name}, ${char.appearance || char.description || '人物立绘'}, 高质量, 正面, 白色背景`
     try {
-      const genId = await generateImage({ characterId: cid, dramaId: char.dramaId, prompt, configId: ep.imageConfigId ?? undefined })
+      const refPaths = parseStoredPathArray(char.referenceImages)
+      const genId = await generateImage({
+        characterId: cid,
+        dramaId: char.dramaId,
+        prompt,
+        configId: ep.imageConfigId ?? undefined,
+        referenceImages: refPaths.length ? refPaths : undefined,
+      })
       results.push(genId)
     } catch {}
   }

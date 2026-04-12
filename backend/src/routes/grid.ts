@@ -1,7 +1,9 @@
+import fs from 'fs'
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
 import { db, schema } from '../db/index.js'
 import { success, badRequest, now } from '../utils/response.js'
+import { getAbsolutePath } from '../utils/storage.js'
 import { generateImage } from '../services/image-generation.js'
 import { splitGridImage } from '../services/grid-split.js'
 import { createAgent } from '../agents/index.js'
@@ -553,24 +555,35 @@ app.post('/split', async (c) => {
   const body = await c.req.json()
   const {
     image_generation_id,
+    local_path,
     rows,
     cols,
     assignments, // [{storyboard_id, frame_type: 'first_frame'|'last_frame'|'reference'}]
   } = body
 
-  if (!image_generation_id) return badRequest(c, 'image_generation_id required')
   if (!rows || !cols) return badRequest(c, 'rows and cols required')
   if (!assignments?.length) return badRequest(c, 'assignments required')
 
-  const [imgRecord] = db.select().from(schema.imageGenerations)
-    .where(eq(schema.imageGenerations.id, image_generation_id)).all()
+  let sourcePath: string | null = null
+  if (local_path) {
+    const normalized = String(local_path).replace(/^\//, '')
+    sourcePath = normalized
+    const abs = getAbsolutePath(normalized)
+    if (!fs.existsSync(abs)) return badRequest(c, 'Image file not found')
+  } else if (image_generation_id) {
+    const [imgRecord] = db.select().from(schema.imageGenerations)
+      .where(eq(schema.imageGenerations.id, image_generation_id)).all()
 
-  if (!imgRecord) return badRequest(c, 'Image generation not found')
-  if (imgRecord.status !== 'completed') return badRequest(c, `Image status: ${imgRecord.status}`)
-  if (!imgRecord.localPath) return badRequest(c, 'No local image file')
+    if (!imgRecord) return badRequest(c, 'Image generation not found')
+    if (imgRecord.status !== 'completed') return badRequest(c, `Image status: ${imgRecord.status}`)
+    if (!imgRecord.localPath) return badRequest(c, 'No local image file')
+    sourcePath = imgRecord.localPath
+  } else {
+    return badRequest(c, 'image_generation_id or local_path required')
+  }
 
   try {
-    const cells = await splitGridImage(imgRecord.localPath, rows, cols)
+    const cells = await splitGridImage(sourcePath, rows, cols)
 
     const results: any[] = []
     for (let i = 0; i < assignments.length && i < cells.length; i++) {

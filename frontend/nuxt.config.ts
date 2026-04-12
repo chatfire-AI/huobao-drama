@@ -1,6 +1,14 @@
 export default defineNuxtConfig({
   srcDir: 'app/',
   ssr: false,
+  runtimeConfig: {
+    public: {
+      /** 为 true 时隐藏「视频合成」步骤，视频生成完成后可直接去拼接导出（本地设置可覆盖） */
+      skipVideoCompose:
+        process.env.NUXT_PUBLIC_SKIP_VIDEO_COMPOSE === '1'
+        || process.env.NUXT_PUBLIC_SKIP_VIDEO_COMPOSE === 'true',
+    },
+  },
   devtools: { enabled: false },
   experimental: {
     appManifest: false,
