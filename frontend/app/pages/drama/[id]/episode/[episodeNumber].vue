@@ -771,6 +771,14 @@
                 <div class="asset-foot">
                   <span :class="['dot', (c.image_url || c.imageUrl) && 'ok', isPendingCharImage(c.id) && 'pending']" />
                   <span class="dim" style="font-size:10px">{{ (c.image_url || c.imageUrl) ? '已生成' : (isPendingCharImage(c.id) ? '生成中' : '待生成') }}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    class="hidden-file-input"
+                    :ref="(el) => setCharUploadInput(c.id, el)"
+                    @change="uploadCharLocalImage(c, $event)"
+                  />
+                  <button class="btn btn-sm" @click.stop="openCharUpload(c.id)">上传本地</button>
                   <button class="btn btn-sm ml-auto" :disabled="isPendingCharImage(c.id)" @click="genCharImg(c.id)">{{ isPendingCharImage(c.id) ? '生成中' : '生成' }}</button>
                 </div>
               </div>
@@ -810,6 +818,14 @@
                 <div class="asset-foot">
                   <span :class="['dot', (s.image_url || s.imageUrl) && 'ok', isPendingSceneImage(s.id) && 'pending']" />
                   <span class="dim" style="font-size:10px">{{ (s.image_url || s.imageUrl) ? '已生成' : (isPendingSceneImage(s.id) ? '生成中' : '待生成') }}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    class="hidden-file-input"
+                    :ref="(el) => setSceneUploadInput(s.id, el)"
+                    @change="uploadSceneLocalImage(s, $event)"
+                  />
+                  <button class="btn btn-sm" @click.stop="openSceneUpload(s.id)">上传本地</button>
                   <button class="btn btn-sm ml-auto" :disabled="isPendingSceneImage(s.id)" @click="genSceneImg(s.id)">{{ isPendingSceneImage(s.id) ? '生成中' : '生成' }}</button>
                 </div>
               </div>
@@ -976,6 +992,14 @@
                         </span>
                       </div>
                       <span class="frame-thumb-label">{{ isPendingShotFrame(sb.id, 'first_frame') ? '首帧生成中' : '首帧' }}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        class="hidden-file-input"
+                        :ref="(el) => setShotFrameUploadInput(sb.id, 'first_frame', el)"
+                        @change="uploadShotFrameLocalImage(sb, 'first_frame', $event)"
+                      />
+                      <button class="btn btn-sm frame-upload-btn" @click.stop="openShotFrameUpload(sb.id, 'first_frame')">上传本地</button>
                     </div>
                     <div v-if="frameMode === 'first_last'" class="frame-thumb-wrap">
                       <div class="frame-thumb" @click.stop="!isPendingShotFrame(sb.id, 'last_frame') && genShotFrame(sb, 'last_frame')">
@@ -994,6 +1018,14 @@
                         </span>
                       </div>
                       <span class="frame-thumb-label">{{ isPendingShotFrame(sb.id, 'last_frame') ? '尾帧生成中' : '尾帧' }}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        class="hidden-file-input"
+                        :ref="(el) => setShotFrameUploadInput(sb.id, 'last_frame', el)"
+                        @change="uploadShotFrameLocalImage(sb, 'last_frame', $event)"
+                      />
+                      <button class="btn btn-sm frame-upload-btn" @click.stop="openShotFrameUpload(sb.id, 'last_frame')">上传本地</button>
                     </div>
                   </div>
                 </div>
@@ -1440,7 +1472,7 @@ import { toast } from 'vue-sonner'
 import {
   Users, MapPin, Video, ImageIcon, Layers, Mic2, FileText, FolderKanban, Clapperboard, Download,
 } from 'lucide-vue-next'
-import { dramaAPI, episodeAPI, storyboardAPI, characterAPI, sceneAPI, imageAPI, videoAPI, composeAPI, mergeAPI, gridAPI, aiConfigAPI, voicesAPI } from '~/composables/useApi'
+import { dramaAPI, episodeAPI, storyboardAPI, characterAPI, sceneAPI, imageAPI, videoAPI, composeAPI, mergeAPI, gridAPI, aiConfigAPI, voicesAPI, uploadAPI } from '~/composables/useApi'
 import { useAgent } from '~/composables/useAgent'
 import BaseSelect from '~/components/BaseSelect.vue'
 
@@ -1506,6 +1538,9 @@ const pendingComposeIds = ref([])
 const failedVideoMessages = ref({})
 const failedComposeMessages = ref({})
 const imageViewer = ref({ open: false, src: '', title: '' })
+const charUploadInputRefs = ref({})
+const shotFrameUploadInputRefs = ref({})
+const sceneUploadInputRefs = ref({})
 
 function configLabel(config) {
   if (!config) return '未配置'
@@ -1545,6 +1580,117 @@ function isPendingSceneImage(id) {
 
 function framePendingKey(id, frameType) {
   return `${id}:${frameType}`
+}
+
+function setCharUploadInput(id, el) {
+  if (el) charUploadInputRefs.value[id] = el
+  else delete charUploadInputRefs.value[id]
+}
+
+function openCharUpload(id) {
+  const input = charUploadInputRefs.value[id]
+  if (input) input.click()
+}
+
+function shotFrameUploadKey(id, frameType) {
+  return `${id}:${frameType}`
+}
+
+function setShotFrameUploadInput(id, frameType, el) {
+  const key = shotFrameUploadKey(id, frameType)
+  if (el) shotFrameUploadInputRefs.value[key] = el
+  else delete shotFrameUploadInputRefs.value[key]
+}
+
+function openShotFrameUpload(id, frameType) {
+  const input = shotFrameUploadInputRefs.value[shotFrameUploadKey(id, frameType)]
+  if (input) input.click()
+}
+
+function setSceneUploadInput(id, el) {
+  if (el) sceneUploadInputRefs.value[id] = el
+  else delete sceneUploadInputRefs.value[id]
+}
+
+function openSceneUpload(id) {
+  const input = sceneUploadInputRefs.value[id]
+  if (input) input.click()
+}
+
+function getUploadPath(payload) {
+  return payload?.path || payload?.local_path || payload?.localPath || ''
+}
+
+async function uploadCharLocalImage(char, event) {
+  const file = event?.target?.files?.[0]
+  if (!file) return
+  event.target.value = ''
+  if (!String(file.type || '').startsWith('image/')) {
+    toast.error('请上传图片文件')
+    return
+  }
+  try {
+    const result = await uploadAPI.image(file)
+    const localPath = getUploadPath(result)
+    if (!localPath) throw new Error('上传结果缺少文件路径')
+    await characterAPI.update(char.id, { image_url: localPath, local_path: localPath })
+    char.image_url = localPath
+    char.imageUrl = localPath
+    char.local_path = localPath
+    char.localPath = localPath
+    toast.success('本地角色图已上传并替换')
+    await refresh()
+  } catch (e) {
+    toast.error(e.message || '上传失败')
+  }
+}
+
+async function uploadShotFrameLocalImage(sb, frameType, event) {
+  const file = event?.target?.files?.[0]
+  if (!file) return
+  event.target.value = ''
+  if (!String(file.type || '').startsWith('image/')) {
+    toast.error('请上传图片文件')
+    return
+  }
+  const field = frameType === 'last_frame' ? 'last_frame_image' : 'first_frame_image'
+  try {
+    const result = await uploadAPI.image(file)
+    const localPath = getUploadPath(result)
+    if (!localPath) throw new Error('上传结果缺少文件路径')
+    await storyboardAPI.update(sb.id, { [field]: localPath })
+    sb[field] = localPath
+    const camelField = toCamel(field)
+    if (camelField !== field) sb[camelField] = localPath
+    toast.success(frameType === 'last_frame' ? '尾帧已上传并替换' : '首帧已上传并替换')
+    await refresh()
+  } catch (e) {
+    toast.error(e.message || '上传失败')
+  }
+}
+
+async function uploadSceneLocalImage(scene, event) {
+  const file = event?.target?.files?.[0]
+  if (!file) return
+  event.target.value = ''
+  if (!String(file.type || '').startsWith('image/')) {
+    toast.error('请上传图片文件')
+    return
+  }
+  try {
+    const result = await uploadAPI.image(file)
+    const localPath = getUploadPath(result)
+    if (!localPath) throw new Error('上传结果缺少文件路径')
+    await sceneAPI.update(scene.id, { image_url: localPath, local_path: localPath })
+    scene.image_url = localPath
+    scene.imageUrl = localPath
+    scene.local_path = localPath
+    scene.localPath = localPath
+    toast.success('本地场景图已上传并替换')
+    await refresh()
+  } catch (e) {
+    toast.error(e.message || '上传失败')
+  }
 }
 
 function isPendingShotFrame(id, frameType) {
@@ -3695,6 +3841,7 @@ onMounted(() => { refresh(); loadConfigs(); loadVoices() })
 .frame-thumbs { display: flex; gap: 8px; flex-shrink: 0; }
 .frame-thumb-wrap { display: flex; flex-direction: column; gap: 3px; align-items: center; }
 .frame-thumb-label { font-size: 10px; font-weight: 600; color: var(--text-3); }
+.frame-upload-btn { height: 24px; padding: 0 8px; font-size: 10px; }
 .frame-thumb {
   position: relative; width: 130px; aspect-ratio: 16/9;
   border-radius: 6px; overflow: hidden;
@@ -3717,6 +3864,7 @@ onMounted(() => { refresh(); loadConfigs(); loadVoices() })
   background: var(--accent-dark);
   box-shadow: 0 0 0 3px rgba(76, 125, 255, 0.14);
 }
+.hidden-file-input { display: none; }
 
 /* Prod grid */
 .prod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
