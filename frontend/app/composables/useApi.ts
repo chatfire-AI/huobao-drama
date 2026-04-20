@@ -35,6 +35,22 @@ export const api = {
   del: <T = any>(p: string) => req<T>('DELETE', p),
 }
 
+export const uploadAPI = {
+  image: async (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    const resp = await fetch(`${BASE}/upload/image`, {
+      method: 'POST',
+      body: form,
+    })
+    const json = await resp.json()
+    if (!resp.ok || (json.code && json.code >= 400)) {
+      throw new Error(json.message || `${resp.status}`)
+    }
+    return json.data ?? json
+  },
+}
+
 export const dramaAPI = {
   list: () => api.get<{ items: any[] }>('/dramas'),
   get: (id: number) => api.get(`/dramas/${id}`),
