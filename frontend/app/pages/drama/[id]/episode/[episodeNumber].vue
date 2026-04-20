@@ -778,7 +778,7 @@
                     :ref="(el) => setCharUploadInput(c.id, el)"
                     @change="uploadCharLocalImage(c, $event)"
                   />
-                  <button class="btn btn-sm" @click="openCharUpload(c.id)">上传本地</button>
+                  <button class="btn btn-sm" @click.stop="openCharUpload(c.id)">上传本地</button>
                   <button class="btn btn-sm ml-auto" :disabled="isPendingCharImage(c.id)" @click="genCharImg(c.id)">{{ isPendingCharImage(c.id) ? '生成中' : '生成' }}</button>
                 </div>
               </div>
@@ -818,6 +818,14 @@
                 <div class="asset-foot">
                   <span :class="['dot', (s.image_url || s.imageUrl) && 'ok', isPendingSceneImage(s.id) && 'pending']" />
                   <span class="dim" style="font-size:10px">{{ (s.image_url || s.imageUrl) ? '已生成' : (isPendingSceneImage(s.id) ? '生成中' : '待生成') }}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    class="hidden-file-input"
+                    :ref="(el) => setSceneUploadInput(s.id, el)"
+                    @change="uploadSceneLocalImage(s, $event)"
+                  />
+                  <button class="btn btn-sm" @click.stop="openSceneUpload(s.id)">上传本地</button>
                   <button class="btn btn-sm ml-auto" :disabled="isPendingSceneImage(s.id)" @click="genSceneImg(s.id)">{{ isPendingSceneImage(s.id) ? '生成中' : '生成' }}</button>
                 </div>
               </div>
@@ -1532,6 +1540,7 @@ const failedComposeMessages = ref({})
 const imageViewer = ref({ open: false, src: '', title: '' })
 const charUploadInputRefs = ref({})
 const shotFrameUploadInputRefs = ref({})
+const sceneUploadInputRefs = ref({})
 
 function configLabel(config) {
   if (!config) return '未配置'
@@ -1598,6 +1607,16 @@ function openShotFrameUpload(id, frameType) {
   if (input) input.click()
 }
 
+function setSceneUploadInput(id, el) {
+  if (el) sceneUploadInputRefs.value[id] = el
+  else delete sceneUploadInputRefs.value[id]
+}
+
+function openSceneUpload(id) {
+  const input = sceneUploadInputRefs.value[id]
+  if (input) input.click()
+}
+
 function getUploadPath(payload) {
   return payload?.path || payload?.local_path || payload?.localPath || ''
 }
@@ -1644,6 +1663,30 @@ async function uploadShotFrameLocalImage(sb, frameType, event) {
     const camelField = toCamel(field)
     if (camelField !== field) sb[camelField] = localPath
     toast.success(frameType === 'last_frame' ? '尾帧已上传并替换' : '首帧已上传并替换')
+    await refresh()
+  } catch (e) {
+    toast.error(e.message || '上传失败')
+  }
+}
+
+async function uploadSceneLocalImage(scene, event) {
+  const file = event?.target?.files?.[0]
+  if (!file) return
+  event.target.value = ''
+  if (!String(file.type || '').startsWith('image/')) {
+    toast.error('请上传图片文件')
+    return
+  }
+  try {
+    const result = await uploadAPI.image(file)
+    const localPath = getUploadPath(result)
+    if (!localPath) throw new Error('上传结果缺少文件路径')
+    await sceneAPI.update(scene.id, { image_url: localPath, local_path: localPath })
+    scene.image_url = localPath
+    scene.imageUrl = localPath
+    scene.local_path = localPath
+    scene.localPath = localPath
+    toast.success('本地场景图已上传并替换')
     await refresh()
   } catch (e) {
     toast.error(e.message || '上传失败')

@@ -28,6 +28,33 @@ async function req<T = any>(method: string, path: string, body?: any): Promise<T
   }
 }
 
+async function reqForm<T = any>(method: string, path: string, formData: FormData): Promise<T> {
+  const opts: RequestInit = { method, body: formData }
+
+  const start = performance.now()
+  console.log(`%c[API] %c${method} %c${path}`, 'color:#888', 'color:#4fc3f7;font-weight:bold', 'color:#ccc', '[form-data]')
+
+  try {
+    const resp = await fetch(`${BASE}${path}`, opts)
+    const json = await resp.json()
+    const ms = Math.round(performance.now() - start)
+
+    if (!resp.ok || (json.code && json.code >= 400)) {
+      console.log(`%c[API] %c${method} ${path} %c${resp.status} %c${ms}ms`, 'color:#888', 'color:#ef5350', 'color:#ef5350;font-weight:bold', 'color:#888', json.message || '')
+      throw new Error(json.message || `${resp.status}`)
+    }
+
+    console.log(`%c[API] %c${method} ${path} %c${resp.status} %c${ms}ms`, 'color:#888', 'color:#66bb6a', 'color:#66bb6a;font-weight:bold', 'color:#888')
+    return json.data ?? json
+  } catch (err: any) {
+    if (!err.message?.match(/^\d{3}$/)) {
+      const ms = Math.round(performance.now() - start)
+      console.log(`%c[API] %c${method} ${path} %cERROR %c${ms}ms`, 'color:#888', 'color:#ef5350', 'color:#ef5350;font-weight:bold', 'color:#888', err.message)
+    }
+    throw err
+  }
+}
+
 export const api = {
   get: <T = any>(p: string) => req<T>('GET', p),
   post: <T = any>(p: string, b?: any) => req<T>('POST', p, b),
@@ -35,21 +62,6 @@ export const api = {
   del: <T = any>(p: string) => req<T>('DELETE', p),
 }
 
-export const uploadAPI = {
-  image: async (file: File) => {
-    const form = new FormData()
-    form.append('file', file)
-    const resp = await fetch(`${BASE}/upload/image`, {
-      method: 'POST',
-      body: form,
-    })
-    const json = await resp.json()
-    if (!resp.ok || (json.code && json.code >= 400)) {
-      throw new Error(json.message || `${resp.status}`)
-    }
-    return json.data ?? json
-  },
-}
 
 export const dramaAPI = {
   list: () => api.get<{ items: any[] }>('/dramas'),
@@ -83,6 +95,7 @@ export const characterAPI = {
 }
 
 export const sceneAPI = {
+  update: (id: number, data: any) => api.put(`/scenes/${id}`, data),
   generateImage: (id: number, episodeId: number) => api.post(`/scenes/${id}/generate-image`, { episode_id: episodeId }),
 }
 
@@ -142,4 +155,12 @@ export const skillsAPI = {
 export const voicesAPI = {
   list: (provider?: string) => api.get(`/ai-voices${provider ? `?provider=${provider}` : ''}`),
   sync: () => api.post('/ai-voices/sync', {}),
+}
+
+export const uploadAPI = {
+  image: (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return reqForm('POST', '/upload/image', formData)
+  },
 }
