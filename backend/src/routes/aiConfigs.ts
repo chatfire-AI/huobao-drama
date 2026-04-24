@@ -92,11 +92,13 @@ function buildProbe(serviceType: string, provider: string, baseUrl: string, mode
   }
 
   if (p === 'minimax') {
-    const path = serviceType === 'audio'
-      ? '/t2a_v2'
-      : serviceType === 'video'
-        ? '/video_generation'
-        : '/image_generation'
+    const path = serviceType === 'text'
+      ? '/chat/completions'
+      : serviceType === 'audio'
+        ? '/t2a_v2'
+        : serviceType === 'video'
+          ? '/video_generation'
+          : '/image_generation'
     return {
       method: 'POST',
       url: joinProviderUrl(baseUrl, '/v1', path),

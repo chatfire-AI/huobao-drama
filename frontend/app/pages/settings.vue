@@ -434,6 +434,7 @@ const providerPresets = {
     chatfire: { label: 'ChatFire 推荐', baseUrl: 'https://api.chatfire.site', models: ['gemini-3-pro-preview'] },
     openrouter: { label: 'OpenRouter 推荐', baseUrl: 'https://openrouter.ai/api', models: ['google/gemini-3-flash-preview'] },
     openai: { label: 'OpenAI 推荐', baseUrl: 'https://api.openai.com', models: ['gpt-4.1-mini'] },
+    minimax: { label: 'MiniMax 推荐', baseUrl: 'https://api.minimax.io', models: ['MiniMax-M2.7', 'MiniMax-M2.7-highspeed'] },
   },
   image: {
     chatfire: { label: 'ChatFire 推荐', baseUrl: 'https://api.chatfire.site', models: ['doubao-seedream-4-5-251128'] },
