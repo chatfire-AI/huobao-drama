@@ -30,6 +30,10 @@ export function getTextProviderBaseUrl(config: AIConfig) {
     return joinProviderUrl(config.baseUrl, '/api/v1', '')
   }
 
+  if (provider === 'minimax') {
+    return joinProviderUrl(config.baseUrl, '/v1', '')
+  }
+
   return config.baseUrl
 }
 
