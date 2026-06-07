@@ -8,7 +8,7 @@ import { getTextProviderBaseUrl } from '../ai.js'
 type AIConfig = Parameters<typeof getTextProviderBaseUrl>[0]
 
 function makeConfig(provider: string, baseUrl: string): AIConfig {
-  return { provider, baseUrl, apiKey: 'test-key', model: 'MiniMax-M2.7' }
+  return { provider, baseUrl, apiKey: 'test-key', model: 'MiniMax-M3' }
 }
 
 // Test 1: MiniMax provider appends /v1 when baseUrl has no path
