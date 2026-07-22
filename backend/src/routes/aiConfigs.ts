@@ -68,6 +68,17 @@ function buildProbe(serviceType: string, provider: string, baseUrl: string, mode
     }
   }
 
+  if (p === 'atlascloud') {
+    return {
+      method: 'GET',
+      url: serviceType === 'text'
+        ? joinProviderUrl(baseUrl, '/v1', '/models')
+        : joinProviderUrl(baseUrl, '/api/v1', '/models'),
+      headers: bearerHeaders(apiKey),
+      body: undefined,
+    }
+  }
+
   if (p === 'ali') {
     return {
       method: 'POST',
