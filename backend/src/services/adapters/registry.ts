@@ -12,6 +12,7 @@ import { VolcEngineVideoAdapter } from './volcengine-video'
 import { ViduVideoAdapter } from './vidu-video'
 import { AliImageAdapter } from './ali-image'
 import { AliVideoAdapter } from './ali-video'
+import { ColabLtxvVideoAdapter } from './colab-ltxv-video'
 import type { ImageProviderAdapter, VideoProviderAdapter, TTSProviderAdapter } from './types'
 
 // 图片 Adapter 注册表
@@ -31,6 +32,7 @@ export const videoAdapters: Record<string, VideoProviderAdapter> = {
   volcengine: new VolcEngineVideoAdapter(),
   vidu: new ViduVideoAdapter(),
   ali: new AliVideoAdapter(),
+  'colab-ltxv': new ColabLtxvVideoAdapter(),
   // Chatfire 视频 - 待确认 API 格式
 }
 
@@ -58,5 +60,7 @@ export function getImageAdapter(provider: string): ImageProviderAdapter {
  * @returns 对应的 Adapter，未知厂商返回 MiniMax 默认
  */
 export function getVideoAdapter(provider: string): VideoProviderAdapter {
-  return videoAdapters[provider.toLowerCase()] || videoAdapters['minimax']
+  const adapter = videoAdapters[provider.toLowerCase()]
+  if (!adapter) throw new Error(`Unsupported video provider: ${provider}`)
+  return adapter
 }

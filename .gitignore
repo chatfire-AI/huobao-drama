@@ -43,3 +43,9 @@ temp/
 .superpowers/
 /CLAUDE.md
 /AGENTS.md
+
+# Local Kaggle import helpers and generated inspection files
+/tools/
+/colab/__pycache__/
+/colab/LTXV_original.ipynb
+/colab/transformed.py

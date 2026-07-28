@@ -2698,11 +2698,22 @@ async function genShotFrame(sb, frameType) {
 }
 
 async function genVid(sb) {
+  const selectedConfig = videoConfigs.value.find(c => c.id === lockedVideoConfigId.value)
+  const isColabLtxv = selectedConfig?.provider === 'colab-ltxv'
   const params = {
     storyboard_id: sb.id,
     drama_id: dramaId,
     prompt: sb.video_prompt || sb.videoPrompt || '',
-    duration: Number(sb.duration || 5),
+    duration: isColabLtxv ? 5 : Number(sb.duration || 5),
+    ...(isColabLtxv ? {
+      negative_prompt: 'low quality, worst quality, deformed, distorted, motion smear, motion artifacts, game screenshot, HUD, crosshair, text, subtitle, logo, watermark',
+      fps: 24,
+      frames: 121,
+      resolution: '576x1024',
+      aspect_ratio: '9:16',
+      seed: 0,
+      upscale_video: false,
+    } : {}),
   }
   const first = getFirstFrame(sb)
   const last = getLastFrame(sb)

@@ -89,13 +89,21 @@ export interface VideoGenerationRecord {
   id: number
   model?: string | null
   prompt?: string | null
+  negativePrompt?: string | null
   referenceMode?: string | null
   imageUrl?: string | null
   firstFrameUrl?: string | null
   lastFrameUrl?: string | null
   referenceImageUrls?: string | null
   duration?: number | null
+  fps?: number | null
+  frames?: number | null
+  resolution?: string | null
   aspectRatio?: string | null
+  motionLevel?: number | null
+  cameraMotion?: string | null
+  seed?: number | null
+  upscaleVideo?: boolean | null
   // ... 其他字段
 }
 

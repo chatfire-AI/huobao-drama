@@ -11,6 +11,7 @@ interface GenerateVideoParams {
   storyboardId?: number
   dramaId?: number
   prompt: string
+  negativePrompt?: string
   model?: string
   referenceMode?: string
   imageUrl?: string
@@ -18,7 +19,14 @@ interface GenerateVideoParams {
   lastFrameUrl?: string
   referenceImageUrls?: string[]
   duration?: number
+  fps?: number
+  frames?: number
+  resolution?: string
   aspectRatio?: string
+  motionLevel?: number
+  cameraMotion?: string
+  seed?: number
+  upscaleVideo?: boolean
   configId?: number
 }
 
@@ -33,6 +41,7 @@ export async function generateVideo(params: GenerateVideoParams): Promise<number
     storyboardId: params.storyboardId,
     dramaId: params.dramaId,
     prompt: params.prompt,
+    negativePrompt: params.negativePrompt,
     model: params.model || config.model,
     provider: config.provider,
     referenceMode: params.referenceMode || 'none',
@@ -40,8 +49,15 @@ export async function generateVideo(params: GenerateVideoParams): Promise<number
     firstFrameUrl: params.firstFrameUrl,
     lastFrameUrl: params.lastFrameUrl,
     referenceImageUrls: params.referenceImageUrls ? JSON.stringify(params.referenceImageUrls) : null,
-    duration: params.duration || 5,
+    duration: params.duration ?? 5,
+    fps: params.fps,
+    frames: params.frames,
+    resolution: params.resolution,
     aspectRatio: params.aspectRatio || '16:9',
+    motionLevel: params.motionLevel,
+    cameraMotion: params.cameraMotion,
+    seed: params.seed,
+    upscaleVideo: params.upscaleVideo,
     status: 'processing',
     createdAt: ts,
     updatedAt: ts,
@@ -54,7 +70,7 @@ export async function generateVideo(params: GenerateVideoParams): Promise<number
     storyboardId: params.storyboardId,
     dramaId: params.dramaId,
     referenceMode: params.referenceMode || 'none',
-    duration: params.duration || 5,
+    duration: params.duration ?? 5,
   })
   logTaskPayload('VideoTask', 'enqueue params', {
     id: lastId,
@@ -96,13 +112,21 @@ async function processVideoGeneration(id: number, config: AIConfig) {
       id: record.id,
       model: record.model,
       prompt: record.prompt,
+      negativePrompt: record.negativePrompt,
       referenceMode: record.referenceMode,
       imageUrl: resolvedImageUrl,
       firstFrameUrl: resolvedFirstFrameUrl,
       lastFrameUrl: resolvedLastFrameUrl,
       referenceImageUrls: resolvedReferenceImageUrls ? JSON.stringify(resolvedReferenceImageUrls) : null,
       duration: record.duration,
+      fps: record.fps,
+      frames: record.frames,
+      resolution: record.resolution,
       aspectRatio: record.aspectRatio,
+      motionLevel: record.motionLevel,
+      cameraMotion: record.cameraMotion,
+      seed: record.seed,
+      upscaleVideo: record.upscaleVideo,
     })
     logTaskProgress('VideoTask', 'request', {
       id,
@@ -134,7 +158,7 @@ async function processVideoGeneration(id: number, config: AIConfig) {
     if (!isAsync && videoUrl) {
       logTaskProgress('VideoTask', 'sync-complete', { id, videoUrl })
       // 同步模式
-      await handleVideoComplete(id, videoUrl, record.duration)
+      await handleVideoComplete(id, videoUrl, record.duration, record.storyboardId)
       return
     }
 
@@ -151,7 +175,7 @@ async function processVideoGeneration(id: number, config: AIConfig) {
       return
     }
 
-    pollVideoTask(id, config, taskId!, record.storyboardId)
+    pollVideoTask(id, config, taskId!, record.storyboardId, record.duration)
   } catch (err: any) {
     logTaskError('VideoTask', 'process', { id, provider: config.provider, error: err.message })
     db.update(schema.videoGenerations)
@@ -195,7 +219,13 @@ async function normalizeVideoReferenceUrls(raw: string | null | undefined): Prom
   return normalized.filter((item): item is string => !!item)
 }
 
-async function pollVideoTask(id: number, config: AIConfig, taskId: string, storyboardId?: number | null) {
+async function pollVideoTask(
+  id: number,
+  config: AIConfig,
+  taskId: string,
+  storyboardId?: number | null,
+  duration?: number | null,
+) {
   const adapter = getVideoAdapter(config.provider)
 
   for (let i = 0; i < 300; i++) {
@@ -218,7 +248,7 @@ async function pollVideoTask(id: number, config: AIConfig, taskId: string, story
 
       if (pollResp.status === 'completed' && pollResp.videoUrl) {
         logTaskSuccess('VideoTask', 'poll-complete', { id, taskId, videoUrl: pollResp.videoUrl })
-        await handleVideoComplete(id, pollResp.videoUrl, null, storyboardId)
+        await handleVideoComplete(id, pollResp.videoUrl, duration, storyboardId)
         return
       }
       if (pollResp.status === 'failed') {

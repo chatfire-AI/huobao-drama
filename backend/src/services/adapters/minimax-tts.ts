@@ -48,7 +48,7 @@ export class MiniMaxTTSAdapter implements TTSProviderAdapter {
         speed: params.speed ?? 1,
         vol: 1,
         pitch: 0,
-        emotion: params.emotion || 'happy',
+        emotion: params.emotion || 'neutral',
       },
       audio_setting: {
         sample_rate: 32000,

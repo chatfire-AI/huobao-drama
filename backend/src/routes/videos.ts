@@ -33,6 +33,7 @@ app.post('/', async (c) => {
       storyboardId: body.storyboard_id,
       dramaId: body.drama_id,
       prompt: body.prompt,
+      negativePrompt: body.negative_prompt,
       model: body.model,
       referenceMode: body.reference_mode,
       imageUrl: body.image_url,
@@ -40,7 +41,14 @@ app.post('/', async (c) => {
       lastFrameUrl: body.last_frame_url,
       referenceImageUrls: body.reference_image_urls,
       duration: body.duration,
+      fps: body.fps,
+      frames: body.frames,
+      resolution: body.resolution,
       aspectRatio: body.aspect_ratio,
+      motionLevel: body.motion_level,
+      cameraMotion: body.camera_motion,
+      seed: body.seed,
+      upscaleVideo: body.upscale_video,
       configId,
     })
 

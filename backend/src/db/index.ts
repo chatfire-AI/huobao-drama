@@ -253,6 +253,7 @@ sqlite.exec(`
     drama_id INTEGER,
     provider TEXT,
     prompt TEXT,
+    negative_prompt TEXT,
     model TEXT,
     image_gen_id INTEGER,
     reference_mode TEXT,
@@ -262,12 +263,14 @@ sqlite.exec(`
     reference_image_urls TEXT,
     duration INTEGER,
     fps INTEGER,
+    frames INTEGER,
     resolution TEXT,
     aspect_ratio TEXT,
     style TEXT,
     motion_level INTEGER,
     camera_motion TEXT,
     seed INTEGER,
+    upscale_video INTEGER DEFAULT 0,
     video_url TEXT,
     minio_url TEXT,
     local_path TEXT,
@@ -358,6 +361,9 @@ function ensureColumn(table: string, column: string, definition: string) {
 ensureColumn('episodes', 'image_config_id', 'INTEGER')
 ensureColumn('episodes', 'video_config_id', 'INTEGER')
 ensureColumn('episodes', 'audio_config_id', 'INTEGER')
+ensureColumn('video_generations', 'negative_prompt', 'TEXT')
+ensureColumn('video_generations', 'frames', 'INTEGER')
+ensureColumn('video_generations', 'upscale_video', 'INTEGER DEFAULT 0')
 
 export const db = drizzle(sqlite, { schema })
 export { schema }
