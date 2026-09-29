@@ -125,7 +125,9 @@ command reports the API error without falling back to a configuration apply.
 
 The live project is `hidrama`, environment `production`, and this file owns two resources:
 
-- service `app` — builds the repo `Dockerfile` from `infra-soulmate/hidrama` (branch `master`), serves the API and the static frontend on one port, healthcheck `/api/v1/health`
+- service `app` — builds the repo `Dockerfile` from `infra-soulmate/hidrama` (branch `main`), serves the API and the static frontend on one port, healthcheck `/api/v1/health`
 - volume `app-volume` — 50 GB in `asia-southeast1-eqsg3a`, mounted at `/app/data` (SQLite, generated media, editable workspace)
 
 `railway.json` was migrated into this file and removed. Railway needs the GitHub App connected to `infra-soulmate/hidrama` before the first GitHub-sourced deploy can run; `PUBLIC_BASE_URL` is kept as `preserve()` because the live value already points at the service domain.
+
+On the fork, `main` holds the fork's own work and is the default branch; `master` mirrors `upstream/master` (`chatfire-AI/huobao-drama`) for pulling upstream upgrades. Railway deploys `main`.
