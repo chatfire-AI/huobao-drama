@@ -71,7 +71,7 @@ A prop's **description** covers only physical appearance: material, colour, shap
 
 **Video prompt** — the storyboard-level prompt described above. Also produced by `prompt_generator`, but through a separate skill and a separate tool call.
 
-**Style preset** (风格预设) — a named visual style with an English prompt fragment. A project stores the preset's `value` in `dramas.style`. The fragment is prepended to image and video prompts so style words stay out of the agent's creative text. Eight presets ship: 3D 漫剧, 日漫赛璐璐, 吉卜力手绘, 水彩绘本, 美式漫画, 国风 2.5D, 韩系网漫, 黑白漫画. An earlier ninth seed, `live` (photorealistic live action), is now removed in code because real-person imagery fails platform content review. The removal is content-addressed, so a user-edited row with that value survives.
+**Style preset** (风格预设) — a named visual style with an English prompt fragment. A project stores the preset's `value` in `dramas.style`. The fragment is prepended to image and video prompts so style words stay out of the agent's creative text. Eight presets ship: 3D Anime, Japanese Cel Anime, Ghibli Hand-drawn, Watercolor Storybook, Western Comic, Guofeng 2.5D, Korean Webtoon, Manga Noir. An earlier ninth seed, `live` (photorealistic live action), is now removed in code because real-person imagery fails platform content review. The removal is content-addressed, so a user-edited row with that value survives. Display names ship in English; the rename from the earlier Chinese names is content-addressed too, so it reaches existing installs without touching a user-edited name.
 
 **Prompt file** — the system prompt for one agent, stored at `workspace/prompts/<agent_type>.md`, with optional language variants. Editable in Settings.
 

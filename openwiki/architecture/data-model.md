@@ -104,7 +104,7 @@ This table has no `deleted_at`. Deletion is hard.
 
 ### `style_presets`
 
-`value` is the key stored in `dramas.style`; `prompt` is the English prompt fragment injected in front of image and video prompts. `value` has a unique index. Seeds are idempotent and content-addressed: a seed row is upgraded or removed only when its `prompt` still equals the seeded text, so user edits survive (`sqlite-schema.ts`).
+`value` is the key stored in `dramas.style`; `prompt` is the English prompt fragment injected in front of image and video prompts. Display names and descriptions ship in English. `value` has a unique index. Seeds are idempotent and content-addressed: a seed row is upgraded or removed only when its `prompt` still equals the seeded text, and a row is renamed only while it still carries the earlier Chinese name, so user edits survive (`sqlite-schema.ts`).
 
 The seed file also explains a product decision: the `live` (photorealistic live-action) preset was removed because real-person imagery fails platform content review.
 
