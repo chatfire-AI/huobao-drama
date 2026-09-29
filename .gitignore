@@ -43,6 +43,9 @@ configs/config.yaml
 # Misc
 tmp/
 temp/
+
+# Verification runs (`.agents/skills/verify-hidrama`): scratch state and proof artifacts
+.verification/
 .superpowers/
 /CLAUDE.md
 

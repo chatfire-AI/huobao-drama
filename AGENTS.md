@@ -32,6 +32,8 @@ configs/   — legacy dead config, zero code references
 
 ## Commands
 
+Dependencies are not vendored. Install once with `.agents/skills/verify-hidrama/helpers/app.sh install`; a plain `npm install` in `backend/` or `frontend/` fails, because the committed lockfiles resolve tarballs to a private registry that answers 401.
+
 ### Backend (`backend/`)
 - `npm run dev` — tsx watch dev server (port 5679)
 - `npm start` — tsx production start
@@ -103,3 +105,7 @@ The five canonical triage roles map to label strings of the same name (`needs-tr
 ### Domain docs
 
 Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+### Verification
+
+`verify-hidrama` starts the backend and frontend against an isolated database and drives the real UI and HTTP API to prove a change, capturing screenshots and server-side read-backs. Reach for it whenever you need to run the app or prove a user-facing behaviour. See `.agents/skills/verify-hidrama/SKILL.md`.
