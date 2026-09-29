@@ -44,8 +44,9 @@ COPY --from=frontend-build /build/frontend/.output/public ./frontend-dist
 COPY docker/entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh && mkdir -p /app/data
 
-# 数据卷：SQLite + 生成的静态文件 + 可编辑 workspace
-VOLUME ["/app/data"]
+# 数据卷（/app/data）：SQLite + 生成的静态文件 + 可编辑 workspace
+# 不在此声明 VOLUME：Railway 构建直接拒绝（docker VOLUME ... is not supported, use Railway Volumes）。
+# 卷统一由编排侧声明：docker-compose 的 huobao-data 命名卷 / Railway Volume；裸 docker run 需自行加 -v。
 EXPOSE 5679
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s \

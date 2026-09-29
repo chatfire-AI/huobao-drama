@@ -9,5 +9,8 @@
     "dev:desktop": "cd desktop && npm run dev",
     "build:frontend": "cd frontend && npm run generate",
     "dist": "cd desktop && npm run dist"
+  },
+  "devDependencies": {
+    "railway": "^3.12.0"
   }
 }
