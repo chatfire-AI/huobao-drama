@@ -104,6 +104,26 @@ export async function getTextConfig(): Promise<AIConfig> {
 /**
  * 取某服务类型当前启用且优先级最高的官方配置 ID（创建集时自动锁定用）
  */
+/** A specific provider's active config: a re-poll must use the config that issued the task. */
+export async function getConfigByProvider(serviceType: ServiceType, provider: string): Promise<AIConfig | null> {
+  const rows = (await db.select().from(schema.aiServiceConfigs)
+    .where(eq(schema.aiServiceConfigs.serviceType, serviceType))
+  )
+    .filter(r => r.isActive && r.provider === provider && isOfficialProvider(serviceType, r.provider))
+    .sort((a, b) => (b.priority || 0) - (a.priority || 0))
+
+  const active = rows[0]
+  if (!active) return null
+  const models = active.model ? JSON.parse(active.model) : []
+  return {
+    provider: active.provider || '',
+    baseUrl: active.baseUrl,
+    apiKey: active.apiKey,
+    model: models[0] || '',
+    temperature: parseConfigTemperature(active.settings),
+  }
+}
+
 export async function getActiveConfigId(serviceType: ServiceType): Promise<number | null> {
   const rows = (await db.select().from(schema.aiServiceConfigs)
     .where(eq(schema.aiServiceConfigs.serviceType, serviceType))

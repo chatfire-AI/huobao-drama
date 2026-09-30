@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
 import { db, schema } from '../db/index.js'
 import { success, created, badRequest } from '../utils/response.js'
-import { generateImage, generateVideo } from '../services/generation.js'
+import { generateImage, generateVideo, resumeTask } from '../services/generation.js'
 import { getActiveConfig, getConfigById } from '../services/ai.js'
 import { getDramaStylePrompt } from '../services/style-preset.js'
 import { logTaskError, logTaskPayload, logTaskStart, logTaskSuccess } from '../utils/task-logger.js'
@@ -207,6 +207,18 @@ app.post('/', async (c) => {
     logTaskError('TaskAPI', 'generate', { type, error: err.message })
     return badRequest(c, err.message)
   }
+})
+
+// POST /tasks/:id/resume — poll a task again whose provider may have finished it
+app.post('/:id/resume', async (c) => {
+  const id = Number(c.req.param('id'))
+  try {
+    await resumeTask(id)
+  } catch (err: any) {
+    logTaskError('SysTask', 'resume-rejected', { id, error: err.message })
+    return badRequest(c, err.message)
+  }
+  return success(c, { id, status: 'processing' })
 })
 
 // GET /tasks/:id — 轮询任务状态
