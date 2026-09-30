@@ -4,7 +4,7 @@
  */
 import { db, getInsertId, schema } from '../db/index.js'
 import { eq } from 'drizzle-orm'
-import { getActiveConfig, getConfigById } from './ai.js'
+import { getActiveConfig, getConfigById, getConfigByProvider } from './ai.js'
 import { now } from '../utils/response.js'
 import { downloadFile, fetchImageAsCompressedDataUrl, generateImageThumb, readImageAsCompressedDataUrl, saveBase64Image } from '../utils/storage.js'
 import { extractVideoPoster } from '../utils/video-poster.js'
@@ -339,6 +339,8 @@ async function pollTask(record: SysTaskRecord, config: AIConfig, taskId: string)
   const profile = POLL_PROFILES[type]
   const adapter = type === 'image' ? getImageAdapter(config.provider) : getVideoAdapter(config.provider)
   const startedAt = Date.now()
+  // The provider's own status text: one log line per change
+  let lastRawStatus = ''
 
   for (let i = 0; i < profile.attempts; i++) {
     if (profile.maxDurationMs && Date.now() - startedAt >= profile.maxDurationMs) {
@@ -379,6 +381,20 @@ async function pollTask(record: SysTaskRecord, config: AIConfig, taskId: string)
 
       // 图片/视频 PollResponse 结构不同，这里统一按 any 取值后按 type 分支
       const pollResp: any = adapter.parsePollResponse(result)
+
+      // Log the provider's raw status value: when the status is not recognized, a silent
+      // retry is indistinguishable from a request that never ends.
+      const rawStatus = String(result?.status ?? '')
+      if (rawStatus && rawStatus !== lastRawStatus) {
+        lastRawStatus = rawStatus
+        logTaskProgress(label, 'poll-status', {
+          id: record.id,
+          taskId,
+          status: rawStatus,
+          fields: Object.keys(result || {}).join(','),
+          body: JSON.stringify(result ?? null).slice(0, 400),
+        })
+      }
 
       if (pollResp.status === 'completed') {
         if (type === 'image') {
@@ -634,4 +650,31 @@ function normalizeStoredVideoResolution(resolution: string | null | undefined): 
   if (value === '480p' || value === '720p' || value === '1080p') return value
   if (value === '2k') return '2K'
   return undefined
+}
+
+/**
+ * Poll a task again after our side gave up on it, for a provider that finished it.
+ * The row keeps the provider task id, so the poll can run again: this recovers a video
+ * that exists at the provider while the app shows the task as failed.
+ */
+export async function resumeTask(id: number): Promise<void> {
+  const [record] = await db.select().from(schema.sysTask).where(eq(schema.sysTask.id, id))
+  if (!record) throw new Error(`task ${id} does not exist`)
+  if (!record.taskId) throw new Error(`task ${id} never reached the provider, so there is nothing to poll; generate it again`)
+
+  const type = record.type as TaskType
+  const config = await getConfigByProvider(type, record.provider || '')
+  if (!config) {
+    throw new Error(`task ${id} needs an active ${record.provider} ${type} config to poll it again`)
+  }
+
+  await markPolling(id, record.taskId)
+  logTaskProgress(taskLabel(type), 'resume-poll', {
+    id,
+    taskId: record.taskId,
+    provider: config.provider,
+    storyboardId: record.storyboardId,
+  })
+  // A video poll can run for the whole budget, far longer than an HTTP request should wait.
+  void pollTask(record, config, record.taskId).catch(err => failTask(id, err.message))
 }
