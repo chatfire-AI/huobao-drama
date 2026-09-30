@@ -121,4 +121,20 @@ test('fal Wan 3.0 reads the video URL from the result endpoint', () => {
   const payload = { video: { url: 'https://fal.media/video.mp4' }, seed: 7, duration: 6 }
   assert.equal(adapter.extractVideoUrl(payload), 'https://fal.media/video.mp4')
   assert.equal(adapter.extractVideoUrl({ video: {} }), null)
+  assert.equal(adapter.extractVideoUrl({ data: payload }), 'https://fal.media/video.mp4')
+})
+
+test('fal Wan 3.0 reads a status value in any case, wrapped or not', () => {
+  // A case or shape the adapter does not match means polling the status forever while the
+  // provider has finished, so every form must land on the right status.
+  assert.equal(adapter.parsePollResponse({ status: 'completed' }).status, 'completed')
+  assert.equal(adapter.parsePollResponse({ status: 'Completed' }).status, 'completed')
+  assert.equal(adapter.parsePollResponse({ status: 'in_progress' }).status, 'processing')
+  assert.equal(adapter.parsePollResponse({ status: 'in_queue' }).status, 'pending')
+  assert.equal(adapter.parsePollResponse({ status: 'completed', error: 'flagged' }).status, 'failed')
+
+  const wrapped = adapter.parsePollResponse({ data: { status: 'completed', duration: 6 } })
+  assert.deepEqual(wrapped, { status: 'completed', duration: 6 })
+  const wrappedOutput = adapter.parsePollResponse({ data: { video: { url: 'https://fal.media/w.mp4' } } })
+  assert.equal(wrappedOutput.videoUrl, 'https://fal.media/w.mp4')
 })

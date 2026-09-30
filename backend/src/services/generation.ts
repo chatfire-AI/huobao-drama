@@ -339,6 +339,8 @@ async function pollTask(record: SysTaskRecord, config: AIConfig, taskId: string)
   const profile = POLL_PROFILES[type]
   const adapter = type === 'image' ? getImageAdapter(config.provider) : getVideoAdapter(config.provider)
   const startedAt = Date.now()
+  // The provider's own status text: one log line per change
+  let lastRawStatus = ''
 
   for (let i = 0; i < profile.attempts; i++) {
     if (profile.maxDurationMs && Date.now() - startedAt >= profile.maxDurationMs) {
@@ -379,6 +381,20 @@ async function pollTask(record: SysTaskRecord, config: AIConfig, taskId: string)
 
       // 图片/视频 PollResponse 结构不同，这里统一按 any 取值后按 type 分支
       const pollResp: any = adapter.parsePollResponse(result)
+
+      // Log the provider's raw status value: when the status is not recognized, a silent
+      // retry is indistinguishable from a request that never ends.
+      const rawStatus = String(result?.status ?? '')
+      if (rawStatus && rawStatus !== lastRawStatus) {
+        lastRawStatus = rawStatus
+        logTaskProgress(label, 'poll-status', {
+          id: record.id,
+          taskId,
+          status: rawStatus,
+          fields: Object.keys(result || {}).join(','),
+          body: JSON.stringify(result ?? null).slice(0, 400),
+        })
+      }
 
       if (pollResp.status === 'completed') {
         if (type === 'image') {

@@ -161,15 +161,19 @@ export class FalWanVideoAdapter implements VideoProviderAdapter {
     }
   }
 
-  parsePollResponse(result: any): VideoPollResponse {
-    // A relay may hand back the raw output body instead of a status envelope.
-    const videoUrl = result?.video?.url
+  parsePollResponse(body: any): VideoPollResponse {
+    // A relay may wrap the queue body in an envelope, or hand back the raw output instead of a
+    // status envelope, so accept both before reading the status.
+    const result = body?.data && typeof body.data === 'object' ? body.data : body
+    const videoUrl = result?.video?.url || body?.video?.url
     if (videoUrl) return { status: 'completed', videoUrl }
     // Queue failures arrive on the COMPLETED status as error / error_type.
     if (result?.error || result?.error_type) {
       return { status: 'failed', error: errorMessage(result, 'fal Wan 3.0 video generation failed') }
     }
-    switch (result?.status) {
+    // Providers and relays disagree on the case of this value (COMPLETED / completed), and a
+    // value that matches nothing here would poll forever, so compare an upper-cased copy.
+    switch (String(result?.status ?? '').trim().toUpperCase()) {
       case 'IN_QUEUE':
         return { status: 'pending' }
       case 'IN_PROGRESS':
@@ -186,8 +190,8 @@ export class FalWanVideoAdapter implements VideoProviderAdapter {
     }
   }
 
-  extractVideoUrl(result: any): string | null {
-    return result?.video?.url || null
+  extractVideoUrl(body: any): string | null {
+    return body?.video?.url || body?.data?.video?.url || null
   }
 
   /** Base URL is host/relay only; a pasted full endpoint URL is accepted and trimmed. */
