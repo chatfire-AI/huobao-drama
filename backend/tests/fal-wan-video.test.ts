@@ -53,6 +53,14 @@ test('fal Wan 3.0 accepts a base URL that already carries the endpoint path', ()
   assert.equal(request.url, 'https://queue.fal.run/alibaba/wan-3.0/reference-to-video')
 })
 
+test('fal Wan 3.0 reads a stored request id whose base URL carries a path', () => {
+  // A pasted app path or endpoint path must not double up in the poll URL.
+  for (const baseUrl of ['https://queue.fal.run/alibaba/wan-3.0', 'https://queue.fal.run/alibaba/wan-3.0/reference-to-video']) {
+    const poll = adapter.buildPollRequest({ ...config, baseUrl }, 'req-1')
+    assert.equal(poll.url, 'https://queue.fal.run/alibaba/wan-3.0/requests/req-1/status')
+  }
+})
+
 test('fal Wan 3.0 rejects other fal models and empty input', () => {
   assert.throws(
     () => adapter.buildGenerateRequest({ ...config, model: 'alibaba/wan-3.0/image-to-video' }, { id: 4, prompt: 'a cat' }),
@@ -94,7 +102,7 @@ test('fal Wan 3.0 clamps out-of-range duration to the documented window', () => 
 
 test('fal Wan 3.0 polls the queue status and reads status envelopes', () => {
   const poll = adapter.buildPollRequest(config, 'req-1')
-  assert.equal(poll.url, 'https://queue.fal.run/alibaba/wan-3.0/reference-to-video/requests/req-1/status')
+  assert.equal(poll.url, 'https://queue.fal.run/alibaba/wan-3.0/requests/req-1/status')
   assert.equal(poll.method, 'GET')
   assert.equal(poll.headers.Authorization, 'Key fal-key')
 
@@ -115,7 +123,7 @@ test('fal Wan 3.0 reads the video URL from the result endpoint', () => {
   assert.deepEqual(submit, { isAsync: true, taskId: 'req-1' })
 
   const result = adapter.buildResultRequest(config, 'req-1')
-  assert.equal(result.url, 'https://queue.fal.run/alibaba/wan-3.0/reference-to-video/requests/req-1')
+  assert.equal(result.url, 'https://queue.fal.run/alibaba/wan-3.0/requests/req-1')
   assert.equal(result.method, 'GET')
 
   const payload = { video: { url: 'https://fal.media/video.mp4' }, seed: 7, duration: 6 }
