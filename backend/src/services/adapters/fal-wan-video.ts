@@ -24,6 +24,9 @@ import type {
 } from './types'
 
 const ENDPOINT_ID = 'alibaba/wan-3.0/reference-to-video'
+// fal serves the request resources under the app path and answers 405 to a GET on the alias path,
+// so the status and result URLs use this prefix while the submit uses ENDPOINT_ID.
+const REQUEST_PREFIX = 'alibaba/wan-3.0'
 /** The workbench model dropdown keys options as `provider/model` and strips the provider prefix. */
 const SUPPORTED_MODEL_IDS = new Set([ENDPOINT_ID, 'wan-3.0/reference-to-video'])
 const DEFAULT_BASE_URL = 'https://queue.fal.run'
@@ -144,7 +147,7 @@ export class FalWanVideoAdapter implements VideoProviderAdapter {
 
   buildPollRequest(config: AIConfig, taskId: string): ProviderRequest {
     return {
-      url: this.endpointUrl(config, `/requests/${encodeURIComponent(taskId)}/status`),
+      url: this.requestUrl(config, taskId, '/status'),
       method: 'GET',
       headers: this.headers(config),
       body: undefined,
@@ -154,7 +157,7 @@ export class FalWanVideoAdapter implements VideoProviderAdapter {
   /** Called by generation.ts once the status is COMPLETED, because the status body carries no video URL. */
   buildResultRequest(config: AIConfig, taskId: string): ProviderRequest {
     return {
-      url: this.endpointUrl(config, `/requests/${encodeURIComponent(taskId)}`),
+      url: this.requestUrl(config, taskId),
       method: 'GET',
       headers: this.headers(config),
       body: undefined,
@@ -195,11 +198,26 @@ export class FalWanVideoAdapter implements VideoProviderAdapter {
   }
 
   /** Base URL is host/relay only; a pasted full endpoint URL is accepted and trimmed. */
+  /** Submit path: the endpoint alias. */
   private endpointUrl(config: AIConfig, suffix = ''): string {
+    return `${this.hostUrl(config)}/${ENDPOINT_ID}${suffix}`
+  }
+
+  /**
+   * Request path: fal serves the request resources under the app path. Both paths arrive in the
+   * submit response, and this one needs only the request id, which is all a stored task keeps.
+   */
+  private requestUrl(config: AIConfig, taskId: string, suffix = ''): string {
+    return `${this.hostUrl(config)}/${REQUEST_PREFIX}/requests/${encodeURIComponent(taskId)}${suffix}`
+  }
+
+  /** Base URL is host/relay only; a pasted endpoint or request URL is accepted and trimmed. */
+  private hostUrl(config: AIConfig): string {
     const raw = String(config.baseUrl || DEFAULT_BASE_URL).trim().replace(/\/+$/, '') || DEFAULT_BASE_URL
-    const withEndpoint = `/${ENDPOINT_ID}`
-    const base = raw.endsWith(withEndpoint) ? raw.slice(0, -withEndpoint.length) : raw
-    return `${base}${withEndpoint}${suffix}`
+    for (const path of [`/${ENDPOINT_ID}`, `/${REQUEST_PREFIX}`]) {
+      if (raw.endsWith(path)) return raw.slice(0, -path.length)
+    }
+    return raw
   }
 
   private headers(config: AIConfig): Record<string, string> {
