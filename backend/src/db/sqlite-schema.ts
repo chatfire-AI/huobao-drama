@@ -329,6 +329,11 @@ export const stylePresetSeeds = [
     description: 'Western comic style with bold ink outlines',
   },
   {
+    name: 'Ultra Realistic', value: 'live', sortOrder: 6,
+    prompt: 'ultra-realistic cinematic live-action look, professional film photography, natural skin tones with detailed pores and realistic texture, true human anatomy and proportions, shallow depth of field with creamy bokeh, cinematic three-point lighting, subtle film grain, 35mm lens cinematic framing, true-to-life color grading, detailed real-world environments, consistent actor appearance across shots, avoid cartoon or anime features, avoid 3D render look, avoid illustration style, avoid plastic waxy skin, avoid over-smoothing beauty filter',
+    description: 'Photoreal live-action look with true skin texture and film photography rendering',
+  },
+  {
     name: 'Guofeng 2.5D', value: 'guofeng', sortOrder: 7,
     prompt: 'Chinese guofeng 2.5D illustration style, semi-realistic donghua-quality character art, elegant flowing line work, rich traditional Chinese aesthetic elements, layered ink-wash inspired atmospheric backgrounds, refined silk and fabric textures, soft luminous lighting with gentle haze, sophisticated muted jewel-tone palette, xianxia drama poster quality, consistent character design across shots, avoid flat cel shading, avoid western comic ink style, avoid photorealism, avoid plastic 3D look, avoid modern clothing and props unless specified',
     description: 'Chinese animation and xianxia drama look, 2.5D semi-realistic',
@@ -358,13 +363,12 @@ const LEGACY_SEED_PROMPTS: Record<string, string> = {
 }
 
 /**
- * 已下架的种子预设 — 内容寻址删除：仅当库中行的 prompt 仍是种子原文
+ * 已下架的种子预设 — 内容寻址删除：仅当库中行的 prompt 仍是表中原文
  * （未被用户编辑过）才删除；用户改过的同名行视为用户数据保留。
- * live（真人写实）：真人影像过不了平台真人内容审核，下架。
+ * 当前为空：真人写实（live）已恢复为 Ultra Realistic，见上方 stylePresetSeeds。
+ * 保留该机制供后续下架使用。
  */
-const REMOVED_SEED_PROMPTS: Record<string, string> = {
-  live: 'ultra-realistic cinematic live-action look, professional film photography, natural skin tones with detailed pores and realistic texture, true human anatomy and proportions, shallow depth of field with creamy bokeh, cinematic three-point lighting, subtle film grain, 35mm lens cinematic framing, true-to-life color grading, detailed real-world environments, consistent actor appearance across shots, avoid cartoon or anime features, avoid 3D render look, avoid illustration style, avoid plastic waxy skin, avoid over-smoothing beauty filter',
-}
+const REMOVED_SEED_PROMPTS: Record<string, string> = {}
 
 /**
  * Legacy Chinese display names for the seeds above — content-addressed rename to English:
@@ -379,6 +383,7 @@ export const LEGACY_SEED_NAMES: Record<string, string> = {
   guofeng: '国风 2.5D',
   webtoon: '韩系网漫',
   noir: '黑白漫画',
+  live: '真人写实',
 }
 
 // INSERT ... SELECT WHERE NOT EXISTS → 幂等：只补缺失行，不覆盖用户编辑
