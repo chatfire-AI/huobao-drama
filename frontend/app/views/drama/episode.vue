@@ -2119,7 +2119,7 @@ const selectedVideoConfig = computed(() => {
     .filter(config => config.is_active)
     .sort((a, b) => (b.priority || 0) - (a.priority || 0))[0]
 })
-const isWan3Video = computed(() => selectedVideoConfig.value?.provider === 'aliyun'
+const isWan3Video = computed(() => ['aliyun', 'fal-wan-video'].includes(selectedVideoConfig.value?.provider)
   || bareModelName(videoModel.value).startsWith('wan3.0-video'))
 
 // 参考图上限（Wan 3.0 官方 10 张，其他模型 9 张），绑定素材收集与 @名字 映射统一读取
