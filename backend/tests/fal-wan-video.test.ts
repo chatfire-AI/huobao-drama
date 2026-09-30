@@ -34,6 +34,7 @@ test('fal Wan 3.0 submits to the queue endpoint with the documented input schema
     duration: 6,
     audio: false,
     enable_prompt_expansion: false,
+    enable_safety_checker: false,
     seed: 42,
   })
 })

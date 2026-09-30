@@ -106,6 +106,9 @@ export class FalWanVideoAdapter implements VideoProviderAdapter {
       duration: this.normalizeDuration(record.duration),
       audio: booleanValue(record.generateAudio, true),
       enable_prompt_expansion: booleanValue(record.promptExtend, true),
+      // This app produces drama footage, so input and output moderation stay off; fal
+      // ignores the flag and checks anyway when the account cannot disable it.
+      enable_safety_checker: false,
     }
     if (prompt) body.prompt = prompt
     if (images.length) body.reference_image_urls = images
