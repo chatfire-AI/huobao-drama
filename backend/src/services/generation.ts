@@ -9,7 +9,7 @@ import { now } from '../utils/response.js'
 import { downloadFile, fetchImageAsCompressedDataUrl, generateImageThumb, readImageAsCompressedDataUrl, saveBase64Image } from '../utils/storage.js'
 import { extractVideoPoster } from '../utils/video-poster.js'
 import { getImageAdapter, getVideoAdapter } from './adapters/registry'
-import type { AIConfig } from './adapters/types'
+import type { AIConfig, VideoProviderAdapter } from './adapters/types'
 import { logTaskError, logTaskPayload, logTaskProgress, logTaskStart, logTaskSuccess, logTaskWarn, redactUrl } from '../utils/task-logger.js'
 
 type TaskType = 'image' | 'video'
@@ -386,10 +386,15 @@ async function pollTask(record: SysTaskRecord, config: AIConfig, taskId: string)
               return
             }
           }
-        } else if (pollResp.videoUrl) {
-          logTaskSuccess(label, 'poll-complete', { id: record.id, taskId, videoUrl: pollResp.videoUrl })
-          await handleVideoComplete(record, pollResp.videoUrl, pollResp.duration)
-          return
+        } else {
+          // The video URL may come straight from the status body, or need a second fetch
+          // of the result endpoint once the status is complete (fal queue).
+          const videoUrl = pollResp.videoUrl || await fetchResultVideoUrl(adapter as VideoProviderAdapter, config, taskId)
+          if (videoUrl) {
+            logTaskSuccess(label, 'poll-complete', { id: record.id, taskId, videoUrl })
+            await handleVideoComplete(record, videoUrl, pollResp.duration)
+            return
+          }
         }
       }
       if (pollResp.status === 'failed') {
@@ -408,6 +413,30 @@ async function pollTask(record: SysTaskRecord, config: AIConfig, taskId: string)
     }
   }
   await failTask(record.id, 'Timeout: polling attempts exhausted')
+}
+
+/**
+ * Providers that split state from result (the fal queue) expose buildResultRequest:
+ * the status poll returns no video URL, so fetch the result endpoint once it completes.
+ * Providers whose parsePollResponse already carries the URL never reach the fetch.
+ */
+async function fetchResultVideoUrl(adapter: VideoProviderAdapter, config: AIConfig, taskId: string): Promise<string | null> {
+  if (!adapter.buildResultRequest) return null
+  const request = adapter.buildResultRequest(config, taskId)
+  try {
+    const resp = await fetch(request.url, {
+      method: request.method,
+      headers: request.headers,
+      signal: AbortSignal.timeout(60_000),
+    })
+    if (!resp.ok) return null
+    const result = await resp.json() as any
+    logTaskPayload('VideoTask', 'result payload', { taskId, provider: config.provider, result })
+    return adapter.extractVideoUrl(result)
+  } catch (err: any) {
+    logTaskWarn('VideoTask', 'result-fetch-failed', { taskId, error: err.message })
+    return null
+  }
 }
 
 async function handleImageComplete(record: SysTaskRecord, imageUrl: string) {

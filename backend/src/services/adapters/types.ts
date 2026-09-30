@@ -54,6 +54,13 @@ export interface VideoProviderAdapter {
 
   buildPollRequest(config: AIConfig, taskId: string): ProviderRequest
 
+  /**
+   * Only for providers that split state from result (the fal queue): once the status
+   * poll reports completed, generation.ts fetches this endpoint and reads extractVideoUrl.
+   * Other providers return the video URL straight from parsePollResponse and omit it.
+   */
+  buildResultRequest?(config: AIConfig, taskId: string): ProviderRequest
+
   parsePollResponse(result: any): VideoPollResponse
 
   extractVideoUrl(result: any): string | null
