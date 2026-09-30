@@ -364,7 +364,17 @@ async function pollTask(record: SysTaskRecord, config: AIConfig, taskId: string)
         headers,
         signal: AbortSignal.timeout(remainingMs),
       })
-      if (!resp.ok) continue
+      if (!resp.ok) {
+        const preview = (await resp.text().catch(() => '')).slice(0, 300)
+        // 401/403/404/405 mean the poll URL or the API key is wrong, so retrying can never
+        // succeed: fail with the HTTP status instead of polling silently until the budget ends.
+        if ([401, 403, 404, 405].includes(resp.status)) {
+          await failTask(record.id, `Poll rejected: HTTP ${resp.status}${preview ? ` ${preview}` : ''}`)
+          return
+        }
+        logTaskWarn(label, 'poll-http-retry', { id: record.id, taskId, status: resp.status, body: preview })
+        continue
+      }
       const result = await resp.json() as any
 
       // 图片/视频 PollResponse 结构不同，这里统一按 any 取值后按 type 分支
@@ -429,7 +439,17 @@ async function fetchResultVideoUrl(adapter: VideoProviderAdapter, config: AIConf
       headers: request.headers,
       signal: AbortSignal.timeout(60_000),
     })
-    if (!resp.ok) return null
+    if (!resp.ok) {
+      // A rejected result fetch must be visible: silently retrying it looks exactly like a
+      // request that never finishes.
+      logTaskWarn('VideoTask', 'result-fetch-rejected', {
+        taskId,
+        provider: config.provider,
+        status: resp.status,
+        body: (await resp.text().catch(() => '')).slice(0, 300),
+      })
+      return null
+    }
     const result = await resp.json() as any
     logTaskPayload('VideoTask', 'result payload', { taskId, provider: config.provider, result })
     return adapter.extractVideoUrl(result)
