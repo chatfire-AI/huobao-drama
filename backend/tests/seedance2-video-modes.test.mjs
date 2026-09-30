@@ -95,6 +95,9 @@ test('tasks route validates reference-mode requirements for video tasks', () => 
 
   // 多模态参考校验并固定 reference 模式
   assert.match(route, /参考素材超限：图片≤9、视频≤3、音频≤3/)
+  // fal Wan 3.0 reference-to-video documents images 10 / videos 5 / audios 5
+  assert.match(route, /\(provider \|\| ''\)\.toLowerCase\(\) === 'fal-wan-video'/)
+  assert.match(route, /return 'fal Wan 3\.0 reference limits: images ≤10, videos ≤5, audios ≤5'/)
   assert.match(route, /参考音频需要至少 1 个参考图片或视频/)
   assert.match(route, /视频生成需要至少一个参考素材或 prompt/)
   assert.match(route, /referenceMode: 'reference'/)

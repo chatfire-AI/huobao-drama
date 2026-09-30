@@ -94,6 +94,9 @@ function validateVideoRequest(body: any, provider?: string): string | null {
     }
     const total = imgs + vids + auds + Number(first) + Number(last) + Number(file) + Number(link)
     if (total > 20) return 'Wan 3.0 input.media 最多 20 项'
+  } else if ((provider || '').toLowerCase() === 'fal-wan-video') {
+    // fal's reference-to-video takes reference media only: images ≤10, videos ≤5, audios ≤5.
+    if (imgs > 10 || vids > 5 || auds > 5) return 'fal Wan 3.0 reference limits: images ≤10, videos ≤5, audios ≤5'
   } else {
     if (imgs > 9 || vids > 3 || auds > 3) return '参考素材超限：图片≤9、视频≤3、音频≤3'
     if (auds > 0 && imgs + vids === 0) return '参考音频需要至少 1 个参考图片或视频'
