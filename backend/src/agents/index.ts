@@ -356,7 +356,9 @@ function buildInstructions(type: string) {
     const baseInstructions = promptFile?.instructions || defaults.instructions
     const skillInstructions = await loadAgentSkills(type, lang)
     const languageDirective = buildLanguageDirective(lang)
-    return [baseInstructions, skillInstructions, languageDirective]
+    // PROMPT_OPTIMIZER (env) prepends to every agent system instruction, resolved per request; empty or unset = off
+    const promptOptimizer = (process.env.PROMPT_OPTIMIZER || '').trim()
+    return [promptOptimizer, baseInstructions, skillInstructions, languageDirective]
       .filter(Boolean)
       .join('\n\n')
   }
