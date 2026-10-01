@@ -15,7 +15,7 @@
         </button>
       </div>
 
-      <nav class="header-nav">
+      <nav v-if="desktopBridge" class="header-nav">
         <NuxtLink to="/" class="nav-link" :class="{ active: route.path === '/' }">
           <LayoutGrid :size="15" :stroke-width="1.8" />
           <span>{{ t('layout.nav.projects') }}</span>
@@ -64,6 +64,8 @@ import brandLogo from '~/assets/brand-logo.png'
 const { t, locale } = useI18n()
 const route = useRoute()
 const showBrandImage = ref(true)
+// The browser build hides the Projects/Settings group (Settings opens by URL); the desktop app has no address bar, so it keeps the group
+const desktopBridge = useDesktopBridge()
 
 // 渲染时求值，语言切换即时生效（不能模块级常量固化）
 const SERVICE_TYPE_LABELS = computed(() => ({
