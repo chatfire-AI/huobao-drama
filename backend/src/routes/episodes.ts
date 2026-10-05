@@ -6,6 +6,7 @@ import { toSnakeCaseArray, toSnakeCase } from '../utils/transform.js'
 import { getActiveConfigId } from '../services/ai.js'
 import { EXTRACT_TARGETS, getExtractionStatus, startExtraction, type ExtractTarget } from '../services/extraction.js'
 import { getVideoPromptBatchStatus, startVideoPromptBatch } from '../services/video-prompts.js'
+import { renameAsset } from '../services/asset-rename.js'
 
 const app = new Hono()
 
@@ -123,6 +124,20 @@ app.get('/:id/props', async (c) => {
   const allProps = await db.select().from(schema.props)
   const result = allProps.filter(p => propIds.includes(p.id) && !p.deletedAt)
   return success(c, toSnakeCaseArray(result))
+})
+
+// POST /episodes/assets/:type/:id/rename — 素材改名 { name, cascade, dry_run }
+// cascade：同步替换本剧剧本/分镜/素材描述中的旧名；dry_run：只返回将替换的处数
+app.post('/assets/:type/:assetId/rename', async (c) => {
+  const kind = c.req.param('type')
+  if (kind !== 'character' && kind !== 'scene' && kind !== 'prop') return badRequest(c, 'type 须为 character / scene / prop')
+  const body = await c.req.json().catch(() => ({}))
+  try {
+    const r = await renameAsset(kind, Number(c.req.param('assetId')), body.name, { cascade: body.cascade !== false, dryRun: !!body.dry_run })
+    return success(c, { old_name: r.oldName, new_name: r.newName, cascaded: r.cascaded, hits: r.hits })
+  } catch (err: any) {
+    return badRequest(c, err.message)
+  }
 })
 
 // POST /episodes/:id/extract — 异步提取资产（target: characters | scenes | props），立即返回，前端轮询状态

@@ -1082,7 +1082,10 @@
           <header class="dialog-head asset-detail-head">
             <div class="asset-detail-title-block">
               <span class="asset-detail-kicker">{{ assetTypeLabel(assetDetail.type) }}</span>
-              <h2 class="asset-detail-title">{{ assetDetailTitle(assetDetail) }}</h2>
+              <h2 class="asset-detail-title">
+                {{ assetDetailTitle(assetDetail) }}
+                <button class="btn btn-ghost btn-icon btn-sm asset-rename-btn" :title="t('assetRename.title', { type: assetTypeLabel(assetDetail.type) })" @click="assetRenameOpen = true"><Pencil :size="13" /></button>
+              </h2>
             </div>
             <div class="asset-detail-head-actions">
               <span class="tag" v-if="assetDetail.type === 'character'">{{ assetDetail.item.role || t('common.role') }}</span>
@@ -1422,6 +1425,15 @@
         @confirm="confirmDeleteAsset"
         @cancel="assetDelete.open = false"
       />
+      <AssetRenameDialog
+        :open="assetRenameOpen"
+        :type="assetDetail.type"
+        :item="assetDetail.item"
+        :type-label="assetTypeLabel(assetDetail.type)"
+        @close="assetRenameOpen = false"
+        @renamed="onAssetRenamed"
+      />
+
     </main>
     </div>
   </div>
@@ -1432,13 +1444,14 @@ import { toast } from 'vue-sonner'
 import { useI18n } from 'vue-i18n'
 import {
   Users, FileText, FolderKanban, Clapperboard, Download, Loader2,
-  Plus, X, ListTodo, CircleHelp,
+  Plus, X, ListTodo, CircleHelp, Pencil,
 } from 'lucide-vue-next'
 import { api, dramaAPI, episodeAPI, storyboardAPI, characterAPI, sceneAPI, propAPI, taskAPI, mergeAPI, aiConfigAPI, uploadAPI } from '~/composables/useApi'
 import { startTour, autoTour } from '~/composables/useTour'
 import { useAgent } from '~/composables/useAgent'
 import { toastError, mapError, MODERATION_RE } from '~/composables/useToast'
 import LocaleSwitcher from '~/components/LocaleSwitcher.vue'
+import AssetRenameDialog from '~/components/AssetRenameDialog.vue'
 
 definePageMeta({ layout: 'studio' })
 
@@ -1876,6 +1889,21 @@ function assetImageSrc(item) {
   if (!raw) return ''
   if (/^https?:\/\//i.test(raw) || raw.startsWith('/')) return raw
   return `/${raw}`
+}
+
+// 素材改名：可同步替换本剧剧本/分镜/素材描述里的旧名，改完刷新（剧本、分镜内容可能已变）
+const assetRenameOpen = ref(false)
+async function onAssetRenamed(r) {
+  assetRenameOpen.value = false
+  const item = assetDetail.value.item
+  if (item) {
+    if (assetDetail.value.type === 'scene') item.location = r.new_name
+    else item.name = r.new_name
+  }
+  toast.success(r.cascaded && r.hits?.total
+    ? t('assetRename.doneCascade', { name: r.new_name, n: r.hits.total })
+    : t('assetRename.done', { name: r.new_name }))
+  await refresh()
 }
 
 function assetDetailTitle(detail) {
@@ -5240,6 +5268,8 @@ button.video-task-metric.on { box-shadow: 0 0 0 2px var(--accent); }
   padding: 14px 16px;
   border-bottom: 1px solid var(--surface-outline);
 }
+.asset-rename-btn { vertical-align: middle; margin-left: 4px; opacity: 0.6; }
+.asset-rename-btn:hover { opacity: 1; }
 .asset-detail-title-block {
   min-width: 0;
   display: flex;

@@ -921,5 +921,16 @@
         "desc": "Click this \"?\" button to replay this page's guide. Happy creating!"
       }
     }
+  },
+  "assetRename": {
+    "title": "Rename {type}",
+    "newName": "New name",
+    "cascade": "Also replace {n} occurrences of \"{old}\" in scripts, storyboards and asset descriptions",
+    "detail": "Scripts {ep} · Storyboards {sb} · Asset descriptions {as}",
+    "singleChar": "The old name is a single character; to avoid false matches only the asset itself is renamed",
+    "noRefs": "\"{old}\" does not appear in scripts or storyboards; only the asset name changes",
+    "save": "Save",
+    "done": "Renamed to \"{name}\"",
+    "doneCascade": "Renamed to \"{name}\" and replaced {n} occurrences"
   }
 }
