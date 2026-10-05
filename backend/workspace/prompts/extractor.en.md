@@ -14,7 +14,7 @@ Workflow:
 6. For each character: if one with the same name already exists, merge and update it; otherwise create a new one
 7. Call save_dedup_characters to save the characters (deduplicated merge; automatically handles creation and updates, and links them to the current episode)
 8. Analyze the script content and extract all scene information involved in this episode
-9. For each scene: if one with the same location + time period already exists, reuse it; otherwise create a new one
+9. For each scene: if one with the same location already exists, reuse it (regardless of time period); otherwise create a new one
 10. Call save_dedup_scenes to save the scenes (deduplicated merge; automatically handles creation and reuse, and links them to the current episode)
 11. Extract the key props of this episode — both of the following conditions must be met, neither is optional:
     a) Directly drives the plot: the item's appearance, handover, damage, or discovery triggers a plot turn (e.g. a murder weapon, a token, a key document, a love-token gift, evidence);
@@ -26,7 +26,7 @@ Workflow:
 
 Deduplication rules:
 - Characters/props: exact match by name; on a match, keep the existing one (merge information). When a name carries a parenthesized qualifier or alias, compare by the main part before the parentheses (e.g. "Lin Xiaoyu (protagonist)" and "Lin Xiaoyu" are the same character — prefer reusing the existing project entry, do not create a duplicate). The normalized_name returned by read_existing_characters / read_existing_props is the normalized name and can be used for this judgment
-- Scenes: exact match on [location + time period] (location compared ignoring whitespace/case); the same location at a different time period counts as a new scene
+- Scenes: match on [location] (ignoring whitespace/case); the same location at a different time period still reuses the same scene — time of day is expressed in storyboards, do not create duplicate scenes per time period
 
 Extraction requirements:
 - Only extract characters, scenes, and props that actually appear in, or are explicitly mentioned in, the current episode and are narratively effective for it

@@ -303,6 +303,7 @@
             <div class="asset-section-title">
               {{ t('common.role') }}
               <button class="asset-add-btn" @click="openAssetCreate('character')"><Plus :size="11" /> {{ t('common.add') }}</button>
+              <button class="asset-add-btn" @click="openAssetLibrary('character')"><Library :size="11" /> {{ t('assetLibrary.open') }}</button>
             </div>
             <template v-if="visualChars.length">
             <div class="character-asset-grid">
@@ -330,6 +331,7 @@
                       <div v-else class="character-portrait-empty">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                       </div>
+                      <span v-if="c.episode_count > 1" class="asset-shared-badge">{{ t('assetLibrary.shared', { n: c.episode_count }) }}</span>
                       <span class="asset-cover-badge" :class="(c.image_url || c.imageUrl) ? 'is-ready' : (isPendingCharImage(c.id) ? 'is-pending' : '')">
                         {{ (c.image_url || c.imageUrl) ? t('episode.asset.portraitReady') : (isPendingCharImage(c.id) ? t('episode.asset.portraitPending') : t('episode.asset.portraitTodo')) }}
                       </span>
@@ -369,6 +371,7 @@
             <div class="asset-section-title">
               {{ t('common.scene') }}
               <button class="asset-add-btn" @click="openAssetCreate('scene')"><Plus :size="11" /> {{ t('common.add') }}</button>
+              <button class="asset-add-btn" @click="openAssetLibrary('scene')"><Library :size="11" /> {{ t('assetLibrary.open') }}</button>
             </div>
             <template v-if="scenes.length">
             <div class="asset-grid">
@@ -395,6 +398,7 @@
                   <div v-else class="asset-cover-empty">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                   </div>
+                  <span v-if="s.episode_count > 1" class="asset-shared-badge">{{ t('assetLibrary.shared', { n: s.episode_count }) }}</span>
                   <span class="asset-cover-badge" :class="(s.image_url || s.imageUrl) ? 'is-ready' : (isPendingSceneImage(s.id) ? 'is-pending' : '')">{{ (s.image_url || s.imageUrl) ? t('episode.asset.ready') : (isPendingSceneImage(s.id) ? t('episode.asset.generating') : t('episode.asset.todo')) }}</span>
                 </div>
                 <div class="asset-body">
@@ -425,6 +429,7 @@
             <div class="asset-section-title">
               {{ t('common.prop') }}
               <button class="asset-add-btn" @click="openAssetCreate('prop')"><Plus :size="11" /> {{ t('common.add') }}</button>
+              <button class="asset-add-btn" @click="openAssetLibrary('prop')"><Library :size="11" /> {{ t('assetLibrary.open') }}</button>
             </div>
             <div v-if="propItems.length" class="asset-grid">
               <div
@@ -450,6 +455,7 @@
                   <div v-else class="asset-cover-empty">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
                   </div>
+                  <span v-if="p.episode_count > 1" class="asset-shared-badge">{{ t('assetLibrary.shared', { n: p.episode_count }) }}</span>
                   <span class="asset-cover-badge" :class="(p.image_url || p.imageUrl) ? 'is-ready' : (isPendingPropImage(p.id) ? 'is-pending' : '')">{{ (p.image_url || p.imageUrl) ? t('episode.asset.ready') : (isPendingPropImage(p.id) ? t('episode.asset.generating') : t('episode.asset.todo')) }}</span>
                 </div>
                 <div class="asset-body">
@@ -1414,13 +1420,25 @@
         </div>
       </div>
 
-      <ConfirmDialog
+      <!-- 移除素材：默认「移出本集」（不影响其他集），「从整部剧删除」需二次确认 -->
+      <AssetRemoveDialog
         :open="assetDelete.open"
-        :title="t('episode.delete.title', { type: assetDeleteTypeLabel })"
-        :message="t('episode.delete.message', { type: assetDeleteTypeLabel, name: assetDeleteName })"
+        :type-label="assetDeleteTypeLabel"
+        :name="assetDeleteName"
+        :episode-count="assetDelete.item?.episode_count || 1"
         :loading="assetDelete.loading"
-        @confirm="confirmDeleteAsset"
+        @unlink="confirmUnlinkAsset"
+        @delete="confirmDeleteAsset"
         @cancel="assetDelete.open = false"
+      />
+
+      <AssetLibraryDialog
+        :open="assetLibrary.open"
+        :episode-id="epId"
+        :type="assetLibrary.type"
+        :type-label="assetKindLabel(assetLibrary.type)"
+        @close="assetLibrary.open = false"
+        @linked="onAssetsLinked"
       />
     </main>
     </div>
@@ -1432,13 +1450,15 @@ import { toast } from 'vue-sonner'
 import { useI18n } from 'vue-i18n'
 import {
   Users, FileText, FolderKanban, Clapperboard, Download, Loader2,
-  Plus, X, ListTodo, CircleHelp,
+  Plus, X, ListTodo, CircleHelp, Library,
 } from 'lucide-vue-next'
 import { api, dramaAPI, episodeAPI, storyboardAPI, characterAPI, sceneAPI, propAPI, taskAPI, mergeAPI, aiConfigAPI, uploadAPI } from '~/composables/useApi'
 import { startTour, autoTour } from '~/composables/useTour'
 import { useAgent } from '~/composables/useAgent'
 import { toastError, mapError, MODERATION_RE } from '~/composables/useToast'
 import LocaleSwitcher from '~/components/LocaleSwitcher.vue'
+import AssetLibraryDialog from '~/components/AssetLibraryDialog.vue'
+import AssetRemoveDialog from '~/components/AssetRemoveDialog.vue'
 
 definePageMeta({ layout: 'studio' })
 
@@ -1723,6 +1743,34 @@ const assetDeleteName = computed(() => assetDelete.value.item?.name || assetDele
 
 function askDeleteAsset(type, item) {
   assetDelete.value = { open: true, type, item, loading: false }
+}
+
+async function confirmUnlinkAsset() {
+  const { type, item } = assetDelete.value
+  if (!item || assetDelete.value.loading) return
+  assetDelete.value.loading = true
+  try {
+    await episodeAPI.unlinkAsset(epId.value, type, item.id)
+    toast.success(t('assetRemove.unlinked', { type: assetDeleteTypeLabel.value }))
+    assetDelete.value.open = false
+    if (assetDetail.value.open && assetDetail.value.type === type && assetDetail.value.item?.id === item.id) closeAssetDetail()
+    await refresh()
+  } catch (e) {
+    toastError(e)
+  } finally {
+    assetDelete.value.loading = false
+  }
+}
+
+// 从项目（剧）素材库挑选已有素材加入本集，形象图直接复用
+const assetLibrary = ref({ open: false, type: 'character' })
+function openAssetLibrary(type) {
+  assetLibrary.value = { open: true, type }
+}
+async function onAssetsLinked(n) {
+  assetLibrary.value.open = false
+  if (n) toast.success(t('assetLibrary.added', { n, type: assetKindLabel(assetLibrary.value.type) }))
+  await refresh()
 }
 
 async function confirmDeleteAsset() {
@@ -4458,6 +4506,19 @@ onMounted(() => setTimeout(() => autoTour('episode', EPISODE_TOUR, t), 900))
 .asset-cover img { width: 100%; height: 100%; object-fit: cover; }
 .previewable-image { cursor: zoom-in; transition: transform 0.18s var(--ease-out), filter 0.18s var(--ease-out); }
 .previewable-image:hover { transform: scale(1.015); filter: saturate(1.04); }
+.asset-shared-badge {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  z-index: 1;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+  font-size: 9.5px;
+  font-weight: 700;
+  pointer-events: none;
+}
 .asset-cover-badge {
   position: absolute;
   top: 7px;

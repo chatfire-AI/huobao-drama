@@ -923,5 +923,28 @@
         "desc": "点这个「?」按钮可重新播放本页引导。祝创作顺利！"
       }
     }
+  },
+  "assetLibrary": {
+    "open": "从项目库添加",
+    "title": "从项目库添加{type}",
+    "hint": "同一部剧的{type}在各集之间共用，形象图直接复用，不会重新生成",
+    "empty": "项目库里没有可添加的{type}（都已在本集中）",
+    "usedIn": "已用于 {n} 集",
+    "unused": "未用于任何集",
+    "add": "加入本集（{n}）",
+    "added": "已加入 {n} 个{type}",
+    "shared": "共用 {n} 集"
+  },
+  "assetRemove": {
+    "title": "移除{type}「{name}」",
+    "unlinkDesc": "「移出本集」只从当前集移除，项目库和其他集都不受影响。",
+    "shared": "该{type}目前被 {n} 集共用。",
+    "deleteAll": "从整部剧删除",
+    "unlink": "移出本集",
+    "deleteTitle": "从整部剧删除「{name}」？",
+    "deleteDesc": "该{type}会从项目库删除，所有 {n} 个引用它的集都会失去它，无法撤销。",
+    "back": "返回",
+    "confirmDelete": "确认删除",
+    "unlinked": "已将{type}移出本集"
   }
 }

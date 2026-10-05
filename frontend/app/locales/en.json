@@ -923,5 +923,28 @@
         "desc": "Click this \"?\" button to replay this page's guide. Happy creating!"
       }
     }
+  },
+  "assetLibrary": {
+    "open": "From library",
+    "title": "Add {type} from project library",
+    "hint": "Within a series, {type} assets are shared across episodes and their images are reused, not regenerated",
+    "empty": "No {type} left to add (all are already in this episode)",
+    "usedIn": "Used in {n} episodes",
+    "unused": "Not used yet",
+    "add": "Add to episode ({n})",
+    "added": "Added {n} {type}",
+    "shared": "{n} episodes"
+  },
+  "assetRemove": {
+    "title": "Remove {type} \"{name}\"",
+    "unlinkDesc": "\"Remove from episode\" only removes it from this episode; the project library and other episodes are unaffected.",
+    "shared": "This {type} is shared by {n} episodes.",
+    "deleteAll": "Delete from series",
+    "unlink": "Remove from episode",
+    "deleteTitle": "Delete \"{name}\" from the whole series?",
+    "deleteDesc": "This {type} will be deleted from the project library and removed from all {n} episodes that use it. This cannot be undone.",
+    "back": "Back",
+    "confirmDelete": "Delete",
+    "unlinked": "{type} removed from this episode"
   }
 }
