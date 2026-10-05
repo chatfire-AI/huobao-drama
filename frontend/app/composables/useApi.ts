@@ -168,6 +168,8 @@ export const storageAPI = {
 export const settingsAPI = {
   contentLanguage: () => api.get<{ language: string }>('/settings/content-language'),
   setContentLanguage: (language: string) => api.put('/settings/content-language', { language }),
+  bannedWords: () => api.get<{ words: { word: string; replace: string }[] }>('/settings/banned-words'),
+  setBannedWords: (words: { word: string; replace?: string }[]) => api.put('/settings/banned-words', { words }),
 }
 
 // 服务器/Docker 部署的版本检查与更新（桌面版走 useDesktopBridge，不用此 API）

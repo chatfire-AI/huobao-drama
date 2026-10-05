@@ -45,6 +45,31 @@
             <p class="config-empty">{{ t('settings.general.languageHint') }}</p>
           </section>
 
+          <!-- AI 改写屏蔽词：避免剧本出现易触发下游内容审核的词 -->
+          <section class="card svc-group">
+            <div class="svc-group-head">
+              <div class="svc-group-heading">
+                <span class="svc-group-title">{{ t('settings.banned.title') }}</span>
+                <div class="svc-group-sub">{{ t('settings.banned.sub') }}</div>
+              </div>
+            </div>
+            <div class="banned-body">
+              <textarea
+                v-model="bannedText"
+                class="textarea banned-textarea"
+                rows="6"
+                :placeholder="t('settings.banned.placeholder')"
+              />
+              <div class="banned-foot">
+                <span class="config-sub">{{ t('settings.banned.hint', { n: bannedParsed.length }) }}</span>
+                <button class="btn btn-sm btn-primary" :disabled="bannedSaving || !bannedDirty" @click="saveBannedWords">
+                  <Loader2 v-if="bannedSaving" :size="12" class="animate-spin" />
+                  {{ t('common.save') }}
+                </button>
+              </div>
+            </div>
+          </section>
+
           <!-- 外观主题 -->
           <section class="card svc-group">
             <div class="svc-group-head">
@@ -1016,6 +1041,41 @@ const themeOptions = computed(() => [
   { value: 'system', label: t('settings.general.appearanceSystem') },
 ])
 
+// ===== AI 改写屏蔽词：每行「词 => 替换词」，只写词表示无替换（让 AI 换种说法） =====
+const bannedText = ref('')
+const bannedSavedText = ref('')
+const bannedSaving = ref(false)
+function formatBanned(list) {
+  return (list || []).map(w => w.replace ? `${w.word} => ${w.replace}` : w.word).join('\n')
+}
+const bannedParsed = computed(() => bannedText.value.split('\n')
+  .map(line => line.trim())
+  .filter(Boolean)
+  .map(line => {
+    const [word, replace = ''] = line.split(/\s*(?:=>|→|＝>)\s*/)
+    return { word: (word || '').trim(), replace: replace.trim() }
+  })
+  .filter(w => w.word))
+const bannedDirty = computed(() => bannedText.value.trim() !== bannedSavedText.value.trim())
+async function loadBannedWords() {
+  try {
+    const r = await settingsAPI.bannedWords()
+    bannedText.value = bannedSavedText.value = formatBanned(r?.words)
+  } catch { /* 静默 */ }
+}
+async function saveBannedWords() {
+  bannedSaving.value = true
+  try {
+    const r = await settingsAPI.setBannedWords(bannedParsed.value)
+    bannedText.value = bannedSavedText.value = formatBanned(r?.words)
+    toast.success(t('settings.banned.saved', { n: r?.words?.length || 0 }))
+  } catch (e) {
+    toastError(e)
+  } finally {
+    bannedSaving.value = false
+  }
+}
+
 async function loadContentLanguage() {
   try {
     const lang = (await settingsAPI.contentLanguage())?.language || 'zh'
@@ -1029,6 +1089,7 @@ async function setContentLanguage(lang) {
   await confirmUnifiedLanguage(lang)
 }
 onMounted(loadContentLanguage)
+onMounted(loadBannedWords)
 
 // agent type 用下划线（script_rewriter），skill 目录按 Mastra 规范用连字符（script-rewriter）
 const skillDirOf = (type) => type.replace(/_/g, '-')
@@ -1377,6 +1438,9 @@ onBeforeUnmount(stopUsagePoll)
 </script>
 
 <style scoped>
+.banned-body { display: flex; flex-direction: column; gap: 8px; padding: 4px 2px 2px; }
+.banned-textarea { width: 100%; min-height: 120px; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.7; resize: vertical; }
+.banned-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .settings-page { display: flex; flex-direction: column; height: 100%; background: var(--bg-base); }
 
 .settings-layout { display: flex; flex: 1; min-height: 0; }
