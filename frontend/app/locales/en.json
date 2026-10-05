@@ -28,7 +28,8 @@
     "serviceType": {
       "text": "Text",
       "image": "Image",
-      "video": "Video"
+      "video": "Video",
+      "audio": "Voice"
     }
   },
   "layout": {
@@ -290,7 +291,8 @@
       "meta": {
         "text": "Text capabilities: script rewriting, asset extraction, storyboard breaking",
         "image": "Static image generation: characters, scenes and shots",
-        "video": "Direct video generation, Seedance 2.0 by default"
+        "video": "Direct video generation, Seedance 2.0 by default",
+        "audio": "Line-by-line voiceover for storyboards, one consistent voice per character, Doubao TTS 2.0 by default"
       }
     },
     "styles": {
@@ -521,7 +523,8 @@
       "emptyDesc": "Characters, scenes and props will appear here after extraction. Extract each type separately or all at once in parallel.",
       "startExtract": "Start Extraction",
       "scriptFirst": "Please finish the script first",
-      "goBack": "Go back"
+      "goBack": "Go back",
+      "dub": "Voiceover"
     },
     "asset": {
       "fallbackType": "Asset",
@@ -923,5 +926,54 @@
         "desc": "Click this \"?\" button to replay this page's guide. Happy creating!"
       }
     }
+  },
+  "dub": {
+    "stats": "{done}/{total} lines · {sec}s",
+    "extract": "Extract lines",
+    "reextract": "Re-extract",
+    "extracting": "Extracting lines…",
+    "extracted": "Extracted {n} lines",
+    "synthAll": "Voice all",
+    "synthesizing": "Voicing {done}/{total}",
+    "notConfigured": "No voice service configured yet, speech synthesis is unavailable",
+    "goSettings": "Settings",
+    "voicesTitle": "Character voices",
+    "voicesHint": "Each character keeps one voice across the whole series",
+    "lineCount": "{n} lines",
+    "noVoice": "No voice",
+    "male": "Male",
+    "female": "Female",
+    "custom": "Custom / cloned voice",
+    "customVoicePh": "Cloned voice ID (starts with S_)",
+    "customVoiceTip": "Voice ID trained in the Doubao Voice console",
+    "apply": "Use",
+    "preview": "Preview",
+    "previewText": "Hello, I am {name}. This is a voice preview.",
+    "linesTitle": "Lines",
+    "linesHint": "Re-synthesize after editing a line or its tone; the voiceover is mixed in on merge export and original audio ducks under dialogue",
+    "emptyTitle": "No lines yet",
+    "emptyDesc": "Click \"Extract lines\" to pull speakers, lines and tone from storyboard descriptions",
+    "shot": "Shot {n}",
+    "unassigned": "No shot",
+    "shotFit": "Voice {dub}s / Shot {shot}s",
+    "overflow": "+{s}s over",
+    "emotionPh": "Tone direction, e.g. low voice, bitter and self-mocking",
+    "play": "Play",
+    "synth": "Synthesize",
+    "resynth": "Re-synthesize",
+    "delete": "Delete",
+    "addLine": "Add line",
+    "addToShot": "Choose a shot…",
+    "status": {
+      "pending": "Pending",
+      "processing": "Working",
+      "completed": "Done",
+      "failed": "Failed"
+    },
+    "reextractTitle": "Re-extract lines?",
+    "reextractMsg": "Lines will be re-extracted from storyboard descriptions and replace this episode's current lines (existing audio becomes stale). Character voices are kept.",
+    "enable": "Separate voiceover",
+    "enabledHint": "On: lines are voiced one by one and mixed in on merge export; original audio ducks under dialogue and stays at full level elsewhere (ambience/SFX)",
+    "disabledHint": "Off: the video model's own audio is used. Turn on to give each character a fixed voice and voice lines one by one"
   }
 }

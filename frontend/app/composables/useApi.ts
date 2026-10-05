@@ -128,6 +128,35 @@ export const mergeAPI = {
   status: (epId: number) => api.get(`/merge/episodes/${epId}/merge`),
   list: (epId: number) => api.get<any[]>(`/merge/episodes/${epId}/merges`),
 }
+export const dubAPI = {
+  catalog: () => api.get('/dub/catalog'),
+  get: (episodeId: number) => api.get(`/dub/episodes/${episodeId}`),
+  extract: (episodeId: number, textModel?: string, textConfigId?: number) =>
+    api.post(`/dub/episodes/${episodeId}/extract`, { text_model: textModel, text_config_id: textConfigId }),
+  cast: (episodeId: number, textModel?: string, textConfigId?: number) =>
+    api.post(`/dub/episodes/${episodeId}/cast`, { text_model: textModel, text_config_id: textConfigId }),
+  setEnabled: (dramaId: number, enabled: boolean) => api.put(`/dub/dramas/${dramaId}/enabled`, { enabled }),
+  setVoice: (dramaId: number, speaker: string, voice: string) => api.put(`/dub/dramas/${dramaId}/voices`, { speaker, voice }),
+  addLine: (episodeId: number, data: any) => api.post(`/dub/episodes/${episodeId}/lines`, data),
+  updateLine: (id: number, data: any) => api.put(`/dub/lines/${id}`, data),
+  deleteLine: (id: number) => api.del(`/dub/lines/${id}`),
+  synthesizeLine: (id: number, force = false, audio: any = {}) => api.post(`/dub/lines/${id}/synthesize`, { force, ...audio }),
+  synthesizeEpisode: (episodeId: number, audio: any = {}) => api.post(`/dub/episodes/${episodeId}/synthesize`, audio),
+  // 试听返回音频二进制，不走 JSON 封装
+  preview: async (voice: string, text: string, emotion?: string, audio: any = {}): Promise<Blob> => {
+    const resp = await fetch('/api/v1/dub/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ voice, text, emotion, ...audio }),
+    })
+    if (!resp.ok) {
+      const json = await resp.json().catch(() => ({}))
+      throw new Error(json.message || `${resp.status}`)
+    }
+    return resp.blob()
+  },
+}
+
 export const aiConfigAPI = {
   list: (t?: string) => api.get(`/ai-configs${t ? `?service_type=${t}` : ''}`),
   create: (d: any) => api.post('/ai-configs', d),

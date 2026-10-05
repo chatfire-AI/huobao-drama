@@ -28,7 +28,8 @@
     "serviceType": {
       "text": "텍스트",
       "image": "이미지",
-      "video": "영상"
+      "video": "영상",
+      "audio": "더빙"
     }
   },
   "layout": {
@@ -290,7 +291,8 @@
       "meta": {
         "text": "대본 재작성, 캐릭터·장면 추출, 스토리보드 분해 등 Agent 텍스트 기능",
         "image": "캐릭터 이미지, 장면 이미지, 샷 이미지 등 정지 이미지 생성",
-        "video": "샷 영상 직접 생성(기본 Seedance 2.0)"
+        "video": "샷 영상 직접 생성(기본 Seedance 2.0)",
+        "audio": "콘티 대사를 한 줄씩 음성 합성, 캐릭터별로 전 회차 동일한 목소리, 기본값 Doubao TTS 2.0"
       }
     },
     "styles": {
@@ -521,7 +523,8 @@
       "emptyDesc": "캐릭터, 장면, 소품은 추출 후 이곳에 표시됩니다. 개별로 추출하거나 일괄 병렬 추출할 수 있습니다.",
       "startExtract": "추출 시작",
       "scriptFirst": "먼저 대본을 완성하세요",
-      "goBack": "처리로 돌아가기"
+      "goBack": "처리로 돌아가기",
+      "dub": "더빙"
     },
     "asset": {
       "fallbackType": "에셋",
@@ -923,5 +926,54 @@
         "desc": "이 \"?\" 버튼으로 이 페이지의 가이드를 다시 재생할 수 있습니다. 즐거운 제작 되세요!"
       }
     }
+  },
+  "dub": {
+    "stats": "합성 {done}/{total}줄 · {sec}초",
+    "extract": "대사 추출",
+    "reextract": "다시 추출",
+    "extracting": "대사 추출 중…",
+    "extracted": "대사 {n}줄을 추출했습니다",
+    "synthAll": "일괄 더빙",
+    "synthesizing": "더빙 중 {done}/{total}",
+    "notConfigured": "더빙 서비스가 설정되지 않아 음성을 합성할 수 없습니다",
+    "goSettings": "설정으로",
+    "voicesTitle": "캐릭터 목소리",
+    "voicesHint": "같은 캐릭터는 전체 시리즈에서 같은 목소리를 사용합니다",
+    "lineCount": "{n}줄",
+    "noVoice": "목소리 미설정",
+    "male": "남성",
+    "female": "여성",
+    "custom": "사용자 지정 / 보이스 클론",
+    "customVoicePh": "클론 음성 ID (S_로 시작)",
+    "customVoiceTip": "Doubao 음성 콘솔에서 학습한 클론 음성 ID",
+    "apply": "사용",
+    "preview": "미리 듣기",
+    "previewText": "안녕하세요, {name}입니다. 미리 듣기입니다.",
+    "linesTitle": "대사",
+    "linesHint": "대사나 어조를 수정한 뒤 다시 합성하세요. 병합 내보내기 시 더빙이 믹스되고 대사 구간의 원래 소리는 자동으로 낮아집니다",
+    "emptyTitle": "대사가 없습니다",
+    "emptyDesc": "「대사 추출」을 눌러 콘티 설명에서 화자·대사·어조를 자동 추출합니다",
+    "shot": "컷 {n}",
+    "unassigned": "컷 미지정",
+    "shotFit": "음성 {dub}s / 영상 {shot}s",
+    "overflow": "{s}s 초과",
+    "emotionPh": "어조 지시, 예: 낮은 목소리로 씁쓸하게 자조하듯",
+    "play": "재생",
+    "synth": "합성",
+    "resynth": "다시 합성",
+    "delete": "삭제",
+    "addLine": "대사 추가",
+    "addToShot": "컷 선택…",
+    "status": {
+      "pending": "대기",
+      "processing": "합성 중",
+      "completed": "완료",
+      "failed": "실패"
+    },
+    "reextractTitle": "대사를 다시 추출할까요?",
+    "reextractMsg": "콘티 설명에서 대사를 다시 추출해 이 회차의 현재 대사를 덮어씁니다 (합성된 음성은 무효가 됩니다). 캐릭터 목소리는 유지됩니다.",
+    "enable": "별도 더빙",
+    "enabledHint": "켜짐: 대사를 한 줄씩 더빙해 병합 내보내기 시 믹스합니다. 대사가 나올 때 원래 소리를 자동으로 낮추고, 그 외에는 환경음/효과음을 그대로 유지합니다",
+    "disabledHint": "꺼짐: 영상 모델이 생성한 소리를 사용합니다. 켜면 캐릭터별 고정 목소리로 대사를 더빙할 수 있습니다"
   }
 }

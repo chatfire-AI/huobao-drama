@@ -3,7 +3,7 @@
  * 自 MySQL 迁移：varchar(x)→text（SQLite 不校验长度）、int→integer、
  * boolean→integer boolean mode、时间戳仍为 text 存 ISO 字符串，表/列名不变。
  */
-import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, real, primaryKey } from 'drizzle-orm/sqlite-core'
 
 export const dramas = sqliteTable('dramas', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -287,5 +287,34 @@ export const assets = sqliteTable('assets', {
 export const appSettings = sqliteTable('app_settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
+  updatedAt: text('updated_at').notNull(),
+})
+
+// 配音台词（status: pending / processing / completed / failed）
+export const dubLines = sqliteTable('dub_lines', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  episodeId: integer('episode_id').notNull(),
+  storyboardId: integer('storyboard_id'),
+  lineIndex: integer('line_index').notNull().default(0),
+  speaker: text('speaker').notNull(),
+  text: text('text').notNull(),
+  emotion: text('emotion'),
+  audioUrl: text('audio_url'),
+  // 合成参数指纹（音色|台词|语气|资源），未变化时复用已有音频，避免重复计费
+  audioKey: text('audio_key'),
+  duration: real('duration'),
+  status: text('status').default('pending'),
+  errorMsg: text('error_msg'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+})
+
+// 剧级音色绑定：说话人 → 音色 ID
+export const dubVoices = sqliteTable('dub_voices', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  dramaId: integer('drama_id').notNull(),
+  speaker: text('speaker').notNull(),
+  voice: text('voice').notNull(),
+  createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 })

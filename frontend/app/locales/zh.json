@@ -28,7 +28,8 @@
     "serviceType": {
       "text": "文本",
       "image": "图片",
-      "video": "视频"
+      "video": "视频",
+      "audio": "配音"
     }
   },
   "layout": {
@@ -290,7 +291,8 @@
       "meta": {
         "text": "剧本改写、角色场景提取、分镜拆解等 Agent 文本能力",
         "image": "角色图、场景图与镜头图等静态图像生成",
-        "video": "镜头视频直出生成，默认 Seedance 2.0"
+        "video": "镜头视频直出生成，默认 Seedance 2.0",
+        "audio": "分镜台词逐句配音，角色音色全剧统一，默认豆包语音合成 2.0"
       }
     },
     "styles": {
@@ -521,7 +523,8 @@
       "emptyDesc": "角色、场景和道具会在提取后显示在这里，可分别单独提取，也可一键并行提取全部。",
       "startExtract": "开始提取",
       "scriptFirst": "请先完成剧本编写",
-      "goBack": "返回处理"
+      "goBack": "返回处理",
+      "dub": "配音"
     },
     "asset": {
       "fallbackType": "资产",
@@ -923,5 +926,54 @@
         "desc": "点这个「?」按钮可重新播放本页引导。祝创作顺利！"
       }
     }
+  },
+  "dub": {
+    "stats": "已合成 {done}/{total} 句 · {sec} 秒",
+    "extract": "提取台词",
+    "reextract": "重新提取",
+    "extracting": "正在提取台词…",
+    "extracted": "已提取 {n} 句台词",
+    "synthAll": "批量配音",
+    "synthesizing": "配音中 {done}/{total}",
+    "notConfigured": "尚未配置配音服务，无法合成语音",
+    "goSettings": "去设置",
+    "voicesTitle": "角色音色",
+    "voicesHint": "同一角色在整部剧共用一个音色，保证每集声音一致",
+    "lineCount": "{n} 句",
+    "noVoice": "未设置音色",
+    "male": "男声",
+    "female": "女声",
+    "custom": "自定义 / 声音复刻",
+    "customVoicePh": "声音复刻音色 ID（S_开头）",
+    "customVoiceTip": "填写在豆包语音控制台训练好的复刻音色 ID",
+    "apply": "使用",
+    "preview": "试听",
+    "previewText": "你好，我是{name}，这是一段试听。",
+    "linesTitle": "台词",
+    "linesHint": "修改台词或语气后需重新合成；拼接导出时自动混入配音，对白处原声自动压低",
+    "emptyTitle": "还没有台词",
+    "emptyDesc": "点击「提取台词」，从分镜描述中自动提取说话人、台词和语气",
+    "shot": "分镜 {n}",
+    "unassigned": "未关联分镜",
+    "shotFit": "配音 {dub}s / 画面 {shot}s",
+    "overflow": "超出 {s}s",
+    "emotionPh": "语气指令，如：压低声音、带着苦涩自嘲地说",
+    "play": "播放",
+    "synth": "合成",
+    "resynth": "重新合成",
+    "delete": "删除",
+    "addLine": "添加台词",
+    "addToShot": "选择分镜…",
+    "status": {
+      "pending": "待合成",
+      "processing": "合成中",
+      "completed": "完成",
+      "failed": "失败"
+    },
+    "reextractTitle": "重新提取台词？",
+    "reextractMsg": "将用分镜描述重新提取并覆盖本集现有台词（已合成的音频会失效），角色音色保持不变。",
+    "enable": "单独配音",
+    "enabledHint": "已开启：按台词逐句配音，拼接导出时混入配音；对白响起时原声自动压低，其余时间保留原声（环境音/音效）",
+    "disabledHint": "未开启：使用视频模型自带的声音。开启后可为角色绑定固定音色，逐句配音"
   }
 }

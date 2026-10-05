@@ -46,6 +46,14 @@
             :show-config="videoModelMultiCfg"
           />
           <ModelSelect
+            v-if="audioModelOptions.length"
+            v-model="audioModel"
+            :label="t('common.serviceType.audio')"
+            :options="audioModelOptions"
+            :default-label="t('episode.model.defaultWith', { model: audioModelOptions[0].model })"
+            :show-config="audioModelMultiCfg"
+          />
+          <ModelSelect
             v-model="episodeResolution"
             :label="t('episode.topbar.resolution')"
             :options="resolutionOptions"
@@ -478,6 +486,18 @@
               </div>
             </div>
             <div v-else class="asset-props-empty">{{ t('episode.asset.propsEmpty') }}</div>
+
+            <!-- 配音（可选）：开启「单独配音」后提取台词、绑定角色音色、逐句合成，拼接导出时自动混入 -->
+            <div class="asset-section-title">{{ t('episode.prod.dub') }}</div>
+            <DubPanel
+              :episode-id="epId"
+              :drama-id="dramaId"
+              :storyboards="sbs"
+              :text-model="chatModelOverride()"
+              :text-config-id="chatConfigId()"
+              :audio-model="bareModelName(audioModel) || undefined"
+              :audio-config-id="ownerConfigId(audioModelOptions, audioModel)"
+            />
             </template>
           </div>
 
@@ -1439,6 +1459,7 @@ import { startTour, autoTour } from '~/composables/useTour'
 import { useAgent } from '~/composables/useAgent'
 import { toastError, mapError, MODERATION_RE } from '~/composables/useToast'
 import LocaleSwitcher from '~/components/LocaleSwitcher.vue'
+import DubPanel from '~/components/DubPanel.vue'
 
 definePageMeta({ layout: 'studio' })
 
@@ -1560,9 +1581,10 @@ const prodTabIdx = computed({
 })
 const imageConfigs = ref([])
 const videoConfigs = ref([])
+const audioConfigs = ref([])
 const textConfigs = ref([])
 // 生成时可选模型：空串 = 跟随配置默认（models[0]）；选择持久化到 localStorage，刷新页面后保留
-const MODEL_STORE_KEYS = { chat: 'huobao:model:chat', image: 'huobao:model:image', video: 'huobao:model:video' }
+const MODEL_STORE_KEYS = { chat: 'huobao:model:chat', image: 'huobao:model:image', video: 'huobao:model:video', audio: 'huobao:model:audio' }
 function readStoredModel(key, legacyKey = '') {
   try { return localStorage.getItem(key) || (legacyKey && localStorage.getItem(legacyKey)) || '' } catch { return '' }
 }
@@ -1570,6 +1592,7 @@ function readStoredModel(key, legacyKey = '') {
 const chatModel = ref(readStoredModel(MODEL_STORE_KEYS.chat, 'huobao:model:rewrite'))
 const imageModel = ref(readStoredModel(MODEL_STORE_KEYS.image))
 const videoModel = ref(readStoredModel(MODEL_STORE_KEYS.video))
+const audioModel = ref(readStoredModel(MODEL_STORE_KEYS.audio))
 function persistModel(modelRef, key) {
   watch(modelRef, v => {
     try { v ? localStorage.setItem(key, v) : localStorage.removeItem(key) } catch {}
@@ -1578,6 +1601,7 @@ function persistModel(modelRef, key) {
 persistModel(chatModel, MODEL_STORE_KEYS.chat)
 persistModel(imageModel, MODEL_STORE_KEYS.image)
 persistModel(videoModel, MODEL_STORE_KEYS.video)
+persistModel(audioModel, MODEL_STORE_KEYS.audio)
 // 左侧菜单栏收起/展开：收起为窄图标栏给内容区让位，持久化到 localStorage
 const SIDEBAR_COLLAPSED_KEY = 'huobao:sidebar-collapsed'
 const sidebarCollapsed = ref((() => {
@@ -2108,6 +2132,7 @@ function hasMultiConfigs(options) {
 const textModelOptions = computed(() => collectModelOptions(textConfigs.value))
 const imageModelOptions = computed(() => collectModelOptions(imageConfigs.value))
 const videoModelOptions = computed(() => collectModelOptions(videoConfigs.value))
+const audioModelOptions = computed(() => collectModelOptions(audioConfigs.value))
 const selectedVideoConfig = computed(() => {
   const selected = videoModelOptions.value.find(option => option.key === videoModel.value)
   if (selected) return videoConfigs.value.find(config => config.id === selected.configId)
@@ -2183,9 +2208,11 @@ function pruneStaleModel(modelRef, optionsRef) {
 pruneStaleModel(chatModel, textModelOptions)
 pruneStaleModel(imageModel, imageModelOptions)
 pruneStaleModel(videoModel, videoModelOptions)
+pruneStaleModel(audioModel, audioModelOptions)
 const textModelMultiCfg = computed(() => hasMultiConfigs(textModelOptions.value))
 const imageModelMultiCfg = computed(() => hasMultiConfigs(imageModelOptions.value))
 const videoModelMultiCfg = computed(() => hasMultiConfigs(videoModelOptions.value))
+const audioModelMultiCfg = computed(() => hasMultiConfigs(audioModelOptions.value))
 
 // Production step helpers
 // ========== 任务列表面板 ==========
@@ -3353,14 +3380,16 @@ async function doMerge(ids) {
 }
 async function loadConfigs() {
   try {
-    const [imgCfgs, vidCfgs, txtCfgs] = await Promise.all([
+    const [imgCfgs, vidCfgs, txtCfgs, audCfgs] = await Promise.all([
       aiConfigAPI.list('image'),
       aiConfigAPI.list('video'),
       aiConfigAPI.list('text'),
+      aiConfigAPI.list('audio'),
     ])
     imageConfigs.value = imgCfgs || []
     videoConfigs.value = vidCfgs || []
     textConfigs.value = txtCfgs || []
+    audioConfigs.value = audCfgs || []
   } catch (e) { console.error('Failed to load AI configs', e) }
 }
 

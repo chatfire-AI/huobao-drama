@@ -291,7 +291,7 @@ function createMaxTokensFetch(providerName: string, inner?: typeof fetch): typeo
   }
 }
 
-async function getModel(fileModel: string | undefined, modelOverride?: string, textConfigId?: number) {
+export async function getModel(fileModel: string | undefined, modelOverride?: string, textConfigId?: number) {
   // 请求可指定文本配置（含其 provider/baseUrl/apiKey），否则回退到当前启用配置
   const textConfig = (textConfigId ? await getConfigById(textConfigId) : null) || await getTextConfig()
   const modelName = modelOverride || fileModel || textConfig.model

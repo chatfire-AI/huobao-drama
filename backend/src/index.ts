@@ -23,6 +23,7 @@ import props from './routes/props.js'
 import settings from './routes/settings.js'
 import storage from './routes/storage.js'
 import serverUpdate from './routes/serverUpdate.js'
+import dub from './routes/dub.js'
 import { requestLogger, errorHandler } from './middleware/logger.js'
 import { db, schema } from './db/index.js'
 import { eq } from 'drizzle-orm'
@@ -69,6 +70,7 @@ api.route('/props', props)
 api.route('/storage', storage)
 api.route('/settings', settings)
 api.route('/server-update', serverUpdate)
+api.route('/dub', dub)
 
 app.route('/api/v1', api)
 

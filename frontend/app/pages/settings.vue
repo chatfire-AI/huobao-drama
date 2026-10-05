@@ -748,6 +748,7 @@ const serviceTypes = computed(() => [
   { type: 'text', label: t('common.serviceType.text') },
   { type: 'image', label: t('common.serviceType.image') },
   { type: 'video', label: t('common.serviceType.video') },
+  { type: 'audio', label: t('common.serviceType.audio') },
 ])
 const providers = ['gemini', 'openai', 'volcengine', 'minimax', 'aliyun']
 const providerSelectOptions = computed(() => providers.map(p => ({ label: p, value: p })))
@@ -755,6 +756,7 @@ const serviceMeta = computed(() => ({
   text: { label: t('common.serviceType.text'), desc: t('settings.ai.meta.text') },
   image: { label: t('common.serviceType.image'), desc: t('settings.ai.meta.image') },
   video: { label: t('common.serviceType.video'), desc: t('settings.ai.meta.video') },
+  audio: { label: t('common.serviceType.audio'), desc: t('settings.ai.meta.audio') },
 }))
 const providerPresets = {
   text: {
@@ -769,6 +771,10 @@ const providerPresets = {
     aliyun: { label: '阿里云百炼 Wan 3.0', baseUrl: 'https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com', models: ['wan3.0-video', 'wan3.0-video-prime'] },
     volcengine: { label: 'Seedance 2.0 官方', baseUrl: 'https://ark.cn-beijing.volces.com', models: ['doubao-seedance-2-0-mini-260615', 'doubao-seedance-2-0-fast-260128', 'doubao-seedance-2-0-260128'] },
     minimax: { label: 'MiniMax H3 官方', baseUrl: 'https://api.minimaxi.com', models: ['MiniMax-H3'] },
+  },
+  // 配音：API Key 填新版控制台 API Key，或旧版「APP_ID:Access_Token」；声音复刻音色（S_ 开头）自动走 seed-icl-2.0
+  audio: {
+    volcengine: { label: '豆包语音合成 2.0', baseUrl: 'https://openspeech.bytedance.com', models: ['seed-tts-2.0'] },
   },
 }
 const huobaoQuickConfigs = computed(() => {

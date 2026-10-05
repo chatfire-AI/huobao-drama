@@ -28,7 +28,8 @@
     "serviceType": {
       "text": "テキスト",
       "image": "画像",
-      "video": "動画"
+      "video": "動画",
+      "audio": "吹き替え"
     }
   },
   "layout": {
@@ -290,7 +291,8 @@
       "meta": {
         "text": "脚本リライト、キャラクター・シーン抽出、分镜分解などの Agent テキスト能力",
         "image": "キャラクター図、シーン図、ショット図などの静止画生成",
-        "video": "ショット動画の直接生成（デフォルト Seedance 2.0）"
+        "video": "ショット動画の直接生成（デフォルト Seedance 2.0）",
+        "audio": "絵コンテのセリフを一行ずつ音声化、キャラクターごとに全話共通の声、既定は Doubao TTS 2.0"
       }
     },
     "styles": {
@@ -521,7 +523,8 @@
       "emptyDesc": "キャラクター、シーン、小道具は抽出後ここに表示されます。個別に抽出するか、一括で並行抽出できます。",
       "startExtract": "抽出を開始",
       "scriptFirst": "先に脚本を完成させてください",
-      "goBack": "処理に戻る"
+      "goBack": "処理に戻る",
+      "dub": "吹き替え"
     },
     "asset": {
       "fallbackType": "資産",
@@ -923,5 +926,54 @@
         "desc": "この「?」ボタンでこのページのガイドを再表示できます。良い制作を！"
       }
     }
+  },
+  "dub": {
+    "stats": "合成済み {done}/{total} 行 · {sec} 秒",
+    "extract": "セリフ抽出",
+    "reextract": "再抽出",
+    "extracting": "セリフを抽出中…",
+    "extracted": "{n} 行のセリフを抽出しました",
+    "synthAll": "一括吹き替え",
+    "synthesizing": "吹き替え中 {done}/{total}",
+    "notConfigured": "吹き替えサービスが未設定のため、音声合成できません",
+    "goSettings": "設定へ",
+    "voicesTitle": "キャラクターの声",
+    "voicesHint": "同じキャラクターは全話で同じ声を使用します",
+    "lineCount": "{n} 行",
+    "noVoice": "声が未設定",
+    "male": "男性",
+    "female": "女性",
+    "custom": "カスタム / ボイスクローン",
+    "customVoicePh": "クローン音声 ID（S_ で始まる）",
+    "customVoiceTip": "Doubao 音声コンソールで学習したクローン音声 ID",
+    "apply": "使用",
+    "preview": "試聴",
+    "previewText": "こんにちは、{name}です。これは試聴です。",
+    "linesTitle": "セリフ",
+    "linesHint": "セリフや語気を変更したら再合成してください。結合書き出し時に吹き替えをミックスし、セリフ部分の元音声は自動で下がります",
+    "emptyTitle": "セリフがありません",
+    "emptyDesc": "「セリフ抽出」で絵コンテ説明から話者・セリフ・語気を自動抽出します",
+    "shot": "カット {n}",
+    "unassigned": "カット未指定",
+    "shotFit": "音声 {dub}s / 映像 {shot}s",
+    "overflow": "{s}s 超過",
+    "emotionPh": "語気の指示（例：声を落として、苦い自嘲を込めて）",
+    "play": "再生",
+    "synth": "合成",
+    "resynth": "再合成",
+    "delete": "削除",
+    "addLine": "セリフを追加",
+    "addToShot": "カットを選択…",
+    "status": {
+      "pending": "未合成",
+      "processing": "合成中",
+      "completed": "完了",
+      "failed": "失敗"
+    },
+    "reextractTitle": "セリフを再抽出しますか？",
+    "reextractMsg": "絵コンテ説明からセリフを再抽出し、このエピソードの現在のセリフを上書きします（合成済み音声は無効になります）。キャラクターの声は保持されます。",
+    "enable": "個別吹き替え",
+    "enabledHint": "オン：セリフを一行ずつ吹き替え、結合書き出し時にミックスします。セリフ中は元の音声を自動で下げ、それ以外は環境音・効果音をそのまま残します",
+    "disabledHint": "オフ：動画モデルが生成した音声を使用します。オンにするとキャラクターごとに固定の声で吹き替えできます"
   }
 }
