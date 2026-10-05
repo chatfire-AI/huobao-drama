@@ -923,5 +923,19 @@
         "desc": "이 \"?\" 버튼으로 이 페이지의 가이드를 다시 재생할 수 있습니다. 즐거운 제작 되세요!"
       }
     }
+  },
+  "scriptLinks": {
+    "preview": "미리보기",
+    "edit": "편집",
+    "previewTip": "미리보기: 본문에 나온 기존 캐릭터/장면/소품이 링크로 표시되며 클릭하면 소재를 엽니다",
+    "dblclickEdit": "더블클릭하여 편집",
+    "kind": {
+      "character": "캐릭터",
+      "scene": "장면",
+      "prop": "소품"
+    },
+    "imageReady": "이미지 생성됨",
+    "imageTodo": "이미지 미생성",
+    "clickOpen": "클릭하여 보기"
   }
 }

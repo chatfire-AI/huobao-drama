@@ -174,16 +174,32 @@
             </div>
             <div class="toolbar-right">
               <span v-if="rawLen" class="char-count">{{ t('episode.script.charCount', { n: rawLen }) }}</span>
+              <div v-if="localRaw.trim()" class="script-view-toggle" role="group">
+                <button class="btn btn-sm" :class="{ 'is-on': !rawEditing }" :title="t('scriptLinks.previewTip')" @click="rawEditing = false">{{ t('scriptLinks.preview') }}</button>
+                <button class="btn btn-sm" :class="{ 'is-on': rawEditing }" @click="rawEditing = true">{{ t('scriptLinks.edit') }}</button>
+              </div>
               <button class="btn btn-sm" @click="saveRaw(); toast.success(t('episode.script.saved'))">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                 {{ t('common.save') }}
               </button>
             </div>
           </div>
+          <!-- 预览：文中出现的本剧已有角色/场景/道具显示为链接，点击打开素材详情；双击或「编辑」回到文本框 -->
+          <ScriptPreview
+            v-if="!rawEditing && localRaw.trim()"
+            :text="localRaw"
+            :characters="drama?.characters || []"
+            :scenes="drama?.scenes || []"
+            :prop-items="drama?.props || []"
+            @open="openAssetDetail"
+            @edit="rawEditing = true"
+          />
           <textarea
+            v-else
             class="fill-textarea"
             v-model="localRaw"
             :placeholder="t('episode.script.rawPlaceholder')"
+            @focus="rawEditing = true"
           />
         </div>
 
@@ -198,6 +214,10 @@
             </div>
             <div class="toolbar-right">
               <span v-if="scriptLen" class="char-count">{{ t('episode.script.charCount', { n: scriptLen }) }}</span>
+              <div v-if="localScript.trim() && !(rn && rt === 'script_rewriter')" class="script-view-toggle" role="group">
+                <button class="btn btn-sm" :class="{ 'is-on': !scriptEditing }" :title="t('scriptLinks.previewTip')" @click="scriptEditing = false">{{ t('scriptLinks.preview') }}</button>
+                <button class="btn btn-sm" :class="{ 'is-on': scriptEditing }" @click="scriptEditing = true">{{ t('scriptLinks.edit') }}</button>
+              </div>
               <button v-if="rawContent" class="btn btn-sm" @click="skipRewrite">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/><path d="M13 18l6-6-6-6"/></svg>
                 {{ t('episode.script.skipRewrite') }}
@@ -233,7 +253,16 @@
             <Loader2 :size="24" class="animate-spin" style="color:var(--accent)" />
             <div class="loading-text">{{ t('episode.script.rewriting') }}</div>
           </div>
-          <textarea v-else class="fill-textarea" v-model="localScript" :placeholder="t('episode.script.scriptPlaceholder')" />
+          <ScriptPreview
+            v-else-if="!scriptEditing && localScript.trim()"
+            :text="localScript"
+            :characters="drama?.characters || []"
+            :scenes="drama?.scenes || []"
+            :prop-items="drama?.props || []"
+            @open="openAssetDetail"
+            @edit="scriptEditing = true"
+          />
+          <textarea v-else class="fill-textarea" v-model="localScript" :placeholder="t('episode.script.scriptPlaceholder')" @focus="scriptEditing = true" />
         </div>
       </div>
 
@@ -1439,6 +1468,7 @@ import { startTour, autoTour } from '~/composables/useTour'
 import { useAgent } from '~/composables/useAgent'
 import { toastError, mapError, MODERATION_RE } from '~/composables/useToast'
 import LocaleSwitcher from '~/components/LocaleSwitcher.vue'
+import ScriptPreview from '~/components/ScriptPreview.vue'
 
 definePageMeta({ layout: 'studio' })
 
@@ -1505,6 +1535,9 @@ async function loadExportMerges() {
   try { exportMerges.value = await mergeAPI.list(epId.value) || [] } catch { /* 静默 */ }
 }
 
+// 剧本两步默认「预览」（素材名显示为链接），点「编辑」或双击切回文本框
+const rawEditing = ref(false)
+const scriptEditing = ref(false)
 const scriptStep = ref(storedPanel ? (storedPanel.scriptStep === 0 ? 0 : 1) : 0)
 // 旧版本地存储的 'storyboard' 子步骤已并入 'videos'（视频制作）
 const storedProdTab = storedPanel?.prodTab === 'storyboard' ? 'videos' : storedPanel?.prodTab
@@ -3378,6 +3411,9 @@ onMounted(() => setTimeout(() => autoTour('episode', EPISODE_TOUR, t), 900))
 </script>
 
 <style scoped>
+.script-view-toggle { display: inline-flex; gap: 2px; padding: 2px; border-radius: 10px; background: var(--bg-hover); }
+.script-view-toggle .btn { box-shadow: none; background: transparent; }
+.script-view-toggle .btn.is-on { background: var(--bg-surface); color: var(--text-1); box-shadow: var(--button-shadow, 0 1px 2px rgba(0,0,0,0.06)); }
 /* ===== Studio Layout ===== */
 .studio {
   display: flex;
