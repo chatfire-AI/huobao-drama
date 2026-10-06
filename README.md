@@ -613,7 +613,7 @@ Common checks:
 
 ```bash
 cd backend && npm run typecheck
-cd ../frontend && npm run build
+cd ../frontend && npm run generate  # emits index.html (npm run build does not)
 ```
 
 ---
