@@ -614,7 +614,7 @@ Issue와 Pull Request를 환영합니다!
 
 ```bash
 cd backend && npm run typecheck
-cd ../frontend && npm run build
+cd ../frontend && npm run generate  # index.html을 산출함(npm run build는 산출하지 않음)
 ```
 
 ---
