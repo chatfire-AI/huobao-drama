@@ -733,6 +733,8 @@
       "emptyGeneratingDesc": "生成完成后可在此播放预览",
       "emptyNoVideoDesc": "点击下方按钮为当前分镜生成视频",
       "generateVideo": "生成视频",
+      "uploadVideo": "上传视频",
+      "uploadDone": "视频已上传并设为当前分镜视频",
       "history": "历史视频",
       "current": "当前",
       "deleteRecord": "删除该记录",

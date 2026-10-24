@@ -716,6 +716,14 @@
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   {{ t('common.download') }}
                 </a>
+                <button
+                  class="btn btn-sm"
+                  :disabled="uploadingSbVideo"
+                  @click="uploadSbVideo"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  {{ t('episode.vid.uploadVideo') }}
+                </button>
               </div>
               <div class="video-player-stage">
                 <video
@@ -3023,6 +3031,27 @@ async function removeHistoryVideo(t) {
     if (previewVideoUrl.value === taskVideoPath(t)) previewVideoUrl.value = ''
     toast.success(t('episode.vid.historyDeleted'))
   } catch (e) { toastError(e, { fallback: 'common.deleteFailed' }) }
+}
+
+// ===== 分镜视频手动上传(在外部生成好的视频直接设为当前视频)=====
+const uploadingSbVideo = ref(false)
+function uploadSbVideo() {
+  const sb = selectedSb.value
+  if (!sb?.id || uploadingSbVideo.value) return
+  pickFile('video/mp4,video/webm,video/quicktime,.mp4,.webm,.m4v,.mov', async (file) => {
+    uploadingSbVideo.value = true
+    try {
+      const res = await uploadAPI.video(file)
+      await taskAPI.manualVideo({ storyboard_id: sb.id, drama_id: dramaId, video_path: res.path })
+      toast.success(t('episode.vid.uploadDone'))
+      await refresh()
+      await loadSbVideoHistory()
+    } catch (e) {
+      toastError(e)
+    } finally {
+      uploadingSbVideo.value = false
+    }
+  })
 }
 
 function formatHistoryTime(iso) {

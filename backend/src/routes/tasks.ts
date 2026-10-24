@@ -1,11 +1,15 @@
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
 import { db, schema } from '../db/index.js'
-import { success, created, badRequest } from '../utils/response.js'
+import { success, created, badRequest, now } from '../utils/response.js'
 import { generateImage, generateVideo } from '../services/generation.js'
 import { getActiveConfig, getConfigById } from '../services/ai.js'
 import { getDramaStylePrompt } from '../services/style-preset.js'
 import { logTaskError, logTaskPayload, logTaskStart, logTaskSuccess } from '../utils/task-logger.js'
+import fs from 'node:fs'
+import { getAbsolutePath } from '../utils/storage.js'
+import { extractVideoPoster } from '../utils/video-poster.js'
+import { ffmpeg } from '../utils/ffmpeg.js'
 
 const app = new Hono()
 
@@ -204,6 +208,63 @@ app.post('/', async (c) => {
     logTaskError('TaskAPI', 'generate', { type, error: err.message })
     return badRequest(c, err.message)
   }
+})
+
+// POST /tasks/manual-video — 手动上传已生成视频:登记为已完成任务并回写分镜
+// 与生图侧的手动上传对称:文件先经 /upload/video 落盘,这里只做登记,
+// 登记后视频即进入该分镜的历史列表,成片拼接也会直接使用它。
+app.post('/manual-video', async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const storyboardId = Number(body.storyboard_id)
+  const videoPath = String(body.video_path || '')
+  if (!storyboardId) return badRequest(c, 'storyboard_id 必填')
+  if (!videoPath.startsWith('static/')) return badRequest(c, 'video_path 不合法')
+
+  const [sb] = await db.select().from(schema.storyboards).where(eq(schema.storyboards.id, storyboardId))
+  if (!sb) return badRequest(c, '分镜不存在')
+  if (!fs.existsSync(getAbsolutePath(videoPath))) return badRequest(c, '视频文件不存在')
+
+  // 时长以文件实测为准(拼接按分镜时长统计,外部视频时长常与分镜设定不符)
+  const duration = await new Promise<number>((resolve) => {
+    ffmpeg.ffprobe(getAbsolutePath(videoPath), (err: any, metadata: any) => {
+      if (err) { resolve(0); return }
+      resolve(Math.round(metadata?.format?.duration || 0))
+    })
+  })
+  // 海报帧供列表/封面展示(与 AI 生成完成时保持一致)
+  await extractVideoPoster(videoPath)
+
+  let dramaId: number | null = body.drama_id != null ? Number(body.drama_id) : null
+  if (dramaId == null && sb.episodeId) {
+    const [ep] = await db.select().from(schema.episodes).where(eq(schema.episodes.id, sb.episodeId))
+    dramaId = ep?.dramaId ?? null
+  }
+
+  const ts = now()
+  await db.insert(schema.sysTask).values({
+    type: 'video',
+    storyboardId,
+    dramaId,
+    provider: 'manual',
+    model: 'manual-upload',
+    params: JSON.stringify({ manual: true, duration: duration || undefined }),
+    resultUrl: videoPath,
+    localPath: videoPath,
+    status: 'completed',
+    createdAt: ts,
+    updatedAt: ts,
+    completedAt: ts,
+  })
+  await db.update(schema.storyboards)
+    .set({ videoUrl: videoPath, duration: duration || undefined, updatedAt: ts })
+    .where(eq(schema.storyboards.id, storyboardId))
+
+  const rows = await db.select().from(schema.sysTask)
+    .where(eq(schema.sysTask.storyboardId, storyboardId))
+  const mine = rows.filter(r => r.localPath === videoPath && r.provider === 'manual')
+    .sort((a, b) => b.id - a.id)[0]
+  logTaskSuccess('TaskAPI', 'manual-video', { id: mine?.id, storyboardId, videoPath, duration })
+  return success(c, mine || null)
 })
 
 // GET /tasks/:id — 轮询任务状态
