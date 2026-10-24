@@ -733,6 +733,8 @@
       "emptyGeneratingDesc": "生成完了後、ここでプレビューできます",
       "emptyNoVideoDesc": "下のボタンでこの分镜の動画を生成します",
       "generateVideo": "動画を生成",
+      "uploadVideo": "動画をアップロード",
+      "uploadDone": "動画をアップロードし、現在のショット動画に設定しました",
       "history": "動画履歴",
       "current": "現在",
       "deleteRecord": "この記録を削除",

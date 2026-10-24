@@ -733,6 +733,8 @@
       "emptyGeneratingDesc": "Once generated, it can be previewed here",
       "emptyNoVideoDesc": "Click the button below to generate a video for this shot",
       "generateVideo": "Generate Video",
+      "uploadVideo": "Upload Video",
+      "uploadDone": "Video uploaded and set as the current shot video",
       "history": "Video History",
       "current": "Current",
       "deleteRecord": "Delete this record",
