@@ -86,65 +86,112 @@ export async function mergeEpisodeVideos(episodeId: number, dramaId: number, sto
 }
 
 async function doMerge(mergeId: number, episodeId: number, videos: string[]) {
-  // 生成 concat 列表文件
-  const listDir = path.join(STORAGE_ROOT, 'temp')
-  fs.mkdirSync(listDir, { recursive: true })
-  const listPath = path.join(listDir, `${uuid()}.txt`)
+  // 拼接前逐片段归一化：不同来源的片段（生成/上传）分辨率、帧率、时间基（time_base）
+  // 经常不一致，直接 concat 分离器 + genpts 拼接会因时间戳错位疯狂补帧、耗时数小时。
+  // 这里先把每个片段转码为统一规格（同画布/帧率/时间基/音频采样率，缺音频补静音），
+  // 再用 concat 分离器流拷贝拼接，速度与稳定性都远好于全片一次重编码。
+  const workDir = path.join(STORAGE_ROOT, 'temp', `merge-${mergeId}-${uuid()}`)
+  fs.mkdirSync(workDir, { recursive: true })
 
-  const listContent = videos
-    .map(v => `file '${toAbsPath(v)}'`)
-    .join('\n')
-  fs.writeFileSync(listPath, listContent, 'utf-8')
+  try {
+    const probe = (p: string) => new Promise<any>((resolve) => {
+      ffmpeg.ffprobe(p, (err, meta) => resolve(err ? null : meta))
+    })
 
-  // 输出文件
-  const outputDir = path.join(STORAGE_ROOT, 'merged')
-  fs.mkdirSync(outputDir, { recursive: true })
-  const outputFilename = `${uuid()}.mp4`
-  const outputPath = path.join(outputDir, outputFilename)
+    const metas: any[] = []
+    for (const v of videos) metas.push(await probe(toAbsPath(v)))
 
-  await new Promise<void>((resolve, reject) => {
-    ffmpeg()
-      .input(listPath)
-      .inputOptions(['-f', 'concat', '-safe', '0'])
-      .outputOptions([
-        '-fflags', '+genpts',
-        '-c:v', 'libx264',
-        '-preset', 'medium',
-        '-crf', '23',
-        '-c:a', 'aac',
-        '-ar', '48000',
-        '-b:a', '192k',
-        '-movflags', '+faststart',
-      ])
-      .output(outputPath)
-      .on('end', () => resolve())
-      .on('error', (err) => reject(err))
-      .run()
+    const firstStream = metas[0]?.streams?.find((s: any) => s.codec_type === 'video')
+    let canvasW = Number(firstStream?.width) || 720
+    let canvasH = Number(firstStream?.height) || 1280
+    canvasW -= canvasW % 2
+    canvasH -= canvasH % 2
 
-  })
+    let targetFps = 24
+    const rate = String(firstStream?.avg_frame_rate || '')
+    const mRate = rate.match(/^(\d+)\/(\d+)$/)
+    if (mRate && Number(mRate[2]) > 0) {
+      const fps = Math.round(Number(mRate[1]) / Number(mRate[2]))
+      if (fps >= 1 && fps <= 60) targetFps = fps
+    }
 
-  // 清理临时文件
-  fs.unlinkSync(listPath)
+    const normalized: string[] = []
+    for (let i = 0; i < videos.length; i++) {
+      const srcPath = toAbsPath(videos[i])
+      const hasAudio = !!metas[i]?.streams?.some((s: any) => s.codec_type === 'audio')
+      const out = path.join(workDir, `clip-${String(i).padStart(3, '0')}.mp4`)
+      const vf = `scale=${canvasW}:${canvasH}:force_original_aspect_ratio=decrease,pad=${canvasW}:${canvasH}:(ow-iw)/2:(oh-ih)/2,fps=${targetFps},settb=AVTB,setsar=1,format=yuv420p`
+      await new Promise<void>((resolve, reject) => {
+        const cmd = ffmpeg()
+        cmd.input(srcPath)
+        if (!hasAudio) {
+          cmd.input('anullsrc=channel_layout=stereo:sample_rate=48000')
+          cmd.inputOptions(['-f', 'lavfi'])
+        }
+        const outputOpts = [
+          '-vf', vf,
+          '-af', 'aresample=48000:async=1:first_pts=0',
+          '-c:v', 'libx264',
+          '-preset', 'veryfast',
+          '-crf', '20',
+          '-c:a', 'aac',
+          '-ar', '48000',
+          '-ac', '2',
+          '-b:a', '160k',
+          '-video_track_timescale', '12288',
+        ]
+        if (!hasAudio) outputOpts.push('-shortest')
+        cmd.outputOptions(outputOpts)
+          .output(out)
+          .on('end', () => resolve())
+          .on('error', (err) => reject(err))
+          .run()
+      })
+      normalized.push(out)
+    }
 
-  // 获取时长
-  const duration = await getVideoDuration(outputPath)
+    // 统一规格后走 concat 分离器 + 流拷贝，几乎瞬时完成
+    const listPath = path.join(workDir, 'list.txt')
+    fs.writeFileSync(listPath, normalized.map(p => `file '${p}'`).join('\n'), 'utf-8')
 
-  const mergedRelative = `static/merged/${outputFilename}`
+    const outputDir = path.join(STORAGE_ROOT, 'merged')
+    fs.mkdirSync(outputDir, { recursive: true })
+    const outputFilename = `${uuid()}.mp4`
+    const outputPath = path.join(outputDir, outputFilename)
 
-  // 成片海报帧（导出页封面用）
-  await extractVideoPoster(mergedRelative)
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg()
+        .input(listPath)
+        .inputOptions(['-f', 'concat', '-safe', '0'])
+        .outputOptions(['-c', 'copy', '-movflags', '+faststart'])
+        .output(outputPath)
+        .on('end', () => resolve())
+        .on('error', (err) => reject(err))
+        .run()
+    })
 
-  // 更新 merge 记录
-  await db.update(schema.videoMerges)
-    .set({ status: 'completed', mergedUrl: mergedRelative, duration, completedAt: now() })
-    .where(eq(schema.videoMerges.id, mergeId))
+    // 获取时长
+    const duration = await getVideoDuration(outputPath)
 
-  // 更新 episode
-  await db.update(schema.episodes)
-    .set({ videoUrl: mergedRelative, updatedAt: now() })
-    .where(eq(schema.episodes.id, episodeId))
+    const mergedRelative = `static/merged/${outputFilename}`
 
-  logTaskSuccess('MergeTask', 'episode-merge', { mergeId, episodeId, output: mergedRelative, duration, clips: videos.length })
+    // 成片海报帧（导出页封面用）
+    await extractVideoPoster(mergedRelative)
+
+    // 更新 merge 记录
+    await db.update(schema.videoMerges)
+      .set({ status: 'completed', mergedUrl: mergedRelative, duration, completedAt: now() })
+      .where(eq(schema.videoMerges.id, mergeId))
+
+    // 更新 episode
+    await db.update(schema.episodes)
+      .set({ videoUrl: mergedRelative, updatedAt: now() })
+      .where(eq(schema.episodes.id, episodeId))
+
+    logTaskSuccess('MergeTask', 'episode-merge', { mergeId, episodeId, output: mergedRelative, duration, clips: videos.length })
+  } finally {
+    fs.rmSync(workDir, { recursive: true, force: true })
+  }
 }
 
 function getVideoDuration(filePath: string): Promise<number> {
