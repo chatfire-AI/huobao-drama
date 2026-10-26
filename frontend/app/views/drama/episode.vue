@@ -2241,7 +2241,10 @@ function confirmBatchVideos() {
     const done = !!getVideoUrl(target)
     if (done) pendingVideoIds.value = pendingVideoIds.value.filter(item => item !== id)
     return done
-  }), 80, 4000)
+  }), 80, 4000, () => {
+    // 轮询 320s 仍未全部完成：清掉本批所有 pending（#136）
+    pendingVideoIds.value = pendingVideoIds.value.filter(item => !ids.includes(item))
+  })
   if (videoSelectMode.value) toggleVideoSelectMode()
 }
 
@@ -2927,13 +2930,18 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-function watchAsyncResult(check, attempts = 24, delay = 2500) {
+function watchAsyncResult(check, attempts = 24, delay = 2500, onTimeout) {
   void (async () => {
     for (let i = 0; i < attempts; i++) {
       await sleep(delay)
-      await refresh()
+      // refresh() 偶发网络错误不应让轮询整体崩溃退出（#136：6 个调用点
+      // 都没兜底，refresh 一次失败即提前停止 pending 永不清理）
+      try { await refresh() } catch { /* 静默，不影响下一轮 */ }
       if (check()) return
     }
+    // 轮询耗尽仍未完成：清掉本次挂的 pending 状态，避免「一直显示生成中」
+    // 但图片没出来（#136）。onTimeout 由调用方传，负责 toast/记录失败等。
+    try { onTimeout?.() } catch { /* 清理回调本身不应再抛 */ }
   })()
 }
 
@@ -2955,6 +2963,9 @@ async function genCharImg(id) {
       const done = !!(char?.image_url || char?.imageUrl)
       if (done) pendingCharImageIds.value = pendingCharImageIds.value.filter(item => item !== id)
       return done
+    }, 24, 2500, () => {
+      // 轮询 60s 仍未完成：清掉 pending 避免「一直显示生成中」（#136）
+      pendingCharImageIds.value = pendingCharImageIds.value.filter(item => item !== id)
     })
   } catch (e) {
     pendingCharImageIds.value = pendingCharImageIds.value.filter(item => item !== id)
@@ -2973,7 +2984,10 @@ function batchCharImages() {
       const done = !!(char?.image_url || char?.imageUrl)
       if (done) pendingCharImageIds.value = pendingCharImageIds.value.filter(item => item !== id)
       return done
-    }), 36)
+    }), 36, 2500, () => {
+      // 轮询 90s 仍未全部完成：清掉本批所有 pending（#136）
+      pendingCharImageIds.value = pendingCharImageIds.value.filter(item => !ids.includes(item))
+    })
   }).catch(e => {
     pendingCharImageIds.value = pendingCharImageIds.value.filter(item => !ids.includes(item))
     toastError(e)
@@ -2997,6 +3011,8 @@ async function genSceneImg(id) {
       const done = !!(scene?.image_url || scene?.imageUrl)
       if (done) pendingSceneImageIds.value = pendingSceneImageIds.value.filter(item => item !== id)
       return done
+    }, 24, 2500, () => {
+      pendingSceneImageIds.value = pendingSceneImageIds.value.filter(item => item !== id)
     })
   } catch (e) {
     pendingSceneImageIds.value = pendingSceneImageIds.value.filter(item => item !== id)
@@ -3024,6 +3040,8 @@ async function genPropImg(id) {
       const done = !!(prop?.image_url || prop?.imageUrl)
       if (done) pendingPropImageIds.value = pendingPropImageIds.value.filter(item => item !== id)
       return done
+    }, 24, 2500, () => {
+      pendingPropImageIds.value = pendingPropImageIds.value.filter(item => item !== id)
     })
   } catch (e) {
     pendingPropImageIds.value = pendingPropImageIds.value.filter(item => item !== id)
@@ -3041,7 +3059,9 @@ function batchSceneImages() {
     const done = !!(scene?.image_url || scene?.imageUrl)
     if (done) pendingSceneImageIds.value = pendingSceneImageIds.value.filter(item => item !== id)
     return done
-  }), 36)
+  }), 36, 2500, () => {
+    pendingSceneImageIds.value = pendingSceneImageIds.value.filter(item => !ids.includes(item))
+  })
 }
 function batchPropImages() {
   const ids = propItems.value.filter(p => !(p.image_url || p.imageUrl)).map(p => p.id)
@@ -3054,7 +3074,9 @@ function batchPropImages() {
     const done = !!(prop?.image_url || prop?.imageUrl)
     if (done) pendingPropImageIds.value = pendingPropImageIds.value.filter(item => item !== id)
     return done
-  }), 36)
+  }), 36, 2500, () => {
+    pendingPropImageIds.value = pendingPropImageIds.value.filter(item => !ids.includes(item))
+  })
 }
 function getVideoUrl(s) { return s?.video_url || s?.videoUrl || s?.composed_video_url || s?.composedVideoUrl || null }
 function hasVid(s) { return !!getVideoUrl(s) }
@@ -3391,7 +3413,10 @@ async function pollVideoGeneration(generationId, storyboardId) {
       const done = !!(target?.video_url || target?.videoUrl)
       if (done) pendingVideoIds.value = pendingVideoIds.value.filter(item => item !== storyboardId)
       return done
-    }, 60, 4000)
+    }, 60, 4000, () => {
+      // 4 分钟还没出来：清掉 pending（#136）
+      pendingVideoIds.value = pendingVideoIds.value.filter(item => item !== storyboardId)
+    })
     return
   }
   for (let i = 0; i < 120; i++) {
