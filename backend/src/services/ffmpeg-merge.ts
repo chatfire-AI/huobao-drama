@@ -86,16 +86,6 @@ export async function mergeEpisodeVideos(episodeId: number, dramaId: number, sto
 }
 
 async function doMerge(mergeId: number, episodeId: number, videos: string[]) {
-  // 生成 concat 列表文件
-  const listDir = path.join(STORAGE_ROOT, 'temp')
-  fs.mkdirSync(listDir, { recursive: true })
-  const listPath = path.join(listDir, `${uuid()}.txt`)
-
-  const listContent = videos
-    .map(v => `file '${toAbsPath(v)}'`)
-    .join('\n')
-  fs.writeFileSync(listPath, listContent, 'utf-8')
-
   // 输出文件
   const outputDir = path.join(STORAGE_ROOT, 'merged')
   fs.mkdirSync(outputDir, { recursive: true })
@@ -103,11 +93,22 @@ async function doMerge(mergeId: number, episodeId: number, videos: string[]) {
   const outputPath = path.join(outputDir, outputFilename)
 
   await new Promise<void>((resolve, reject) => {
-    ffmpeg()
-      .input(listPath)
-      .inputOptions(['-f', 'concat', '-safe', '0'])
+    const command = ffmpeg()
+    for (const video of videos) command.input(toAbsPath(video))
+
+    // The concat demuxer requires identical audio stream parameters. Generated
+    // clips may use different sample rates, which makes later clips play at the
+    // wrong speed/pitch. Normalize each clip before joining it instead.
+    const filters = videos.flatMap((_, index) => [
+      `[${index}:v:0]setpts=PTS-STARTPTS[v${index}]`,
+      `[${index}:a:0]aresample=48000:async=1:first_pts=0,aformat=sample_rates=48000:channel_layouts=stereo,asetpts=PTS-STARTPTS[a${index}]`,
+    ])
+    const concatInputs = videos.flatMap((_, index) => [`[v${index}]`, `[a${index}]`]).join('')
+    filters.push(`${concatInputs}concat=n=${videos.length}:v=1:a=1[vout][aout]`)
+
+    command
+      .complexFilter(filters, ['vout', 'aout'])
       .outputOptions([
-        '-fflags', '+genpts',
         '-c:v', 'libx264',
         '-preset', 'medium',
         '-crf', '23',
@@ -122,9 +123,6 @@ async function doMerge(mergeId: number, episodeId: number, videos: string[]) {
       .run()
 
   })
-
-  // 清理临时文件
-  fs.unlinkSync(listPath)
 
   // 获取时长
   const duration = await getVideoDuration(outputPath)
