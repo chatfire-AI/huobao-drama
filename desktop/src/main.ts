@@ -17,6 +17,7 @@ import * as path from 'path'
 import { registerMigrationIpc } from './migrate'
 import { registerUpdater, markQuitting } from './updater'
 import { createStartupLog, redactStartupLog, waitForBackend } from './startup'
+import { resolveRuntimeResources } from './runtime-resources'
 
 // 主进程打 CJS 产物，__dirname 天然可用（import.meta.url 在 CJS 下为 undefined）
 declare const __dirname: string
@@ -25,6 +26,8 @@ const DESKTOP_ROOT = path.resolve(__dirname, '..')
 // dev 模式下仓库各目录
 const REPO_ROOT = path.resolve(DESKTOP_ROOT, '..')
 const BACKEND_BUNDLE = path.join(DESKTOP_ROOT, 'build', 'backend.mjs')
+let backendBundle = BACKEND_BUNDLE
+let runtimeResourcesDir = ''
 
 /** workspace 模板版本：内置模板更新时递增，触发向用户目录补缺失文件 */
 const TEMPLATE_VERSION = '4'
@@ -195,7 +198,7 @@ function stopBackend(): Promise<void> {
 function startBackend(): void {
   backendReady = false
   backendStartupTail = ''
-  const resources = resolveResourceDir()
+  const resources = runtimeResourcesDir || resolveResourceDir()
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     PORT: String(backendPort),
@@ -212,14 +215,14 @@ function startBackend(): void {
     env.FFPROBE_BIN = path.join(resources, 'bin', `ffprobe${exe}`)
   }
 
-  backend = utilityProcess.fork(BACKEND_BUNDLE, [], {
+  backend = utilityProcess.fork(backendBundle, [], {
     env,
     serviceName: 'huobao-backend',
     stdio: 'pipe',
     cwd: currentDataDir,
   })
   const child = backend
-  startupLog.write(`backend forked from ${BACKEND_BUNDLE}`)
+  startupLog.write(`backend forked from ${backendBundle}`)
   child.on('spawn', () => startupLog.write(`backend spawned pid=${child.pid}`))
   child.stdout?.on('data', chunk => {
     process.stdout.write(`[backend] ${chunk}`)
@@ -297,8 +300,18 @@ async function bootstrap() {
     fs.mkdirSync(currentDataDir, { recursive: true })
 
     const resources = resolveResourceDir()
+    runtimeResourcesDir = app.isPackaged
+      ? await resolveRuntimeResources(resources, {
+        platform: process.platform,
+        version: app.getVersion(),
+        userDataDir: userData,
+        programDataDir: process.env.ProgramData,
+        log: message => startupLog.write(message),
+      })
+      : resources
+    if (app.isPackaged) backendBundle = path.join(runtimeResourcesDir, 'app.asar', 'build', 'backend.mjs')
     const templateDir = app.isPackaged
-      ? path.join(resources, 'workspace-template')
+      ? path.join(runtimeResourcesDir, 'workspace-template')
       : path.join(REPO_ROOT, 'backend', 'workspace')
     currentWorkspaceDir = app.isPackaged
       ? path.join(userData, 'workspace')
@@ -307,10 +320,10 @@ async function bootstrap() {
     if (app.isPackaged) syncWorkspaceTemplate(templateDir, currentWorkspaceDir)
 
     currentFrontendDist = app.isPackaged
-      ? path.join(resources, 'frontend')
+      ? path.join(runtimeResourcesDir, 'frontend')
       : path.join(REPO_ROOT, 'frontend', '.output', 'public')
 
-    if (!fs.existsSync(BACKEND_BUNDLE)) throw new Error('安装资源缺失：build/backend.mjs')
+    if (!fs.existsSync(backendBundle)) throw new Error('安装资源缺失：build/backend.mjs')
     if (!fs.existsSync(path.join(currentFrontendDist, 'index.html'))) throw new Error('安装资源缺失：frontend/index.html')
     if (quitting) return
     startBackend()

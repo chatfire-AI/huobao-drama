@@ -7,9 +7,9 @@ import { createRequire } from 'node:module'
 const require = createRequire(import.meta.url)
 const code = fs.readFileSync(new URL('../dist/main.js', import.meta.url), 'utf8')
 
-async function boot(mode = 'pending') {
+async function boot(mode = 'pending', options = {}) {
   const windows = [], errors = [], logs = [], timers = new Map()
-  let requests = 0, forks = 0, now = 0, timerId = 0
+  let requests = 0, forks = 0, now = 0, timerId = 0, forkArgs = null
   const app = new EventEmitter()
   Object.assign(app, { isPackaged: true, getPath: () => '/mock/user', setPath() {}, getVersion: () => 'test', requestSingleInstanceLock: () => true, whenReady: () => Promise.resolve(), quit() { app.emit('before-quit') } })
   class Window extends EventEmitter {
@@ -25,10 +25,15 @@ async function boot(mode = 'pending') {
     loadURL(url) { this.loadedURL = url; return mode === 'page-failure' ? Promise.reject(new Error('ERR_CONNECTION_RESET')) : Promise.resolve() }
   }
   const child = new EventEmitter(); child.stdout = new EventEmitter(); child.stderr = new EventEmitter(); child.kill = () => {}
-  const electron = { app, BrowserWindow: Window, dialog: { showErrorBox: (...args) => errors.push(args) }, ipcMain: { handle() {} }, shell: {}, utilityProcess: { fork() { forks++; return child } } }
+  const electron = { app, BrowserWindow: Window, dialog: { showErrorBox: (...args) => errors.push(args) }, ipcMain: { handle() {} }, shell: {}, utilityProcess: { fork(...args) { forks++; forkArgs = args; return child } } }
+  const childProcess = { execFile(_file, _args, _options, callback) {
+    queueMicrotask(() => options.shortPath
+      ? callback(null, options.shortPath, '')
+      : callback(new Error('short path unavailable'), '', ''))
+  } }
   const filesystem = { existsSync: p => !/storage-config|template-version|startup.log/.test(p), mkdirSync() {}, cpSync() {}, writeFileSync() {}, appendFileSync: (_p, s) => logs.push(s) }
   const fakeProcess = new EventEmitter()
-  Object.assign(fakeProcess, { platform: 'win32', arch: 'x64', env: {}, versions: { electron: '37.10.3' }, pid: 123, resourcesPath: '/mock/resources', stdout: new EventEmitter(), stderr: new EventEmitter() })
+  Object.assign(fakeProcess, { platform: 'win32', arch: 'x64', env: {}, versions: { electron: '37.10.3' }, pid: 123, resourcesPath: options.resourcesPath || '/mock/resources', stdout: new EventEmitter(), stderr: new EventEmitter() })
   fakeProcess.stdout.write = fakeProcess.stderr.write = () => true
   const net = { createServer() { const s = new EventEmitter(); s.listen = (_p, _h, fn) => fn(); s.address = () => ({port: 43210}); s.close = fn => fn(); return s } }
   const http = { get(_opts, callback) {
@@ -37,7 +42,7 @@ async function boot(mode = 'pending') {
     if (mode !== 'pending') queueMicrotask(() => callback({ statusCode: 200, resume() {} }))
     return request
   } }
-  const context = vm.createContext({ require: name => name === 'electron' ? electron : /^(node:)?fs$/.test(name) ? filesystem : /^(node:)?net$/.test(name) ? net : name === 'node:http' ? http : require(name),
+  const context = vm.createContext({ require: name => name === 'electron' ? electron : name === 'node:child_process' ? childProcess : /^(node:)?fs$/.test(name) ? filesystem : /^(node:)?net$/.test(name) ? net : name === 'node:http' ? http : require(name),
     process: fakeProcess, __dirname: '/mock/resources/app.asar/dist', module: {exports:{}}, exports: {}, console: {log(){},warn(){},error(){}}, Buffer, URL,
     Date: class extends Date { static now() { return now } },
     setTimeout: (fn, ms) => { const t = { id: ++timerId, at: now + ms, fn, unref() {} }; timers.set(t.id,t); return t },
@@ -46,7 +51,7 @@ async function boot(mode = 'pending') {
   vm.runInContext(code, context)
   async function flush() { for(let i=0;i<50;i++) await Promise.resolve() }
   await flush()
-  return { windows, errors, logs, app, child, requests: () => requests, forks: () => forks, flush,
+  return { windows, errors, logs, app, child, requests: () => requests, forks: () => forks, forkArgs: () => forkArgs, flush,
     async expireHealth() { now=60_001; for(const t of [...timers.values()]) if(t.at <= now && t.at <= 1000) {timers.delete(t.id);t.fn()} await flush() } }
 }
 
@@ -72,6 +77,18 @@ test('backend early exit reports once and includes startup stderr and log locati
 test('page load failure reports a visible error instead of leaving a hidden window', async () => {
   const p=await boot('page-failure'); assert.equal(p.errors.length,1)
   assert.match(p.errors[0][1],/ERR_CONNECTION_RESET/)
+})
+test('non-ASCII Windows install resources use one short path for backend and media tools', async () => {
+  const shortPath = 'C:\\HUOBAO~1\\resources'
+  const p = await boot('healthy', {
+    resourcesPath: 'C:\\用户\\HuobaoDrama\\resources',
+    shortPath,
+  })
+  assert.ok(p.forkArgs()[0].startsWith(shortPath))
+  assert.ok(p.forkArgs()[2].env.FFMPEG_BIN.startsWith(shortPath))
+  assert.ok(p.forkArgs()[2].env.FFPROBE_BIN.startsWith(shortPath))
+  assert.ok(p.forkArgs()[2].env.FRONTEND_DIST.startsWith(shortPath))
+  assert.equal(p.errors.length, 0)
 })
 test('closing while backend starts cancels silently', async () => {
   const p=await boot(); p.app.quit(); await p.expireHealth(); assert.equal(p.errors.length,0)
