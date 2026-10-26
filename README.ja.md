@@ -614,7 +614,7 @@ Issue と Pull Request を歓迎します！
 
 ```bash
 cd backend && npm run typecheck
-cd ../frontend && npm run build
+cd ../frontend && npm run generate  # index.html を产出する（npm run build は产出しない）
 ```
 
 ---
