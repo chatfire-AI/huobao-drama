@@ -69,3 +69,61 @@ export function setToursSeen(ids: unknown): string[] {
     .run()
   return clean
 }
+
+// ===== AI 改写屏蔽词 =====
+// 例如「百家乐」这类容易触发下游生图/生视频内容审核的词；可选替换词，留空则要求 AI 换种说法
+const BANNED_WORDS_KEY = 'banned_words'
+const MAX_BANNED_WORDS = 500
+
+export interface BannedWord { word: string; replace: string }
+
+function sanitizeBannedWords(input: unknown): BannedWord[] {
+  if (!Array.isArray(input)) return []
+  const seen = new Set<string>()
+  const out: BannedWord[] = []
+  for (const it of input) {
+    const word = String((it as any)?.word ?? '').trim().slice(0, 50)
+    const replace = String((it as any)?.replace ?? '').trim().slice(0, 50)
+    // 替换词里不能再含有屏蔽词本身，否则替换后仍命中
+    if (!word || seen.has(word) || replace.includes(word)) continue
+    seen.add(word)
+    out.push({ word, replace })
+  }
+  return out.slice(0, MAX_BANNED_WORDS)
+}
+
+export function getBannedWords(): BannedWord[] {
+  const row = db.select().from(schema.appSettings)
+    .where(eq(schema.appSettings.key, BANNED_WORDS_KEY))
+    .get()
+  try { return sanitizeBannedWords(JSON.parse(row?.value || '[]')) } catch { return [] }
+}
+
+export function setBannedWords(list: unknown): BannedWord[] {
+  const clean = sanitizeBannedWords(list)
+  const value = JSON.stringify(clean)
+  db.insert(schema.appSettings)
+    .values({ key: BANNED_WORDS_KEY, value, updatedAt: now() })
+    .onConflictDoUpdate({ target: schema.appSettings.key, set: { value, updatedAt: now() } })
+    .run()
+  return clean
+}
+
+/**
+ * 按屏蔽词处理文本：有替换词的直接替换（长词优先，避免短词先替换破坏长词），
+ * 返回替换后的文本、已替换项、以及仍残留（无替换词）的屏蔽词
+ */
+export function applyBannedWords(text: string, list = getBannedWords()) {
+  let out = text
+  const replaced: { word: string; replace: string; count: number }[] = []
+  for (const { word, replace } of [...list].sort((a, b) => b.word.length - a.word.length)) {
+    if (!replace) continue
+    const count = out.split(word).length - 1
+    if (count) {
+      out = out.split(word).join(replace)
+      replaced.push({ word, replace, count })
+    }
+  }
+  const remaining = list.filter(({ word, replace }) => !replace && out.includes(word)).map(w => w.word)
+  return { text: out, replaced, remaining }
+}

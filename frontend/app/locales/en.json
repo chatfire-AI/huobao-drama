@@ -444,6 +444,13 @@
     "skillDelete": {
       "title": "Delete Skill",
       "message": "Delete skill “{id}”? The corresponding Agent will fall back to its built-in default prompt."
+    },
+    "banned": {
+      "title": "AI rewrite banned words",
+      "sub": "Words that must not appear in scripts (e.g. ones that trigger image/video moderation). The AI is told during rewrite and the script is checked on save: words with a replacement are replaced automatically, others make the AI rephrase",
+      "placeholder": "One per line, e.g.\nbaccarat => card game\ncasino => club\ncheating",
+      "hint": "{n} words; format \"word => replacement\", or just the word to let the AI rephrase",
+      "saved": "Saved {n} banned words"
     }
   },
   "episode": {

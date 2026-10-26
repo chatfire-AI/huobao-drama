@@ -2,7 +2,7 @@
  * 应用设置路由 — 全局配置的读写入口（当前：AI 内容语言）
  */
 import { Hono } from 'hono'
-import { getContentLanguage, setContentLanguage, getToursSeen, setToursSeen, CONTENT_LANGUAGES, type ContentLanguage } from '../services/app-settings.js'
+import { getContentLanguage, setContentLanguage, getToursSeen, setToursSeen, getBannedWords, setBannedWords, CONTENT_LANGUAGES, type ContentLanguage } from '../services/app-settings.js'
 import { success, badRequest } from '../utils/response.js'
 
 const app = new Hono()
@@ -35,6 +35,16 @@ app.put('/tours-seen', async (c) => {
     return badRequest(c, 'seen 必须是字符串数组')
   }
   return success(c, { seen: await setToursSeen(body.seen) })
+})
+
+// GET /banned-words — AI 改写屏蔽词 [{ word, replace }]
+app.get('/banned-words', async (c) => success(c, { words: getBannedWords() }))
+
+// PUT /banned-words — 覆盖保存（body: { words: [{ word, replace? }] }）
+app.put('/banned-words', async (c) => {
+  const body = await c.req.json().catch(() => null)
+  if (!Array.isArray(body?.words)) return badRequest(c, 'words 必须是数组')
+  return success(c, { words: setBannedWords(body.words) })
 })
 
 export default app
