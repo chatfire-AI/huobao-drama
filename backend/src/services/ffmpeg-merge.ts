@@ -11,6 +11,7 @@ import { logTaskError, logTaskStart, logTaskSuccess } from '../utils/task-logger
 import { extractVideoPoster } from '../utils/video-poster.js'
 import { ffmpeg, checkFfmpegSuite } from '../utils/ffmpeg.js'
 import { DATA_ROOT, STORAGE_ROOT } from '../utils/paths.js'
+import { placeDubLines, DUB_DUCKING } from './dub.js'
 
 function toAbsPath(relativePath: string): string {
   if (path.isAbsolute(relativePath)) return relativePath
@@ -74,7 +75,7 @@ export async function mergeEpisodeVideos(episodeId: number, dramaId: number, sto
   const mergeId = getInsertId(res)
 
   // 异步执行
-  doMerge(mergeId, episodeId, videos).catch(async err => {
+  doMerge(mergeId, episodeId, videos, clips.map(c => c.sb.id)).catch(async err => {
     logTaskError('MergeTask', 'episode-merge', { mergeId, episodeId, error: err.message })
     console.error(`[Merge] Failed:`, err)
     await db.update(schema.videoMerges)
@@ -85,7 +86,7 @@ export async function mergeEpisodeVideos(episodeId: number, dramaId: number, sto
   return mergeId
 }
 
-async function doMerge(mergeId: number, episodeId: number, videos: string[]) {
+async function doMerge(mergeId: number, episodeId: number, videos: string[], storyboardIds: number[]) {
   // 生成 concat 列表文件
   const listDir = path.join(STORAGE_ROOT, 'temp')
   fs.mkdirSync(listDir, { recursive: true })
@@ -126,6 +127,13 @@ async function doMerge(mergeId: number, episodeId: number, videos: string[]) {
   // 清理临时文件
   fs.unlinkSync(listPath)
 
+  // 本集有已合成的配音时混入配音轨（原声降为环境音）；混音失败保留无配音成片
+  try {
+    await mixDubTrack(episodeId, videos, storyboardIds, outputPath)
+  } catch (err: any) {
+    logTaskError('MergeTask', 'dub-mix', { mergeId, episodeId, error: err.message })
+  }
+
   // 获取时长
   const duration = await getVideoDuration(outputPath)
 
@@ -154,4 +162,69 @@ function getVideoDuration(filePath: string): Promise<number> {
       resolve(Math.round(metadata.format.duration || 0))
     })
   })
+}
+
+function probeMedia(filePath: string): Promise<{ duration: number; hasAudio: boolean }> {
+  return new Promise((resolve) => {
+    ffmpeg.ffprobe(filePath, (err, metadata) => {
+      if (err) { resolve({ duration: 0, hasAudio: false }); return }
+      resolve({
+        duration: Number(metadata.format.duration || 0),
+        hasAudio: metadata.streams.some(st => st.codec_type === 'audio'),
+      })
+    })
+  })
+}
+
+/**
+ * 把配音按镜头位置混入成片：每句 adelay 到起点；原声以配音为侧链做闪避（对白时压低），再与配音 amix。
+ * 镜头时长按各镜头文件实测，保证与 concat 结果对齐。没有可用配音时不处理。
+ */
+async function mixDubTrack(episodeId: number, videos: string[], storyboardIds: number[], outputPath: string) {
+  const durations = await Promise.all(videos.map(v => probeMedia(toAbsPath(v)).then(m => m.duration)))
+  const placed = await placeDubLines(episodeId, storyboardIds.map((id, i) => ({ storyboardId: id, duration: durations[i] })))
+  if (!placed.length) return
+
+  const merged = await probeMedia(outputPath)
+  // 先把所有配音按起点排成一条配音轨（apad 补静音到无限长，由原声轨决定成片时长）
+  const filters: string[] = placed.map((p, i) => {
+    const ms = Math.round(p.start * 1000)
+    return `[${i + 1}:a]aresample=48000,adelay=${ms}:all=1[d${i}]`
+  })
+  filters.push(`${placed.map((_, i) => `[d${i}]`).join('')}amix=inputs=${placed.length}:duration=longest:normalize=0,apad[dub]`)
+
+  if (merged.hasAudio) {
+    // 闪避（ducking）：以配音为侧链压缩原声——对白响起时原声自动压低，停顿处恢复原音量，
+    // 环境音/音效在无对白段落完整保留
+    filters.push('[dub]asplit=2[sc][dubout]')
+    filters.push(`[0:a]aresample=48000[orig]`)
+    filters.push(`[orig][sc]sidechaincompress=${DUB_DUCKING}[bg]`)
+    filters.push('[bg][dubout]amix=inputs=2:duration=first:normalize=0[aout]')
+  } else {
+    filters.push(`anullsrc=r=48000:cl=stereo,atrim=duration=${merged.duration.toFixed(3)}[bg]`)
+    filters.push('[bg][dub]amix=inputs=2:duration=first:normalize=0[aout]')
+  }
+
+  const tmpPath = outputPath.replace(/\.mp4$/, '.dub.mp4')
+  await new Promise<void>((resolve, reject) => {
+    const cmd = ffmpeg().input(outputPath)
+    for (const p of placed) cmd.input(p.path)
+    cmd
+      .complexFilter(filters)
+      .outputOptions([
+        '-map', '0:v',
+        '-map', '[aout]',
+        '-c:v', 'copy',
+        '-c:a', 'aac',
+        '-ar', '48000',
+        '-b:a', '192k',
+        '-movflags', '+faststart',
+      ])
+      .output(tmpPath)
+      .on('end', () => resolve())
+      .on('error', (err) => reject(err))
+      .run()
+  })
+  fs.renameSync(tmpPath, outputPath)
+  logTaskSuccess('MergeTask', 'dub-mix', { episodeId, lines: placed.length })
 }

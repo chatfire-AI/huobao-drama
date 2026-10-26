@@ -294,6 +294,36 @@ export const sqliteSchemaStatements = [
     value TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`,
+
+  // 配音台词：从分镜描述提取的 说话人/台词/语气，逐句合成音频
+  `CREATE TABLE IF NOT EXISTS dub_lines (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    episode_id INTEGER NOT NULL,
+    storyboard_id INTEGER,
+    line_index INTEGER NOT NULL DEFAULT 0,
+    speaker TEXT NOT NULL,
+    text TEXT NOT NULL,
+    emotion TEXT,
+    audio_url TEXT,
+    audio_key TEXT,
+    duration REAL,
+    status TEXT DEFAULT 'pending',
+    error_msg TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_dub_lines_episode_id ON dub_lines (episode_id)`,
+
+  // 配音音色：剧级 说话人(角色名/旁白) → 音色 ID，整部剧所有集共用，保证声音一致
+  `CREATE TABLE IF NOT EXISTS dub_voices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    drama_id INTEGER NOT NULL,
+    speaker TEXT NOT NULL,
+    voice TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_dub_voices_drama_speaker ON dub_voices (drama_id, speaker)`,
 ]
 
 /**
