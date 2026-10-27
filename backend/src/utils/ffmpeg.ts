@@ -77,10 +77,16 @@ export async function checkFfmpegSuite(): Promise<FfmpegSuite> {
     okCache = suite
   } else if (!warned) {
     warned = true
+    // 探测阶段故意不把 spawn 错误原样抛出（多个调用方不希望日志里全是 stack）。
+    // 但 ffmpeg-merge 等业务侧需要知道 "bad CPU type" 这种架构错误才能给出可操作
+    // 提示（#135），这里在末尾追加 Rosetta hint。
+    const archHint = (!ffmpegOk || !ffprobeOk)
+      ? '（架构不匹配时，如 darwin/arm64 dmg 误打 x86_64 二进制，可执行 `sudo softwareupdate --install-rosetta` 临时绕过；永久修复见 https://github.com/chatfire-AI/huobao-drama/issues/135）'
+      : ''
     console.warn(
       `[ffmpeg] 内置二进制不可用 (ffmpeg=${ffmpegOk ? 'ok' : 'FAIL'}, ffprobe=${ffprobeOk ? 'ok' : 'FAIL'})。` +
       `海报帧提取与视频拼接将跳过/失败。修复：删除 node_modules 后在本机重新 npm install，` +
-      `或设置 FFMPEG_BIN/FFPROBE_BIN 指向有效的可执行文件`
+      `或设置 FFMPEG_BIN/FFPROBE_BIN 指向有效的可执行文件${archHint}`
     )
   }
   return suite
