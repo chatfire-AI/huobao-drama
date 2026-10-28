@@ -89,40 +89,97 @@ app.delete('/:id', async (c) => {
   return success(c)
 })
 
-// GET /episodes/:id/characters — characters linked to this episode
-app.get('/:id/characters', async (c) => {
+// ===== 资产复用：项目（剧）级素材库 ↔ 集 =====
+// 角色/场景/道具属于整部剧，集通过 episode_* 关联表引用；同一素材可被多集复用（形象图不重复生成）
+const ASSET_KINDS = {
+  character: { table: schema.characters, link: schema.episodeCharacters, fk: schema.episodeCharacters.characterId, fkKey: 'characterId' },
+  scene: { table: schema.scenes, link: schema.episodeScenes, fk: schema.episodeScenes.sceneId, fkKey: 'sceneId' },
+  prop: { table: schema.props, link: schema.episodeProps, fk: schema.episodeProps.propId, fkKey: 'propId' },
+} as const
+type AssetKind = keyof typeof ASSET_KINDS
+const isAssetKind = (k: string): k is AssetKind => k in ASSET_KINDS
+
+/** 素材 id → 被多少集引用（只统计本剧未删除的集） */
+async function assetEpisodeCounts(kind: AssetKind, dramaId: number) {
+  const { link, fkKey } = ASSET_KINDS[kind]
+  const eps = await db.select({ id: schema.episodes.id }).from(schema.episodes)
+    .where(and(eq(schema.episodes.dramaId, dramaId), isNull(schema.episodes.deletedAt)))
+  const epIds = new Set(eps.map(e => e.id))
+  const rows: any[] = await db.select().from(link as any)
+  const counts = new Map<number, number>()
+  for (const r of rows) {
+    if (!epIds.has(r.episodeId)) continue
+    counts.set(r[fkKey], (counts.get(r[fkKey]) || 0) + 1)
+  }
+  return counts
+}
+
+/** 某集引用的素材（附 episode_count 供前端标注「共用 N 集」） */
+async function episodeAssets(kind: AssetKind, episodeId: number) {
+  const { table, link, fkKey } = ASSET_KINDS[kind]
+  const [ep] = await db.select().from(schema.episodes).where(eq(schema.episodes.id, episodeId))
+  if (!ep) return []
+  const links: any[] = await db.select().from(link as any).where(eq((link as any).episodeId, episodeId))
+  const ids = new Set(links.map(l => l[fkKey]))
+  if (!ids.size) return []
+  const all: any[] = await db.select().from(table as any)
+  const counts = await assetEpisodeCounts(kind, ep.dramaId)
+  return all
+    .filter(a => ids.has(a.id) && !a.deletedAt)
+    .map(a => ({ ...toSnakeCase(a), episode_count: counts.get(a.id) || 1 }))
+}
+
+// GET /episodes/:id/characters | scenes | props — 本集引用的素材
+app.get('/:id/characters', async (c) => success(c, await episodeAssets('character', Number(c.req.param('id')))))
+app.get('/:id/scenes', async (c) => success(c, await episodeAssets('scene', Number(c.req.param('id')))))
+app.get('/:id/props', async (c) => success(c, await episodeAssets('prop', Number(c.req.param('id')))))
+
+// GET /episodes/:id/asset-library?type=character|scene|prop — 本剧素材库（标注是否已在本集、共用集数）
+app.get('/:id/asset-library', async (c) => {
   const episodeId = Number(c.req.param('id'))
-  const links = await db.select().from(schema.episodeCharacters)
-    .where(eq(schema.episodeCharacters.episodeId, episodeId))
-  const charIds = links.map(l => l.characterId)
-  if (!charIds.length) return success(c, [])
-  const allChars = await db.select().from(schema.characters)
-  const result = allChars.filter(ch => charIds.includes(ch.id) && !ch.deletedAt)
-  return success(c, toSnakeCaseArray(result))
+  const kind = c.req.query('type') || ''
+  if (!isAssetKind(kind)) return badRequest(c, 'type 须为 character / scene / prop')
+  const [ep] = await db.select().from(schema.episodes).where(eq(schema.episodes.id, episodeId))
+  if (!ep) return notFound(c, '剧集不存在')
+  const { table, link, fkKey } = ASSET_KINDS[kind]
+  const all: any[] = await db.select().from(table as any).where(eq((table as any).dramaId, ep.dramaId))
+  const linked = new Set((await db.select().from(link as any).where(eq((link as any).episodeId, episodeId)) as any[]).map(l => l[fkKey]))
+  const counts = await assetEpisodeCounts(kind, ep.dramaId)
+  return success(c, all
+    .filter(a => !a.deletedAt)
+    .map(a => ({ ...toSnakeCase(a), episode_count: counts.get(a.id) || 0, linked: linked.has(a.id) })))
 })
 
-// GET /episodes/:id/scenes — scenes linked to this episode
-app.get('/:id/scenes', async (c) => {
+// POST /episodes/:id/asset-links — { type, ids }：把素材库中的素材加入本集（已在本集的跳过）
+app.post('/:id/asset-links', async (c) => {
   const episodeId = Number(c.req.param('id'))
-  const links = await db.select().from(schema.episodeScenes)
-    .where(eq(schema.episodeScenes.episodeId, episodeId))
-  const sceneIds = links.map(l => l.sceneId)
-  if (!sceneIds.length) return success(c, [])
-  const allScenes = await db.select().from(schema.scenes)
-  const result = allScenes.filter(sc => sceneIds.includes(sc.id) && !sc.deletedAt)
-  return success(c, toSnakeCaseArray(result))
+  const body = await c.req.json().catch(() => ({}))
+  const kind = String(body.type || '')
+  if (!isAssetKind(kind)) return badRequest(c, 'type 须为 character / scene / prop')
+  const [ep] = await db.select().from(schema.episodes).where(eq(schema.episodes.id, episodeId))
+  if (!ep) return notFound(c, '剧集不存在')
+  const { table, link, fkKey } = ASSET_KINDS[kind]
+  const ids: number[] = (Array.isArray(body.ids) ? body.ids : []).map(Number).filter(Boolean)
+  // 只允许引用同一部剧、未删除的素材
+  const valid = new Set((await db.select().from(table as any).where(eq((table as any).dramaId, ep.dramaId)) as any[])
+    .filter(a => !a.deletedAt).map(a => a.id))
+  const linked = new Set((await db.select().from(link as any).where(eq((link as any).episodeId, episodeId)) as any[]).map(l => l[fkKey]))
+  const toAdd = ids.filter(id => valid.has(id) && !linked.has(id))
+  if (toAdd.length) {
+    const ts = now()
+    await db.insert(link as any).values(toAdd.map(id => ({ episodeId, [fkKey]: id, createdAt: ts })))
+  }
+  return success(c, { added: toAdd.length })
 })
 
-// GET /episodes/:id/props — props linked to this episode
-app.get('/:id/props', async (c) => {
+// DELETE /episodes/:id/asset-links/:type/:assetId — 移出本集（只解除关联，素材本身与其他集不受影响）
+app.delete('/:id/asset-links/:type/:assetId', async (c) => {
   const episodeId = Number(c.req.param('id'))
-  const links = await db.select().from(schema.episodeProps)
-    .where(eq(schema.episodeProps.episodeId, episodeId))
-  const propIds = links.map(l => l.propId)
-  if (!propIds.length) return success(c, [])
-  const allProps = await db.select().from(schema.props)
-  const result = allProps.filter(p => propIds.includes(p.id) && !p.deletedAt)
-  return success(c, toSnakeCaseArray(result))
+  const kind = c.req.param('type')
+  if (!isAssetKind(kind)) return badRequest(c, 'type 须为 character / scene / prop')
+  const { link, fk } = ASSET_KINDS[kind]
+  await db.delete(link as any).where(and(eq((link as any).episodeId, episodeId), eq(fk as any, Number(c.req.param('assetId')))))
+  return success(c)
 })
 
 // POST /episodes/:id/extract — 异步提取资产（target: characters | scenes | props），立即返回，前端轮询状态

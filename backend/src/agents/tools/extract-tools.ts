@@ -245,7 +245,7 @@ const saveDedupCharacters = createTool({
 // 5. 智能保存场景（按地点+时间段去重，与现有数据合并）
 const saveDedupScenes = createTool({
   id: 'save_dedup_scenes',
-  description: 'Save extracted scenes with deduplication. Existing scenes (same location+time) are reused; new ones are created. All are linked to the current episode.',
+  description: 'Save extracted scenes with deduplication. A scene with the same location is reused regardless of time period (time of day belongs to storyboards); new locations are created. All are linked to the current episode.',
   inputSchema: z.object({
     scenes: z.array(z.object({
       location: z.string(),
@@ -268,19 +268,25 @@ const saveDedupScenes = createTool({
     })
 
     for (const scene of scenes) {
-      // 按地点+时间段精确匹配；地点仅做空白/大小写归一化（不删括号，避免误合并）
+      // 按地点匹配（仅做空白/大小写归一化，不删括号，避免误合并）。时间段不参与判定：
+      // 场景素材负责保持「同一个地方」的样子，昼夜/时段属于分镜（storyboards.time）与视频提示词，
+      // 同地点换时段时复用已有场景（及其形象图），避免重复建场景、重复生成图片
       const scenesInProject = (await db.select().from(schema.scenes)
         .where(eq(schema.scenes.dramaId, dramaId)))
         .filter(s => !s.deletedAt)
       const normLocation = normalizeLocation(scene.location)
-      const existing = scenesInProject.find(s => s.location === scene.location && s.time === (scene.time || ''))
-        || (normLocation ? scenesInProject.find(s => normalizeLocation(s.location) === normLocation && s.time === (scene.time || '')) : undefined)
+      const sameLocation = scenesInProject.filter(s =>
+        s.location === scene.location || (normLocation && normalizeLocation(s.location) === normLocation))
+      // 历史数据里同地点可能已有多个时段版本：优先同时段，其次已有形象图的，最后最早创建的
+      const existing = sameLocation.find(s => s.time === (scene.time || ''))
+        || sameLocation.find(s => s.imageUrl)
+        || sameLocation[0]
 
       if (existing) {
-        // 已存在完全匹配的场景：关联并补齐描述/光影
+        // 复用已有场景：只补齐空缺的描述/光影，不覆盖原有内容（避免改动其他集已在用的场景）
         await db.update(schema.scenes).set({
-          prompt: scene.prompt || scene.description || existing.prompt,
-          lighting: scene.lighting || existing.lighting,
+          prompt: existing.prompt || scene.prompt || scene.description || existing.location,
+          lighting: existing.lighting || scene.lighting || '',
           updatedAt: ts,
         }).where(eq(schema.scenes.id, existing.id))
         await linkSceneToEpisode(episodeId, existing.id)
