@@ -56,6 +56,9 @@ export const episodeAPI = {
   extractStatus: (id: number) => api.get(`/episodes/${id}/extract-status`),
   generateVideoPrompts: (id: number, model?: string, configId?: number, storyboardIds?: number[]) => api.post(`/episodes/${id}/generate-video-prompts`, { model: model || undefined, config_id: configId || undefined, storyboard_ids: storyboardIds?.length ? storyboardIds : undefined }),
   videoPromptsStatus: (id: number) => api.get(`/episodes/${id}/video-prompts-status`),
+  // 素材改名：{ name, cascade?, dry_run? }，cascade 同步替换本剧剧本/分镜中的旧名
+  renameAsset: (type: string, assetId: number, data: { name: string; cascade?: boolean; dry_run?: boolean }) =>
+    api.post(`/episodes/assets/${type}/${assetId}/rename`, data),
 }
 
 export const storyboardAPI = {
