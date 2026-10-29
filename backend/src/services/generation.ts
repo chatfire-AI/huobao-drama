@@ -3,7 +3,7 @@
  * 创建(processing) → 适配器构建请求 → 同步完成或异步轮询 → 下载落盘 → 回写业务表
  */
 import { db, getInsertId, schema } from '../db/index.js'
-import { and, desc, eq, gt } from 'drizzle-orm'
+import { and, desc, eq, gt, type SQL } from 'drizzle-orm'
 import fs from 'node:fs'
 import { getAbsolutePath } from '../utils/storage.js'
 import { downloadVideo, safeTaskError } from './video-download.js'
@@ -486,21 +486,56 @@ async function handleImageCompleteBase64(record: SysTaskRecord, base64Data: stri
 async function writeBackImageAssets(record: SysTaskRecord, localPath: string) {
   const params = parseTaskParams(record.params)
   if (record.storyboardId) {
-    const sbUpdate: Record<string, any> = { updatedAt: now() }
-    if (params.frameType === 'first_frame') sbUpdate.firstFrameImage = localPath
-    else if (params.frameType === 'last_frame') sbUpdate.lastFrameImage = localPath
-    else sbUpdate.composedImage = localPath
-    await db.update(schema.storyboards).set(sbUpdate).where(eq(schema.storyboards.id, record.storyboardId))
+    const frameType = imageFrameSlot(params.frameType)
+    // 同一帧位上已有更新的生图任务时，旧任务不得覆盖新结果
+    if (!await hasNewerImageTask(record, eq(schema.sysTask.storyboardId, record.storyboardId), frameType)) {
+      const sbUpdate: Record<string, any> = { updatedAt: now() }
+      if (frameType === 'first_frame') sbUpdate.firstFrameImage = localPath
+      else if (frameType === 'last_frame') sbUpdate.lastFrameImage = localPath
+      else sbUpdate.composedImage = localPath
+      await db.update(schema.storyboards).set(sbUpdate).where(eq(schema.storyboards.id, record.storyboardId))
+    }
   }
-  if (record.characterId) {
+  if (record.characterId && !await hasNewerImageTask(record, eq(schema.sysTask.characterId, record.characterId))) {
     await db.update(schema.characters).set({ imageUrl: localPath, updatedAt: now() }).where(eq(schema.characters.id, record.characterId))
   }
-  if (record.sceneId) {
+  if (record.sceneId && !await hasNewerImageTask(record, eq(schema.sysTask.sceneId, record.sceneId))) {
     await db.update(schema.scenes).set({ imageUrl: localPath, status: 'completed', updatedAt: now() }).where(eq(schema.scenes.id, record.sceneId))
   }
-  if (record.propId) {
+  if (record.propId && !await hasNewerImageTask(record, eq(schema.sysTask.propId, record.propId))) {
     await db.update(schema.props).set({ imageUrl: localPath, updatedAt: now() }).where(eq(schema.props.id, record.propId))
   }
+}
+
+/** 分镜图片回写的帧位：首帧/尾帧/合成图写不同列，只有同帧位才互相覆盖 */
+function imageFrameSlot(frameType: unknown): 'first_frame' | 'last_frame' | 'composed' {
+  if (frameType === 'first_frame') return 'first_frame'
+  if (frameType === 'last_frame') return 'last_frame'
+  return 'composed'
+}
+
+/**
+ * 同一资产上是否已有更新的生图任务。
+ *
+ * 视频回写（handleVideoComplete）已有等价保护：先发后至的旧任务不能覆盖用户后来生成的视频。
+ * 图片回写原先没有：同一资产同时提交两次生图时，先完成的旧任务会把新结果覆盖回旧图。
+ * 同一分镜的不同帧位写不同列，互不覆盖，仍各自回写。
+ */
+async function hasNewerImageTask(record: SysTaskRecord, condition: SQL<unknown>, frameType?: 'first_frame' | 'last_frame' | 'composed'): Promise<boolean> {
+  const rows = await db.select({ id: schema.sysTask.id, params: schema.sysTask.params })
+    .from(schema.sysTask)
+    .where(and(eq(schema.sysTask.type, 'image'), gt(schema.sysTask.id, record.id), condition))
+  if (!rows.length) return false
+  if (!frameType) return true
+  const conflicts = rows.some(row => imageFrameSlot(parseTaskParams(row.params).frameType) === frameType)
+  if (conflicts) {
+    logTaskProgress('ImageTask', 'writeback-skipped', {
+      id: record.id,
+      reason: 'newer-task-exists',
+      frameType,
+    })
+  }
+  return conflicts
 }
 
 async function handleVideoComplete(record: SysTaskRecord, videoUrl: string, duration: number | null | undefined) {
