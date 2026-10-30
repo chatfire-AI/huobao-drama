@@ -1,5 +1,5 @@
 /**
- * 火山引擎 Seedance 2.0 视频生成 Adapter
+ * 火山引擎 Seedance 2.0 / 2.5 视频生成 Adapter
  * 端点: /api/v3/contents/generations/tasks (注意 /api/v3 前缀)
  * 响应: { id: "task-xxx" } -> 轮询获取状态
  *
@@ -39,9 +39,24 @@ export class VolcEngineVideoAdapter implements VideoProviderAdapter {
 
   buildGenerateRequest(config: AIConfig, record: VideoGenerationRecord): ProviderRequest {
     const model = record.model || config.model || DEFAULT_MODEL
-    if (!model.startsWith(SEEDANCE2_MODEL_PREFIX)) {
-      throw new Error(`仅支持 Seedance 2.0 系列模型（${SEEDANCE2_MODEL_PREFIX}-*），当前: ${model}`)
+    const supportsDraft = model === 'doubao-seedance-2-5-260628'
+    if (!model.startsWith(SEEDANCE2_MODEL_PREFIX) && !supportsDraft) {
+      throw new Error(`仅支持 Seedance 2.0 系列模型（${SEEDANCE2_MODEL_PREFIX}-*）或 Seedance 2.5，当前: ${model}`)
     }
+
+    if ((record.draft || record.draftTaskId) && !supportsDraft) throw new Error('样片模式仅支持 Seedance 2.5')
+    if (record.draft && record.draftTaskId) throw new Error('不能同时生成样片与正式视频')
+    if (record.draftTaskId) {
+      // Creative parameters MUST NOT be repeated: Ark inherits them from the draft.
+      return {
+        url: joinProviderUrl(config.baseUrl, '/api/v3', '/contents/generations/tasks'),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}`,
+          ...(record.requestId ? { 'Idempotency-Key': record.requestId } : {}) },
+        body: { model, content: [{ type: 'draft_task', draft_task: { id: record.draftTaskId } }], resolution: '1080p', watermark: false },
+      }
+    }
+    if (record.draft && record.resolution !== '480p') throw new Error('样片分辨率必须为 480p')
 
     const prompt = (record.prompt || '').trim()
     const refImages = parseUrlArray(record.referenceImageUrls)
@@ -75,11 +90,13 @@ export class VolcEngineVideoAdapter implements VideoProviderAdapter {
       content,
       generate_audio: record.generateAudio !== 0 && record.generateAudio !== false,
       ratio: record.aspectRatio || 'adaptive',
-      duration: this.normalizeDuration(record.duration),
+      duration: supportsDraft && record.duration === -1 ? -1 : supportsDraft
+        ? Math.min(30, Math.max(4, Math.round(Number(record.duration) || 5))) : this.normalizeDuration(record.duration),
       // Seedance 2.0 仅 480p/720p 两档，1080p 收敛到 720p
-      resolution: record.resolution === '480p' ? '480p' : '720p',
+      resolution: supportsDraft && record.resolution === '1080p' ? '1080p' : record.resolution === '480p' ? '480p' : '720p',
       watermark: false,
     }
+    if (record.draft) body.draft = true
 
     return {
       url: joinProviderUrl(config.baseUrl, '/api/v3', '/contents/generations/tasks'),
@@ -87,6 +104,7 @@ export class VolcEngineVideoAdapter implements VideoProviderAdapter {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${config.apiKey}`,
+        ...(record.draft && record.requestId ? { 'Idempotency-Key': record.requestId } : {}),
       },
       body,
     }
@@ -122,6 +140,8 @@ export class VolcEngineVideoAdapter implements VideoProviderAdapter {
       return {
         status: 'completed',
         videoUrl,
+        draft: typeof result.draft === 'boolean' ? result.draft : undefined,
+        draftExpiresAt: typeof result.draft_expires_at === 'number' ? result.draft_expires_at : undefined,
       }
     }
     if (status === 'failed') {

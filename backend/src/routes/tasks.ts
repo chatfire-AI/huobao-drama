@@ -2,13 +2,21 @@ import { Hono } from 'hono'
 import { and, desc, eq } from 'drizzle-orm'
 import { db, schema } from '../db/index.js'
 import { success, created, badRequest } from '../utils/response.js'
-import { generateImage, generateVideo, recoverVideoTask } from '../services/generation.js'
+import { generateImage, generateVideo, recoverVideoTask, finalizeDraft } from '../services/generation.js'
 import { safeTaskError } from '../services/video-download.js'
 import { getActiveConfig, getConfigById } from '../services/ai.js'
 import { getDramaStylePrompt } from '../services/style-preset.js'
 import { logTaskError, logTaskPayload, logTaskStart, logTaskSuccess } from '../utils/task-logger.js'
 
 const app = new Hono()
+
+app.post('/:id/finalize', async c => {
+  try {
+    const id = await finalizeDraft(Number(c.req.param('id')))
+    const [task] = await db.select().from(schema.sysTask).where(eq(schema.sysTask.id, id))
+    return created(c, task)
+  } catch (error) { return badRequest(c, safeTaskError(error)) }
+})
 
 app.post('/:id/recover', async c => {
   try {
@@ -126,6 +134,8 @@ function validateVideoRequest(body: any, provider?: string): string | null {
 app.post('/', async (c) => {
   const body = await c.req.json()
   const type = body.type as TaskType
+  if (body.draft !== undefined && typeof body.draft !== 'boolean') return badRequest(c, 'draft 必须为布尔值')
+  if (body.draft && type !== 'video') return badRequest(c, '样片模式仅支持视频')
   if (type !== 'image' && type !== 'video') return badRequest(c, 'type 必须为 image 或 video')
 
   if (type === 'image') {
@@ -199,6 +209,7 @@ app.post('/', async (c) => {
         configId,
       })
       : await generateVideo({
+        draft: body.draft === true,
         forceNew: body.force_new === true,
         storyboardId: body.storyboard_id,
         dramaId: body.drama_id,

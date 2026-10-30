@@ -92,6 +92,9 @@ export interface ImageGenerationRecord {
 }
 
 export interface VideoGenerationRecord {
+  requestId?: string
+  draft?: boolean
+  draftTaskId?: string
   id: number
   model?: string | null
   prompt?: string | null
@@ -135,6 +138,8 @@ export interface VideoGenResponse {
 }
 
 export interface VideoPollResponse {
+  draft?: boolean
+  draftExpiresAt?: number
   status: 'pending' | 'processing' | 'completed' | 'failed'
   stage?: 'transferring'
   videoUrl?: string

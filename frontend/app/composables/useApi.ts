@@ -91,6 +91,7 @@ export const propAPI = {
 
 // 统一生成任务（图片/视频）：POST 带 type 字段，列表按 type 过滤
 export const taskAPI = {
+  finalize: (id: number) => api.post(`/tasks/${id}/finalize`),
   generate: (d: any) => api.post('/tasks', d),
   recover: (id: number) => api.post(`/tasks/${id}/recover`),
   diagnostics: (id: number) => api.get(`/tasks/${id}/diagnostics`),
