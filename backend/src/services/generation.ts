@@ -5,6 +5,7 @@
 import { db, getInsertId, schema } from '../db/index.js'
 import { and, desc, eq, gt } from 'drizzle-orm'
 import fs from 'node:fs'
+import { randomUUID } from 'node:crypto'
 import { getAbsolutePath } from '../utils/storage.js'
 import { downloadVideo, safeTaskError } from './video-download.js'
 import { getActiveConfig, getConfigById } from './ai.js'
@@ -48,6 +49,7 @@ interface GenerateImageParams {
 }
 
 interface GenerateVideoParams {
+  draft?: boolean
   storyboardId?: number
   dramaId?: number
   prompt: string
@@ -126,6 +128,9 @@ export async function generateVideo(params: GenerateVideoParams): Promise<number
       ? (await getConfigById(params.configId)) ?? await getActiveConfig('video')
       : await getActiveConfig('video')
     if (!config) throw new Error('未配置视频模型，请先到「设置」页添加并启用 AI 服务')
+    if (params.draft && (config.provider !== 'volcengine' || params.model !== 'doubao-seedance-2-5-260628')) {
+      throw new Error('样片模式仅支持火山引擎 Seedance 2.5，请明确选择模型')
+    }
 
     const id = await createTask('video', config, {
       storyboardId: params.storyboardId,
@@ -134,6 +139,7 @@ export async function generateVideo(params: GenerateVideoParams): Promise<number
       model: params.model || config.model,
     }, {
       referenceMode: params.referenceMode || 'reference',
+      draft: params.draft === true,
       imageUrl: params.imageUrl,
       firstFrameUrl: params.firstFrameUrl,
       lastFrameUrl: params.lastFrameUrl,
@@ -146,7 +152,7 @@ export async function generateVideo(params: GenerateVideoParams): Promise<number
       duration: params.duration,
       aspectRatio: params.aspectRatio,
       // 统一存为项目内部格式，各适配器再转换为官方大小写与枚举。
-      resolution: normalizeStoredVideoResolution(params.resolution),
+      resolution: params.draft ? '480p' : normalizeStoredVideoResolution(params.resolution),
       seed: params.seed,
       promptExtend: params.promptExtend,
       watermark: params.watermark,
@@ -171,6 +177,53 @@ export async function generateVideo(params: GenerateVideoParams): Promise<number
   }
 }
 
+const draftPromotions = new Set<number>()
+
+/** Repeat confirmations return the persisted child, including after restart. */
+export async function finalizeDraft(id: number): Promise<number> {
+  if (!Number.isSafeInteger(id) || id <= 0) throw new Error('样片任务 ID 无效')
+  if (draftPromotions.has(id)) throw new Error('正在提交正式视频，请稍后刷新')
+  draftPromotions.add(id)
+  let lockedStoryboard: number | undefined
+  try {
+    const [source] = await db.select().from(schema.sysTask).where(eq(schema.sysTask.id, id))
+    const params = parseTaskParams(source?.params)
+    if (!source || source.type !== 'video' || !params.draft || source.provider !== 'volcengine'
+      || source.model !== 'doubao-seedance-2-5-260628') throw new Error('不是支持的样片任务')
+    const tasks = await db.select().from(schema.sysTask).where(eq(schema.sysTask.type, 'video'))
+    const existing = tasks.find(task => task.id === params.finalTaskId || parseTaskParams(task.params).draftSourceId === id)
+    if (existing) return existing.id
+    if (params.finalTaskId) throw new Error('正式视频任务记录已删除，请先核对生成记录，不能重复提交')
+    if (source.storyboardId) {
+      if (videoSubmissions.has(source.storyboardId)) throw new Error('该分镜正在提交任务')
+      lockedStoryboard = source.storyboardId
+      videoSubmissions.add(lockedStoryboard)
+    }
+    if (source.status !== 'completed' || !source.taskId || !source.localPath
+      || !fs.existsSync(getAbsolutePath(source.localPath))) throw new Error('样片尚未完成本地保存')
+    if (params.providerDraft === false) throw new Error('供应商未确认此任务为样片，不能生成正式视频')
+    const created = Date.parse(source.createdAt)
+    const cutoff = Date.parse('2026-10-28T10:00:00+08:00')
+    const lifetime = (created >= cutoff ? 14 : 7) * 86400_000
+    const expires = Number.isFinite(params.providerDraftExpiresAt) ? Math.min(created + lifetime, params.providerDraftExpiresAt * 1000) : created + lifetime
+    if (!Number.isFinite(created) || Date.now() >= expires) throw new Error('样片任务已过期，请重新生成样片')
+    if (tasks.some(task => task.storyboardId === source.storyboardId && source.storyboardId && task.status === 'processing')) {
+      throw new Error('该分镜已有运行中的任务，请等待结果')
+    }
+    const config = await recoveryConfig(source)
+    const childId = await createTask('video', config, {
+      storyboardId: source.storyboardId ?? undefined, dramaId: source.dramaId ?? undefined,
+      prompt: source.prompt || '', model: source.model,
+    }, { draftSourceId: id, draftTaskId: source.taskId, resolution: '1080p' })
+    await db.update(schema.sysTask).set({ params: JSON.stringify({ ...params, finalTaskId: childId }) })
+      .where(eq(schema.sysTask.id, id))
+    return childId
+  } finally {
+    draftPromotions.delete(id)
+    if (lockedStoryboard) videoSubmissions.delete(lockedStoryboard)
+  }
+}
+
 async function createTask(
   type: TaskType,
   config: AIConfig,
@@ -186,6 +239,7 @@ async function createTask(
   params: Record<string, unknown>,
 ): Promise<number> {
   const ts = now()
+  if (params.draft || params.draftTaskId) params.requestId = randomUUID()
   const res = await db.insert(schema.sysTask).values({
     type,
     ...fields,
@@ -256,6 +310,9 @@ async function processTask(id: number, config: AIConfig) {
         model: record.model,
         prompt: record.prompt,
         referenceMode: params.referenceMode,
+        requestId: params.requestId,
+        draft: params.draft === true,
+        draftTaskId: params.draftTaskId,
         imageUrl: resolvedImageUrl,
         firstFrameUrl: resolvedFirstFrameUrl,
         lastFrameUrl: resolvedLastFrameUrl,
@@ -431,7 +488,12 @@ async function pollTask(record: SysTaskRecord, config: AIConfig, taskId: string)
           }
         } else if (pollResp.videoUrl) {
           logTaskSuccess(label, 'poll-complete', { id: record.id, taskId, videoUrl: pollResp.videoUrl })
-          await handleVideoComplete(record, pollResp.videoUrl, pollResp.duration)
+          const params = parseTaskParams(record.params)
+          if (params.draft) {
+            if (typeof pollResp.draft === 'boolean') params.providerDraft = pollResp.draft
+            if (Number.isFinite(pollResp.draftExpiresAt)) params.providerDraftExpiresAt = pollResp.draftExpiresAt
+          }
+          await handleVideoComplete({ ...record, params: JSON.stringify(params) }, pollResp.videoUrl, pollResp.duration)
           return
         }
       }
@@ -505,7 +567,7 @@ async function writeBackImageAssets(record: SysTaskRecord, localPath: string) {
 
 async function handleVideoComplete(record: SysTaskRecord, videoUrl: string, duration: number | null | undefined) {
   // 先落库地址与实际时长；后续下载失败仍可恢复，且不重新提交生成。
-  const params = { ...parseTaskParams(record.params), resultDuration: duration }
+  const params: Record<string, any> = { ...parseTaskParams(record.params), resultDuration: duration }
   await db.update(schema.sysTask).set({ resultUrl: videoUrl, params: JSON.stringify(params),
     stage: 'downloading', status: 'processing', errorCode: null, errorMsg: null, updatedAt: now() })
     .where(eq(schema.sysTask.id, record.id))
@@ -518,7 +580,7 @@ async function handleVideoComplete(record: SysTaskRecord, videoUrl: string, dura
     db.transaction(tx => {
       const newer = record.storyboardId ? tx.select({ id: schema.sysTask.id }).from(schema.sysTask)
         .where(and(eq(schema.sysTask.storyboardId, record.storyboardId), eq(schema.sysTask.type, 'video'), gt(schema.sysTask.id, record.id))).get() : null
-      if (record.storyboardId && !newer) tx.update(schema.storyboards)
+      if (record.storyboardId && !newer && !params.draft) tx.update(schema.storyboards)
         .set({ videoUrl: localPath, duration: duration || undefined, updatedAt: now() })
         .where(eq(schema.storyboards.id, record.storyboardId)).run()
       tx.update(schema.sysTask).set({ localPath, status: 'completed', stage: 'completed', errorCode: null,

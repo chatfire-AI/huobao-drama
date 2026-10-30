@@ -941,5 +941,18 @@
         "desc": "Click this \"?\" button to replay this page's guide. Happy creating!"
       }
     }
+  },
+  "draft": {
+    "title": "Seedance 2.5 Draft",
+    "hint": "Check framing and motion before rendering the final video. Drafts never replace the main clip. Both steps are billed separately.",
+    "generate": "Generate 480p draft",
+    "running": "Task in progress",
+    "preview": "Draft preview (480p)",
+    "expired": "Draft expired. Generate a new draft.",
+    "validity": "Drafts created from Oct 28, 2026 at 10:00 Asia/Shanghai expire after 14 days; earlier drafts after 7 days.",
+    "finalize": "Approve draft and render 1080p",
+    "submitted": "Final video submitted",
+    "confirmPreview": "Generating a 480p draft incurs charges. Continue?",
+    "confirmFinal": "Render 1080p using the draft’s original prompt, inputs, duration and audio? This is billed separately."
   }
 }

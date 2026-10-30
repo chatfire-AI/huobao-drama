@@ -614,6 +614,11 @@
               <div v-if="selectedSb" class="video-task-side">
               <div class="video-main-col">
               <div class="video-main-scroll">
+                <SeedanceDraftPanel v-if="supportsDraft && selectedSb" :key="selectedSb.id"
+                  :storyboard-id="selectedSb.id" :drama-id="dramaId" :config-id="selectedVideoConfig?.id"
+                  :model="effectiveVideoModelLabel" :prompt="resolveVideoPromptRefs(selectedSb)"
+                  :reference-images="getShotReferenceImages(selectedSb)" :duration="Number(selectedSb.duration || 10)"
+                  :aspect-ratio="dramaAspectRatio" @updated="refresh" />
                 <div class="video-main-grid">
                   <section class="video-inspector-section">
                     <span class="video-inspector-label">{{ t('episode.sb.descSection') }}</span>
@@ -694,6 +699,7 @@
               </div>
 
               <aside class="video-task-inspector">
+                <div class="video-inspector-scroll">
             <aside class="video-task-player">
               <div class="video-player-head">
                 <div class="video-player-head-info">
@@ -803,6 +809,7 @@
                     </div>
                     <div v-else class="video-bound-refs-empty">{{ t('episode.inspector.noBoundRefs') }}</div>
                   </section>
+                </div>
                 </div>
 
                 <!-- 分镜时长 + 生成操作常驻底部：不随检查器内容滚动 -->
@@ -1956,7 +1963,8 @@ function isPendingSceneImage(id) {
 }
 
 function isPendingVideo(id) {
-  return pendingVideoIds.value.includes(id)
+  return pendingVideoIds.value.includes(id) || genTasks.value.some(task => task.storyboard_id === id
+    && task.type === 'video' && task.status === 'processing' && isDraftTask(task))
 }
 
 function videoFailMessage(id) {
@@ -1976,8 +1984,11 @@ function videoTaskState(sb) {
   return 'ready'
 }
 
+function isDraftTask(task) {
+  try { return JSON.parse(task?.params || '{}').draft === true } catch { return false }
+}
 function latestVideoTask(id) {
-  return genTasks.value.filter(task => task.type === 'video' && task.storyboard_id === id)
+  return genTasks.value.filter(task => task.type === 'video' && task.storyboard_id === id && !isDraftTask(task))
     .sort((a, b) => b.id - a.id)[0]
 }
 const recoverableVideoCount = computed(() => sbs.value.filter(sb => canRecoverVideo(sb.id)).length)
@@ -2204,6 +2215,8 @@ const effectiveVideoModelLabel = computed(() => {
   if (explicit) return explicit
   return configModels(selectedVideoConfig.value)[0] || ''
 })
+const supportsDraft = computed(() => selectedVideoConfig.value?.provider === 'volcengine'
+  && effectiveVideoModelLabel.value === 'doubao-seedance-2-5-260628')
 const episodeResolutionLabel = computed(() =>
   resolutionOptions.value.find(o => o.key === episodeResolution.value)?.model || episodeResolution.value)
 // 短档位标签（480p / 768P / 2K 等厂商原生档位），用于底部生效配置小结
@@ -2273,7 +2286,7 @@ async function loadGenTasks() {
 
     // 生成中/失败状态只存在内存里,页面刷新后丢失;从 sys_task 记录按分镜恢复,
     // 否则已失败的镜头刷新后会退化成"待生成"
-    const videoTasks = genTasks.value.filter(t => t.type === 'video' && t.storyboard_id)
+    const videoTasks = genTasks.value.filter(t => t.type === 'video' && t.storyboard_id && !isDraftTask(t))
     // 每个分镜只取最新一条任务(created_at 降序、id 兜底),旧任务不干预当前状态
     const latestBySb = new Map()
     for (const t of videoTasks) {
@@ -3089,7 +3102,7 @@ async function loadSbVideoHistory() {
   try {
     const rows = await taskAPI.list({ type: 'video', storyboard_id: selectedSb.value.id })
     sbVideoHistory.value = (Array.isArray(rows) ? rows : [])
-      .filter(t => t.status === 'completed' && taskVideoPath(t))
+      .filter(t => t.status === 'completed' && taskVideoPath(t) && !isDraftTask(t))
       .sort((a, b) => taskCreatedAt(b).localeCompare(taskCreatedAt(a)))
   } catch { sbVideoHistory.value = [] }
 }
@@ -5198,6 +5211,12 @@ button.video-task-metric.on { box-shadow: 0 0 0 2px var(--accent); }
 .video-task-inspector .video-player-history {
   flex: none;
 }
+.video-inspector-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
 .video-inspector-head {
   min-height: 56px;
   display: flex;
@@ -5209,7 +5228,7 @@ button.video-task-metric.on { box-shadow: 0 0 0 2px var(--accent); }
 }
 .video-inspector-title { color: var(--text-0); font-size: 14px; font-weight: 700; }
 .video-inspector-sub { margin-top: 2px; color: var(--text-3); font-size: 11px; }
-.video-inspector-body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding: 16px 18px 18px; }
+.video-inspector-body { display: flex; flex-direction: column; gap: 16px; padding: 16px 18px 18px; }
 /* 时长参数 + 生成操作常驻底部：不随检查器滚动 */
 .video-inspector-footer {
   flex: none;
@@ -6137,9 +6156,15 @@ button.video-task-metric.on { box-shadow: 0 0 0 2px var(--accent); }
     flex-direction: column;
   }
 
-  .video-task-workbench {
+  .video-task-workbench,
+  .video-task-workbench.has-player {
     grid-template-columns: 1fr;
     overflow-y: auto;
+  }
+
+  .prod-section-bar > .ml-auto {
+    flex-wrap: wrap;
+    width: 100%;
   }
 
   /* 窄屏纵向堆叠后无栏间分界，隐藏拖拽分隔条 */
@@ -6177,8 +6202,10 @@ button.video-task-metric.on { box-shadow: 0 0 0 2px var(--accent); }
     overflow: visible;
   }
 
-  .video-inspector-body {
+  .video-inspector-scroll {
+    flex: none;
     overflow: visible;
+    scrollbar-gutter: auto;
   }
 
   .video-task-player {

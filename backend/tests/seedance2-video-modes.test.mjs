@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 const root = new URL('..', import.meta.url)
 const read = (path) => readFileSync(new URL(path, root), 'utf8')
 
-test('volcengine video adapter only supports Seedance 2.0 models and reference mode only', () => {
+test('volcengine video adapter preserves Seedance 2.0 defaults with opt-in 2.5 draft support', () => {
   const adapter = read('src/services/adapters/volcengine-video.ts')
 
   // 模型白名单：仅 doubao-seedance-2-0-* 前缀
@@ -33,7 +33,7 @@ test('volcengine video adapter only supports Seedance 2.0 models and reference m
   // generate_audio 可配置（默认开），时长支持 4-15 秒；分辨率随集固定（480p/720p，默认 720p）
   assert.match(adapter, /generate_audio:\s*record\.generateAudio/)
   assert.match(adapter, /Math\.min\(15, Math\.max\(4, parsed\)\)/)
-  assert.match(adapter, /resolution: record\.resolution === '480p' \? '480p' : '720p'/)
+  assert.match(adapter, /record\.resolution === '480p' \? '480p' : '720p'/)
 })
 
 test('video generation service resolves reference media and persists new fields', () => {
@@ -64,7 +64,7 @@ test('video resolution is fixed per episode, editable, and locked into video tas
   assert.match(tasks, /episodeResolution = ep\.resolution/)
   assert.match(tasks, /resolution: episodeResolution \|\| videoBody!\.resolution/)
   // 服务落入 params 并传给适配器
-  assert.match(service, /resolution: normalizeStoredVideoResolution\(params\.resolution\)/)
+  assert.match(service, /resolution: params\.draft \? '480p' : normalizeStoredVideoResolution\(params\.resolution\)/)
   assert.match(service, /resolution: params\.resolution,/)
 })
 
