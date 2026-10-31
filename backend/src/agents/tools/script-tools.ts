@@ -27,7 +27,7 @@ const readEpisodeScript = createTool({
 
 const rewriteToScreenplay = createTool({
   id: 'rewrite_to_screenplay',
-  description: 'Read the original content for AI rewriting. Returns the source text with formatting instructions.',
+  description: 'Read the original content with formatting instructions for AI rewriting. Use instead of read_episode_script, not after it. This tool does not perform the rewriting.',
   inputSchema: z.object({
     instructions: z.string().optional().describe('Additional rewrite instructions'),
   }),
@@ -42,7 +42,7 @@ const rewriteToScreenplay = createTool({
 
     return {
       source_content: source,
-      instruction: `请将以下内容改写为格式化剧本。
+      instruction: `请将 source_content 中的原始内容改写为格式化剧本。
 
 格式规范：
 - 场景头：## S编号 | 内景/外景 · 地点 | 时间段
@@ -50,10 +50,7 @@ const rewriteToScreenplay = createTool({
 - 对白：角色名：（状态/表情）台词内容
 - 每个场景 30-60 秒内容
 
-${instructions || ''}
-
-【原始内容】
-${source}`,
+${instructions || ''}`,
     }
   },
 })
