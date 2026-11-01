@@ -1,6 +1,8 @@
 import { Hono } from 'hono'
+import { bodyLimit } from 'hono/body-limit'
 import { success, badRequest } from '../utils/response.js'
 import { saveUploadedFile, generateImageThumb } from '../utils/storage.js'
+import { AUDIO_MAX_BYTES, AudioUploadError, saveAudioUpload } from '../utils/audio-upload.js'
 
 const app = new Hono()
 
@@ -23,10 +25,6 @@ app.post('/image', async (c) => {
 const VIDEO_EXT = new Set(['.mp4', '.mov', '.webm', '.m4v'])
 const VIDEO_MIME = new Set(['video/mp4', 'video/quicktime', 'video/webm', 'video/x-m4v'])
 const VIDEO_MAX = 50 * 1024 * 1024 // 50MB
-
-const AUDIO_EXT = new Set(['.mp3', '.wav', '.m4a', '.aac'])
-const AUDIO_MIME = new Set(['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/mp4', 'audio/x-m4a', 'audio/aac'])
-const AUDIO_MAX = 20 * 1024 * 1024 // 20MB
 
 function extOf(name: string): string {
   const i = name.lastIndexOf('.')
@@ -64,6 +62,16 @@ async function saveMediaUpload(
 app.post('/video', async (c) => saveMediaUpload(c, 'video', VIDEO_EXT, VIDEO_MIME, VIDEO_MAX))
 
 // POST /upload/audio — 参考音频上传（Seedance 多模态参考用）
-app.post('/audio', async (c) => saveMediaUpload(c, 'audio', AUDIO_EXT, AUDIO_MIME, AUDIO_MAX))
+app.post('/audio', bodyLimit({ maxSize: AUDIO_MAX_BYTES + 64 * 1024,
+  onError: c => badRequest(c, '音频文件大小不能超过 20MB'),
+}), async (c) => {
+  try {
+    const body = await c.req.parseBody()
+    return success(c, await saveAudioUpload(body.file))
+  } catch (error) {
+    if (error instanceof AudioUploadError) return badRequest(c, error.message)
+    throw error
+  }
+})
 
 export default app

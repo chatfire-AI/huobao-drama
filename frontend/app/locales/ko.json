@@ -3,6 +3,26 @@
     "title": "화바오 숏드라마",
     "updateAvailable": "새 버전 v{version}을 사용할 수 있습니다. 「설정 → 업데이트 정보」에서 업그레이드하세요"
   },
+  "characterVoice": {
+    "title": "캐릭터 음색",
+    "forCharacter": "{name}의 음색",
+    "upload": "음색 업로드",
+    "replace": "음색 교체",
+    "remove": "제거",
+    "saving": "저장 중…",
+    "empty": "캐릭터 음색 샘플로 사용할 선명한 음성 녹음을 업로드하세요.",
+    "formats": "MP3 / WAV / M4A / AAC · 최대 20MB",
+    "sample": "음색 샘플",
+    "preview": "{name}의 음색 미리 듣기",
+    "saved": "캐릭터 음색이 저장되었습니다",
+    "removed": "캐릭터 음색이 제거되었습니다",
+    "invalidFormat": "MP3, WAV, M4A 또는 AAC 오디오 파일을 선택하세요",
+    "tooLarge": "오디오 파일은 20MB 이하여야 합니다",
+    "emptyFile": "오디오 파일이 비어 있습니다",
+    "playbackError": "오디오를 재생할 수 없습니다. 파일을 확인하거나 다시 업로드하세요.",
+    "referenceHint": "{'@'}이름으로 외형, 대사에서 #이름으로 음색을 참조하세요. 예: {'@'}민수가 고개를 들고 #민수가 부드럽게 말한다. 샘플당 2~5초, 총 15초 이하를 권장합니다.",
+    "noMatch": "일치하는 음색이 없습니다. 에셋에서 음색을 업로드하고 현재 샷에 캐릭터를 추가하세요."
+  },
   "common": {
     "confirm": "확인",
     "cancel": "취소",
@@ -673,7 +693,7 @@
       "regenPrompt": "다시 생성",
       "aiGenerate": "AI로 생성",
       "videoPromptCopy": "이 스토리보드의 화면 설명(대사/나레이션 포함)과 분위기를 바탕으로 생성",
-      "videoPromptPlaceholder": "{'@'}캐릭터명 / {'@'}장멸명 으로 참조 소재를 지정하고, 3초마다 줄 바꿈하여 화면의 움직임과 침라를 기술. AI로 생성해 프롬프트 Agent에 맡길 수도 있습니다…",
+      "videoPromptPlaceholder": "{'@'}이름으로 이미지, #이름으로 음색을 참조하고 대사, 화자, 카메라 움직임을 설명하세요…",
       "breaking": "스토리보드 분해 중...",
       "emptyTitle": "스토리보드 분해 시작",
       "emptyDesc": "대본, 캐릭터, 장면을 바탕으로 샷으로 분해하여 스토리보드 설명과 연결 정보를 생성합니다.",
@@ -766,7 +786,7 @@
       "aspectRatio": "화면 비율"
     },
     "inspector": {
-      "videoPromptPlaceholder": "{'@'}캐릭터명 / {'@'}장멸명 으로 참조 소재를 지정(생성 시 참조 이미지로 자동 매핑). 시간대별로 화면의 움직임과 침라를 기술…",
+      "videoPromptPlaceholder": "{'@'}이름으로 이미지, #이름으로 음색을 참조하고 대사, 화자, 카메라 움직임을 설명하세요…",
       "noRefs": "이 스토리보드에는 참조 소재가 연결되어 있지 않습니다",
       "refMedia": "참조 이미지 / 영상 / 오디오",
       "imageN": "이미지 {n}",

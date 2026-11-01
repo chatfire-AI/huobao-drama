@@ -217,8 +217,8 @@
                 tabindex="0"
                 role="button"
                 @click="openEdit(m)"
-                @keydown.enter.prevent="openEdit(m)"
-                @keydown.space.prevent="openEdit(m)"
+                @keydown.enter.self.prevent="openEdit(m)"
+                @keydown.space.self.prevent="openEdit(m)"
               >
                 <div class="character-asset-main">
                   <div class="character-asset-overview">
@@ -257,6 +257,7 @@
                     <span class="afp-label">{{ t('episode.asset.finalPromptTurnaround') }}</span>
                     <span :class="['afp-text', !m.finalPrompt && 'dim']">{{ m.finalPrompt || t('episode.asset.finalPromptAutoTurnaround') }}</span>
                   </div>
+                  <CharacterVoice :character="m" @updated="updateCharacterVoice" />
                 </div>
               </article>
             </div>
@@ -383,6 +384,7 @@
                     <strong>{{ editTarget.kindKey === 'character' ? (editTarget.role || t('common.role')) : editTarget.kindKey === 'prop' ? (editTarget.type || t('common.prop')) : (editTarget.time || t('episode.asset.noTime')) }}</strong>
                   </div>
                 </div>
+                <CharacterVoice v-if="editTarget.kindKey === 'character'" :key="editTarget.id" :character="editTarget" @updated="updateCharacterVoice" />
               </aside>
 
               <!-- 右侧：编辑信息 -->
@@ -845,6 +847,12 @@ function fmtDate(s) {
 const editDialog = ref(false)
 const editSaving = ref(false)
 const editTarget = ref(null)
+function updateCharacterVoice(id, voice) {
+  const patch = { ...voice, voiceAudioUrl: voice.voice_audio_url, voiceAudioName: voice.voice_audio_name }
+  const character = drama.value?.characters?.find(item => item.id === id)
+  if (character) Object.assign(character, patch)
+  if (editTarget.value?.kindKey === 'character' && editTarget.value.id === id) Object.assign(editTarget.value, patch)
+}
 const editDraft = reactive({})
 
 function openEdit(m) {

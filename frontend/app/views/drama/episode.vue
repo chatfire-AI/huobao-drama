@@ -313,8 +313,8 @@
                 tabindex="0"
                 role="button"
                 @click="openAssetDetail('character', c)"
-                @keydown.enter.prevent="openAssetDetail('character', c)"
-                @keydown.space.prevent="openAssetDetail('character', c)"
+                @keydown.enter.self.prevent="openAssetDetail('character', c)"
+                @keydown.space.self.prevent="openAssetDetail('character', c)"
               >
                 <button class="asset-del-btn" :title="t('episode.asset.delChar')" @click.stop="askDeleteAsset('character', c)"><X :size="11" /></button>
                 <div class="character-asset-main">
@@ -361,6 +361,7 @@
                     <span class="afp-label">{{ t('episode.asset.finalPromptTurnaround') }}</span>
                     <span :class="['afp-text', !(c.final_prompt || c.finalPrompt) && 'dim']">{{ c.final_prompt || c.finalPrompt || t('episode.asset.finalPromptAutoTurnaround') }}</span>
                   </div>
+                  <CharacterVoice :character="c" @updated="updateCharacterVoice" />
                 </div>
               </article>
             </div>
@@ -689,6 +690,7 @@
                       :placeholder="t('episode.inspector.videoPromptPlaceholder')"
                       @commit="v => updateField(selectedSb, 'video_prompt', v)"
                     />
+                    <p class="voice-reference-hint">{{ t('characterVoice.referenceHint') }}</p>
                   </section>
               </div>
               </div>
@@ -1150,6 +1152,7 @@
                     <strong>{{ assetDetail.type === 'character' ? (assetDetail.item.role || t('common.role')) : assetDetail.type === 'prop' ? (assetDetail.item.type || t('common.prop')) : (assetDetail.item.time || t('episode.asset.noTime')) }}</strong>
                   </div>
                 </div>
+                <CharacterVoice v-if="assetDetail.type === 'character'" :key="assetDetail.item.id" :character="assetDetail.item" @updated="updateCharacterVoice" />
               </aside>
 
               <section class="asset-detail-editor-panel">
@@ -1651,6 +1654,12 @@ async function toggleExportDone() {
   }
 }
 const assetDetail = ref({ open: false, type: '', item: null })
+function updateCharacterVoice(id, voice) {
+  const patch = { ...voice, voiceAudioUrl: voice.voice_audio_url, voiceAudioName: voice.voice_audio_name }
+  const character = chars.value.find(item => item.id === id)
+  if (character) Object.assign(character, patch)
+  if (assetDetail.value.type === 'character' && assetDetail.value.item?.id === id) Object.assign(assetDetail.value.item, patch)
+}
 const assetDetailDraft = ref({ appearance: '', styling: '', prompt: '', lighting: '', description: '' })
 // 最终提示词手动编辑：dirty 时才随保存提交，避免无修改保存误清空 Agent 生成的提示词
 const assetPromptDraft = ref('')
@@ -3239,6 +3248,14 @@ const mentionOptions = computed(() => {
       group: t('common.role'),
       image: thumbOf(assetImageSrc(c)),
     })),
+    ...getStoryboardCharacters(sb).filter(c => c.voice_audio_url || c.voiceAudioUrl).map(c => ({
+      label: c.name,
+      value: c.name,
+      aliases: [`${c.name}音色`],
+      trigger: '#',
+      kind: 'voice',
+      group: t('characterVoice.title'),
+    })),
     ...(scene ? [{
       label: `${scene.location} · ${scene.time || t('episode.asset.noTime')}`,
       value: scene.location,
@@ -3284,7 +3301,7 @@ function resolveVideoPromptRefs(sb) {
   const map = getShotReferenceIndexMap(sb)
   const names = Object.keys(map).sort((a, b) => b.length - a.length)
   if (!names.length) return prompt
-  return prompt.replace(/@([^\s@]+)/g, (m, raw) => {
+  return prompt.replace(/@([^\s@#]+)/g, (m, raw) => {
     for (const name of names) {
       if (raw.startsWith(name)) {
         return `@图片${map[name]}${name}${raw.slice(name.length)}`
@@ -3473,6 +3490,12 @@ onMounted(() => setTimeout(() => autoTour('episode', EPISODE_TOUR, t), 900))
 </script>
 
 <style scoped>
+.voice-reference-hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-3);
+}
 /* ===== Studio Layout ===== */
 .studio {
   display: flex;

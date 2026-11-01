@@ -1,7 +1,11 @@
 import { Hono } from 'hono'
-import { and, eq } from 'drizzle-orm'
+import { bodyLimit } from 'hono/body-limit'
+import { and, eq, isNull } from 'drizzle-orm'
+import fs from 'node:fs/promises'
 import { db, getInsertId, schema } from '../db/index.js'
-import { success, created, badRequest, now } from '../utils/response.js'
+import { success, created, badRequest, notFound, now } from '../utils/response.js'
+import { AUDIO_MAX_BYTES, AudioUploadError, saveAudioUpload } from '../utils/audio-upload.js'
+import { getAbsolutePath } from '../utils/storage.js'
 import { toSnakeCase } from '../utils/transform.js'
 import { generateImage } from '../services/generation.js'
 import { getDramaStylePrompt } from '../services/style-preset.js'
@@ -10,6 +14,47 @@ import { logTaskError, logTaskStart, logTaskSuccess } from '../utils/task-logger
 
 const app = new Hono()
 const CHARACTER_IMAGE_SIZE = '1920x1080'
+
+// 用户上传的角色音色样本独立于生图和 AI 提取，跨剧集复用同一个角色绑定。
+app.post('/:id/voice', bodyLimit({ maxSize: AUDIO_MAX_BYTES + 64 * 1024,
+  onError: c => badRequest(c, '音频文件大小不能超过 20MB'),
+}), async c => {
+  const id = Number(c.req.param('id'))
+  if (!Number.isSafeInteger(id) || id <= 0) return badRequest(c, '角色编号无效')
+  const condition = and(eq(schema.characters.id, id), isNull(schema.characters.deletedAt))
+  const char = db.select({ id: schema.characters.id }).from(schema.characters).where(condition).get()
+  if (!char) return notFound(c, '角色不存在')
+  let uploadedPath: string | undefined
+  try {
+    const body = await c.req.parseBody()
+    const audio = await saveAudioUpload(body.file)
+    uploadedPath = audio.path
+    const updated = db.update(schema.characters)
+      .set({ voiceAudioUrl: audio.path, voiceAudioName: audio.name, updatedAt: now() })
+      .where(condition).returning({ id: schema.characters.id }).get()
+    if (!updated) {
+      await fs.unlink(getAbsolutePath(audio.path))
+      return notFound(c, '角色不存在')
+    }
+    return success(c, { voice_audio_url: audio.path, voice_audio_name: audio.name })
+  } catch (error) {
+    if (uploadedPath) await fs.unlink(getAbsolutePath(uploadedPath)).catch(() => {})
+    if (error instanceof AudioUploadError) return badRequest(c, error.message)
+    throw error
+  }
+})
+
+// 只移除角色绑定，不删除可能仍被引用的媒体文件。
+app.delete('/:id/voice', async c => {
+  const id = Number(c.req.param('id'))
+  if (!Number.isSafeInteger(id) || id <= 0) return badRequest(c, '角色编号无效')
+  const updated = db.update(schema.characters)
+    .set({ voiceAudioUrl: null, voiceAudioName: null, updatedAt: now() })
+    .where(and(eq(schema.characters.id, id), isNull(schema.characters.deletedAt)))
+    .returning({ id: schema.characters.id }).get()
+  if (!updated) return notFound(c, '角色不存在')
+  return success(c, { voice_audio_url: null, voice_audio_name: null })
+})
 
 // POST /characters — 手动新增角色（传入 episode_id 时关联到该集）
 app.post('/', async (c) => {

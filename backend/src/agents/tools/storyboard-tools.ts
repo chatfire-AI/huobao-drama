@@ -6,10 +6,19 @@ import { createTool } from '@mastra/core/tools'
 import type { ToolExecutionContext } from '@mastra/core/tools'
 import { z } from 'zod'
 import { db, getInsertId, schema } from '../../db/index.js'
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { now } from '../../utils/response.js'
 import { logTaskProgress, logTaskSuccess } from '../../utils/task-logger.js'
 import { getDramaId, getEpisodeId } from '../context.js'
+import { resolveVoiceMentions } from '../../services/character-voice-references.js'
+
+async function validateVideoPromptVoices(prompt: string | undefined, dramaId: number, characterIds: number[] = []) {
+  if (!prompt?.includes('#')) return
+  const characters = await db.select({ id: schema.characters.id, name: schema.characters.name, voiceAudioUrl: schema.characters.voiceAudioUrl }).from(schema.characters)
+    .where(and(eq(schema.characters.dramaId, dramaId), isNull(schema.characters.deletedAt)))
+  // Validate the model's references, but persist the original editable #tokens.
+  resolveVoiceMentions(prompt, characters.map(c => ({ ...c, bound: characterIds.includes(c.id) })))
+}
 
 async function syncStoryboardCharacters(storyboardId: number, characterIds: number[]) {
   await db.delete(schema.storyboardCharacters)
@@ -150,6 +159,8 @@ const readStoryboardContext = createTool({
         styling: c.styling || '',
         image_url: c.imageUrl || '',
         reference_images: c.referenceImages || '',
+        has_voice: Boolean(c.voiceAudioUrl?.trim()),
+        voice_reference: c.voiceAudioUrl?.trim() ? `#${c.name}` : null,
       }))
 
     const scenes = scns
@@ -189,6 +200,9 @@ const readStoryboardContext = createTool({
           title: sb.title || '',
           scene_id: sb.sceneId,
           character_ids: links.map(link => link.characterId),
+          available_voice_references: characters
+            .filter(c => c.has_voice && links.some(link => link.characterId === c.id))
+            .map(c => ({ character_id: c.id, name: c.name, voice_reference: c.voice_reference })),
           prop_ids: sbPropLinks.map(link => link.propId),
           shot_type: sb.shotType || '',
           duration: sb.duration || 0,
@@ -264,6 +278,10 @@ const saveStoryboards = createTool({
       count: storyboards.length,
       shotNumbers: storyboards.map(sb => sb.shot_number).join(','),
     })
+    // Check all voice references before replace_existing can remove the previous storyboards.
+    for (const sb of storyboards) {
+      await validateVideoPromptVoices(sb.video_prompt, dramaId, sb.character_ids)
+    }
     if (replace_existing === true) {
       const existingStoryboardRows = await db.select().from(schema.storyboards)
         .where(eq(schema.storyboards.episodeId, episodeId))
@@ -369,7 +387,7 @@ const updateStoryboard = createTool({
     if ('error' in ids) return ids
     const { episodeId, dramaId } = ids
     const [storyboard] = await db.select().from(schema.storyboards).where(eq(schema.storyboards.id, storyboard_id))
-    if (!storyboard) return { error: `Storyboard ${storyboard_id} not found` }
+    if (!storyboard || storyboard.episodeId !== episodeId || storyboard.deletedAt) return { error: `Storyboard ${storyboard_id} not found in this episode` }
 
     // 过滤模型回传的垃圾值：视频提示词 Agent 常把整行字段回传，
     // 拿不准的字符串字段写成 "null"/"undefined"，直接覆盖会毁掉已有内容
@@ -398,6 +416,7 @@ const updateStoryboard = createTool({
           .where(eq(schema.storyboardProps.storyboardId, storyboard_id)))
           .map(link => link.propId)
 
+    await validateVideoPromptVoices(fields.video_prompt, dramaId, currentCharacterIds)
     await validateStoryboardBindings(
       episodeId,
       dramaId,

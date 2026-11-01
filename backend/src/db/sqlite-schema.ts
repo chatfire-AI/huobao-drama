@@ -56,6 +56,8 @@ export const sqliteSchemaStatements = [
     final_prompt TEXT,
     personality TEXT,
     image_url TEXT,
+    voice_audio_url TEXT,
+    voice_audio_name TEXT,
     reference_images TEXT,
     seed_value TEXT,
     sort_order INTEGER,
@@ -382,6 +384,11 @@ export function initSqliteSchema(sqlite: Database.Database) {
   const taskColumns = new Set((sqlite.prepare('PRAGMA table_info(sys_task)').all() as { name: string }[]).map(c => c.name))
   for (const [name, type] of Object.entries({ config_id: 'INTEGER', config_base_url: 'TEXT', stage: 'TEXT', error_code: 'TEXT' })) {
     if (!taskColumns.has(name)) sqlite.exec(`ALTER TABLE sys_task ADD COLUMN ${name} ${type}`)
+  }
+  // 角色音色由用户上传；旧库补充可空字段，不修改已有角色和图片。
+  const characterColumns = new Set((sqlite.prepare('PRAGMA table_info(characters)').all() as { name: string }[]).map(c => c.name))
+  for (const name of ['voice_audio_url', 'voice_audio_name']) {
+    if (!characterColumns.has(name)) sqlite.exec(`ALTER TABLE characters ADD COLUMN ${name} TEXT`)
   }
   const insertSeed = sqlite.prepare(SEED_SQL)
   const upgradeSeed = sqlite.prepare(UPGRADE_SQL)

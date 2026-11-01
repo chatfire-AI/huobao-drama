@@ -81,7 +81,7 @@ export class MiniMaxVideoAdapter implements VideoProviderAdapter {
       content.push({ type: 'video_url', video_url: { url }, role: 'reference_video' })
     }
     for (const url of refAudios) {
-      content.push({ type: 'audio_url', audio_url: { url } })
+      content.push({ type: 'audio_url', audio_url: { url }, role: 'reference_audio' })
     }
 
     const body: any = {

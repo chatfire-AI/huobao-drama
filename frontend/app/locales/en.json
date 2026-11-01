@@ -3,6 +3,26 @@
     "title": "Huobao Shorts",
     "updateAvailable": "New version v{version} is available. Upgrade in Settings → About."
   },
+  "characterVoice": {
+    "title": "Character voice",
+    "forCharacter": "Voice for {name}",
+    "upload": "Upload voice",
+    "replace": "Replace voice",
+    "remove": "Remove",
+    "saving": "Saving…",
+    "empty": "Upload a clear voice recording as this character’s voice sample.",
+    "formats": "MP3 / WAV / M4A / AAC · Up to 20MB",
+    "sample": "Voice sample",
+    "preview": "Preview voice for {name}",
+    "saved": "Character voice saved",
+    "removed": "Character voice removed",
+    "invalidFormat": "Choose an MP3, WAV, M4A or AAC audio file",
+    "tooLarge": "Audio must be no larger than 20MB",
+    "emptyFile": "The audio file is empty",
+    "playbackError": "Unable to play this audio. Check the file or upload it again.",
+    "referenceHint": "Use {'@'}Name for appearance and #Name at each spoken line, e.g. {'@'}Alex looks up; #Alex softly says hello. Use 2–5 second voice samples, up to 15 seconds total.",
+    "noMatch": "No matching voice. Upload a character voice in Assets and add the character to this shot."
+  },
   "common": {
     "confirm": "Confirm",
     "cancel": "Cancel",
@@ -673,7 +693,7 @@
       "regenPrompt": "Regenerate",
       "aiGenerate": "AI Generate",
       "videoPromptCopy": "Generated from this shot's visual description (including dialogue/narration) and atmosphere",
-      "videoPromptPlaceholder": "Reference assets with {'@'}character / {'@'}scene, describe motion and camera per 3-second line; or click AI Generate for the prompt Agent…",
+      "videoPromptPlaceholder": "Use {'@'}Name for images and #Name for voices; describe the dialogue, speaker and camera movement…",
       "breaking": "Breaking the storyboard...",
       "emptyTitle": "Start Storyboard Breakdown",
       "emptyDesc": "Break the script into shots based on the script, characters and scenes, producing shot descriptions and bindings.",
@@ -766,7 +786,7 @@
       "aspectRatio": "Aspect Ratio"
     },
     "inspector": {
-      "videoPromptPlaceholder": "Reference assets with {'@'}character / {'@'}scene — auto-mapped to reference images on generation; then describe motion and camera per time segment…",
+      "videoPromptPlaceholder": "Use {'@'}Name for images and #Name for voices; describe the dialogue, speaker and camera movement…",
       "noRefs": "No reference assets bound to this shot",
       "refMedia": "Reference images / videos / audio",
       "imageN": "Image {n}",

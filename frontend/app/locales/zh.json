@@ -3,6 +3,26 @@
     "title": "火宝短剧",
     "updateAvailable": "发现新版本 v{version}，可在「设置 → 关于更新」中升级"
   },
+  "characterVoice": {
+    "title": "角色音色",
+    "forCharacter": "{name}的角色音色",
+    "upload": "上传音色",
+    "replace": "替换音色",
+    "remove": "移除",
+    "saving": "保存中…",
+    "empty": "上传一段清晰的人声，作为角色的音色样本。",
+    "formats": "MP3 / WAV / M4A / AAC · 最大 20MB",
+    "sample": "音色样本",
+    "preview": "试听{name}的音色",
+    "saved": "角色音色已保存",
+    "removed": "已移除角色音色",
+    "invalidFormat": "请选择 MP3、WAV、M4A 或 AAC 音频文件",
+    "tooLarge": "音频文件不能超过 20MB",
+    "emptyFile": "音频文件不能为空",
+    "playbackError": "音频无法播放，请检查文件或重新上传。",
+    "referenceHint": "用 {'@'}角色名引用形象，在对白处用 #角色名引用音色，例如：{'@'}林小雨抬头，#林小雨轻声说。音色建议每段 2–5 秒，总计不超过 15 秒。",
+    "noMatch": "未找到音色，请先在资产制作中上传角色音色，并将角色绑定到当前分镜。"
+  },
   "common": {
     "confirm": "确认",
     "cancel": "取消",
@@ -673,7 +693,7 @@
       "regenPrompt": "重新生成",
       "aiGenerate": "AI 生成",
       "videoPromptCopy": "根据当前分镜的画面描述（含台词/旁白）与氛围生成",
-      "videoPromptPlaceholder": "用 {'@'}角色名 / {'@'}场景名 引用参考素材，按 3 秒一段换行描述画面运动与镜头；也可点 AI 生成由提示词 Agent 自动创作…",
+      "videoPromptPlaceholder": "用 {'@'}角色名引用图片，用 #角色名引用声音；描述台词、说话角色与镜头运动…",
       "breaking": "正在拆分分镜...",
       "emptyTitle": "开始拆分分镜",
       "emptyDesc": "根据剧本、角色和场景拆分镜头，生成分镜描述和绑定信息。",
@@ -766,7 +786,7 @@
       "aspectRatio": "画面比例"
     },
     "inspector": {
-      "videoPromptPlaceholder": "用 {'@'}角色名 / {'@'}场景名 引用参考素材，生成时自动映射为参考图片；再按时间段描述画面运动与镜头…",
+      "videoPromptPlaceholder": "用 {'@'}角色名引用图片，用 #角色名引用声音；描述台词、说话角色与镜头运动…",
       "noRefs": "当前分镜未绑定参考素材",
       "refMedia": "参考图片 / 视频 / 音频",
       "imageN": "图片 {n}",

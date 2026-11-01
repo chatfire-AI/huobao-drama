@@ -70,13 +70,15 @@ test('video resolution is fixed per episode, editable, and locked into video tas
 
 test('upload route exposes validated video and audio endpoints', () => {
   const route = read('src/routes/upload.ts')
+  const audioUpload = read('src/utils/audio-upload.ts')
 
   assert.match(route, /app\.post\('\/video'/)
   assert.match(route, /app\.post\('\/audio'/)
   assert.match(route, /VIDEO_EXT = new Set\(\['\.mp4', '\.mov', '\.webm', '\.m4v'\]\)/)
-  assert.match(route, /AUDIO_EXT = new Set\(\['\.mp3', '\.wav', '\.m4a', '\.aac'\]\)/)
+  assert.match(route, /saveAudioUpload/)
+  assert.match(audioUpload, /AUDIO_EXT = new Set\(\['\.mp3', '\.wav', '\.m4a', '\.aac'\]\)/)
   assert.match(route, /50 \* 1024 \* 1024/)
-  assert.match(route, /20 \* 1024 \* 1024/)
+  assert.match(audioUpload, /20 \* 1024 \* 1024/)
 })
 
 test('tasks route validates reference-mode requirements for video tasks', () => {

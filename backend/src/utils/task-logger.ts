@@ -42,6 +42,7 @@ function formatMeta(meta?: Record<string, unknown>) {
 }
 
 export function redactUrl(rawUrl: string) {
+  if (rawUrl.startsWith('data:')) return `${rawUrl.slice(0, rawUrl.indexOf(',') + 1)}<omitted>`
   try {
     const url = new URL(rawUrl)
     for (const key of [...url.searchParams.keys()]) {

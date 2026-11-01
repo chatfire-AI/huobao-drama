@@ -33,12 +33,12 @@
                 <img v-if="opt.image" :src="opt.image" alt="" @error="$event.target.style.display = 'none'" />
                 <component v-else :is="groupIcon(opt.kind)" :size="12" :stroke-width="2" />
               </span>
-              <span class="mention-name">@{{ opt.label }}</span>
+              <span class="mention-name">{{ opt.trigger || '@' }}{{ opt.label }}</span>
               <span class="mention-type">{{ opt.group }}</span>
             </button>
           </template>
         </template>
-        <div v-else class="mention-empty">{{ t('components.mention.noMatch') }}</div>
+        <div v-else class="mention-empty">{{ t(mention.trigger === '#' ? 'characterVoice.noMatch' : 'components.mention.noMatch') }}</div>
       </div>
     </Teleport>
   </div>
@@ -46,17 +46,18 @@
 
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import { User, MapPin, Package } from 'lucide-vue-next'
+import { User, MapPin, Package, AudioLines } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
+import { mentionToken, mentionEntries, activeMentionAt, highlightMentions, mentionDeletionRange } from '../utils/prompt-mentions.js'
 
 const { t } = useI18n()
 
 // 无图资产在下拉中显示分组图标兜底（场景=定位、道具=包裹、角色=人物）——按 kind code 判断，不依赖显示文案
-const groupIcon = (kind) => (kind === 'scene' ? MapPin : kind === 'prop' ? Package : User)
+const groupIcon = (kind) => (kind === 'voice' ? AudioLines : kind === 'scene' ? MapPin : kind === 'prop' ? Package : User)
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
-  // [{ label, value, kind, group, image? }] — value 为插入的 @引用名，kind('character'|'scene'|'prop')为逻辑值，group 为显示分组文案
+  // [{ label, value, kind, group, image?, trigger? }] — 默认 @图片引用，#角色音色引用
   options: { type: Array, default: () => [] },
   rows: { type: [Number, String], default: 4 },
   placeholder: { type: String, default: '' },
@@ -68,7 +69,7 @@ const wrapEl = ref(null)
 const taEl = ref(null)
 const backdropEl = ref(null)
 const text = ref(props.modelValue)
-const mention = ref({ open: false, start: 0, query: '', top: 0, left: 0 })
+const mention = ref({ open: false, start: 0, trigger: '@', query: '', top: 0, left: 0 })
 const highlightIdx = ref(0)
 const dropdownEl = ref(null)
 
@@ -86,7 +87,7 @@ const DROPDOWN_MAX_HEIGHT = 220
 
 // 下拉 Teleport 到 body 后用 fixed 定位，任何外层滚动/窗口变化都会使其错位 → 直接关闭
 function closeOnOuterScroll(e) {
-  if (mention.value.open && e?.target !== taEl.value) closeMention()
+  if (mention.value.open && e?.target !== taEl.value && !dropdownEl.value?.contains(e?.target)) closeMention()
 }
 onMounted(() => {
   window.addEventListener('scroll', closeOnOuterScroll, true)
@@ -98,80 +99,35 @@ onBeforeUnmount(() => {
 })
 
 watch(() => props.modelValue, (v) => {
-  if (v !== text.value) text.value = v
-  mention.value.open = false
+  if (v !== text.value) { text.value = v; mention.value.open = false }
 })
 
 // 可引用名（按长度降序，保证最长匹配优先）及其分组样式（kind code 判断）
-const mentionNames = computed(() => {
-  const seen = new Map()
-  for (const o of props.options) {
-    if (o.value && !seen.has(o.value)) seen.set(o.value, o.kind === 'scene' ? 'scene' : 'role')
-  }
-  return [...seen.entries()].sort((a, b) => b[0].length - a[0].length)
-})
-
-function escapeHtml(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-function escapeRegExp(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-const highlightRegex = computed(() => {
-  if (!mentionNames.value.length) return null
-  const alt = mentionNames.value.map(([name]) => escapeRegExp(name)).join('|')
-  return new RegExp(`@(${alt})`, 'g')
-})
-
-// 镜像层高亮 HTML：@引用 包上分组色彩 span，其余文本原样
-const highlightedHtml = computed(() => {
-  let html = escapeHtml(text.value)
-  const re = highlightRegex.value
-  if (re) {
-    const groupOf = Object.fromEntries(mentionNames.value)
-    html = html.replace(re, (m, name) =>
-      `<span class="mention-token mention-token-${groupOf[name]}">@${escapeHtml(name)}</span>`)
-  }
-  if (html.endsWith('\n')) html += '\u200b'
-  return html
-})
+const mentionNames = computed(() => mentionEntries(props.options))
+const highlightedHtml = computed(() => highlightMentions(text.value, props.options))
 
 // 光标前最近一个 @token（@ 后不含空白），命中则处于引用输入态
 function activeMention() {
   const ta = taEl.value
   if (!ta) return null
-  const pos = ta.selectionStart
-  const before = ta.value.slice(0, pos)
-  const m = before.match(/@([^\s@]{0,20})$/)
-  if (!m) return null
-  return { start: pos - m[0].length, query: m[1] }
+  return activeMentionAt(ta.value, ta.selectionStart, props.options)
 }
 
 // 光标紧邻一个完整 @引用（用于整体删除）
 function mentionBeforeCaret() {
   const ta = taEl.value
-  const pos = ta.selectionStart
-  const before = ta.value.slice(0, pos)
-  for (const [name] of mentionNames.value) {
-    if (before.endsWith(`@${name}`)) return { start: pos - name.length - 1, end: pos }
-  }
-  return null
+  return mentionDeletionRange(ta.value, ta.selectionStart, props.options, true)
 }
 function mentionAfterCaret() {
   const ta = taEl.value
-  const pos = ta.selectionStart
-  const after = ta.value.slice(pos)
-  for (const [name] of mentionNames.value) {
-    if (after.startsWith(`@${name}`)) return { start: pos, end: pos + name.length + 1 }
-  }
-  return null
+  return mentionDeletionRange(ta.value, ta.selectionStart, props.options, false)
 }
 
 const filteredOptions = computed(() => {
   const q = mention.value.query.trim().toLowerCase()
-  if (!q) return props.options
-  return props.options.filter(o =>
+  const options = props.options.filter(o => (o.trigger || '@') === mention.value.trigger)
+  if (!q) return options
+  return options.filter(o =>
     String(o.value).toLowerCase().includes(q) || String(o.label || '').toLowerCase().includes(q),
   )
 })
@@ -231,7 +187,7 @@ function updateMentionState() {
   const active = activeMention()
   if (!active) { mention.value.open = false; return }
   // @后文本已精确等于某个完整引用名时不再弹列表（如删除引用尾部空格后光标落在完整引用上）
-  if (mentionNames.value.some(([name]) => name === active.query)) {
+  if (mentionNames.value.some(([token]) => token === active.trigger + active.query)) {
     mention.value.open = false
     return
   }
@@ -245,6 +201,7 @@ function updateMentionState() {
   mention.value = {
     open: true,
     start: active.start,
+    trigger: active.trigger,
     query: active.query,
     top: above ? rect.top + caret.top - ta.scrollTop - 4 : belowTop,
     left: rect.left + Math.min(caret.left, maxLeft),
@@ -285,6 +242,7 @@ function onScroll() {
 }
 
 function onKeydown(e) {
+  if (e.isComposing) return
   const ta = taEl.value
   // @引用整体删除：光标在完整引用后按退格 / 在完整引用前按 Delete，整段一次删除
   if (ta && (e.key === 'Backspace' || e.key === 'Delete') && ta.selectionStart === ta.selectionEnd) {
@@ -321,7 +279,7 @@ function pick(opt) {
   const pos = ta.selectionStart
   const before = ta.value.slice(0, mention.value.start)
   const after = ta.value.slice(pos)
-  const insert = `@${opt.value} `
+  const insert = `${mentionToken(opt)}${opt.trigger === '#' ? '' : ' '}`
   const next = before + insert + after
   setText(next, before.length + insert.length)
 }
@@ -382,6 +340,10 @@ function onBlur(e) {
   background: var(--accent-bg);
 }
 .mention-backdrop :deep(.mention-token-scene) {
+  color: var(--tag-success-text);
+  background: var(--success-bg);
+}
+.mention-backdrop :deep(.mention-token-voice) {
   color: var(--tag-success-text);
   background: var(--success-bg);
 }

@@ -32,7 +32,9 @@ export const requestLogger: MiddlewareHandler = async (c, next) => {
   // 打印请求
   const time = formatTime()
   let bodyInfo = ''
-  if (['POST', 'PUT', 'PATCH'].includes(method)) {
+  // 上传文件不克隆/读取请求体：避免记录音频内容，也让路由的大小限制先执行。
+  const isFileUpload = c.req.header('content-type')?.toLowerCase().startsWith('multipart/form-data')
+  if (!isFileUpload && ['POST', 'PUT', 'PATCH'].includes(method)) {
     try {
       const clone = c.req.raw.clone()
       const text = await clone.text()

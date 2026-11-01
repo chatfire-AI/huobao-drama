@@ -18,6 +18,7 @@ import { loadAgentSkills, skillWorkspaces } from './skills.js'
 import { loadAgentPromptFile, loadBasePromptFile } from './prompts.js'
 import { buildLanguageDirective } from './language.js'
 import { getContentLanguageFromRC } from './context.js'
+import { getVoiceReferenceInstructions } from './voice-reference-instructions.js'
 
 // Default prompts (used when workspace/prompts/<type>.md 文件缺失时兜底)
 export const DEFAULT_PROMPTS: Record<string, { name: string; instructions: string }> = {
@@ -356,7 +357,8 @@ function buildInstructions(type: string) {
     const baseInstructions = promptFile?.instructions || defaults.instructions
     const skillInstructions = await loadAgentSkills(type, lang)
     const languageDirective = buildLanguageDirective(lang)
-    return [baseInstructions, skillInstructions, languageDirective]
+    const voiceInstructions = getVoiceReferenceInstructions(type, lang)
+    return [baseInstructions, skillInstructions, voiceInstructions, languageDirective]
       .filter(Boolean)
       .join('\n\n')
   }

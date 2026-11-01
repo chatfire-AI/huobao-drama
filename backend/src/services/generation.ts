@@ -7,6 +7,7 @@ import { and, desc, eq, gt } from 'drizzle-orm'
 import fs from 'node:fs'
 import { getAbsolutePath } from '../utils/storage.js'
 import { downloadVideo, safeTaskError } from './video-download.js'
+import { prepareReferenceAudio, resolveReferenceAudioUrls } from './reference-audio.js'
 import { getActiveConfig, getConfigById } from './ai.js'
 import { now } from '../utils/response.js'
 import { downloadFile, fetchImageAsCompressedDataUrl, generateImageThumb, readImageAsCompressedDataUrl, readImageAsDataUrl, saveBase64Image } from '../utils/storage.js'
@@ -126,6 +127,8 @@ export async function generateVideo(params: GenerateVideoParams): Promise<number
       ? (await getConfigById(params.configId)) ?? await getActiveConfig('video')
       : await getActiveConfig('video')
     if (!config) throw new Error('未配置视频模型，请先到「设置」页添加并启用 AI 服务')
+
+    params.referenceAudioUrls = await prepareReferenceAudio(params.referenceAudioUrls, config.provider)
 
     const id = await createTask('video', config, {
       storyboardId: params.storyboardId,
@@ -247,9 +250,9 @@ async function processTask(id: number, config: AIConfig) {
       const resolvedFirstFrameUrl = await normalizeVideoReferenceUrl(params.firstFrameUrl)
       const resolvedLastFrameUrl = await normalizeVideoReferenceUrl(params.lastFrameUrl)
       const resolvedReferenceImageUrls = await normalizeVideoReferenceUrls(params.referenceImageUrls)
-      // 参考视频/音频文件较大，不适合 dataURL 内联，需解析为公网可访问 URL
+      // 视频使用公网地址；短音色按厂商能力使用 data URL 或公网地址。
       const resolvedReferenceVideoUrls = resolvePublicMediaUrls(params.referenceVideoUrls, 'video')
-      const resolvedReferenceAudioUrls = resolvePublicMediaUrls(params.referenceAudioUrls, 'audio')
+      const resolvedReferenceAudioUrls = await resolveReferenceAudioUrls(params.referenceAudioUrls, config.provider)
       const resolvedReferenceFileUrl = resolvePublicMediaUrl(params.referenceFileUrl, 'file')
       ;({ url, method, headers, body } = adapter.buildGenerateRequest(config, {
         id: record.id,
