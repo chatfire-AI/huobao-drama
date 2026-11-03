@@ -612,7 +612,7 @@ A: 后端会在首次启动时自动创建所有表，检查日志确认初始�
 
 ```bash
 cd backend && npm run typecheck
-cd ../frontend && npm run build
+cd ../frontend && npm run generate  # 产出 index.html；npm run build 不产出
 ```
 
 ---
