@@ -5,6 +5,7 @@ import { success, notFound, created, badRequest, now } from '../utils/response.j
 import { toSnakeCase } from '../utils/transform.js'
 import { joinProviderUrl } from '../services/adapters/url.js'
 import { isOfficialProvider, parseConfigTemperature } from '../services/ai.js'
+import { buildTTSHeaders, ttsUrl, DEFAULT_TTS_RESOURCE } from '../services/adapters/volcengine-tts.js'
 import { redactUrl, logTaskError, logTaskProgress, logTaskSuccess } from '../utils/task-logger.js'
 
 const app = new Hono()
@@ -67,6 +68,16 @@ function buildProbe(serviceType: string, provider: string, baseUrl: string, mode
       url: joinProviderUrl(baseUrl, '/v1', '/models'),
       headers: bearerHeaders(apiKey),
       body: undefined,
+    }
+  }
+
+  if (p === 'volcengine' && serviceType === 'audio') {
+    // 豆包语音合成：空 text 不会计费，用于验证鉴权（X-Api-Key 或 APP_ID:Access_Token）与资源是否已开通
+    return {
+      method: 'POST',
+      url: ttsUrl(baseUrl),
+      headers: buildTTSHeaders(apiKey || '', m || DEFAULT_TTS_RESOURCE),
+      body: { user: { uid: 'probe' }, req_params: { text: '', speaker: 'zh_female_vv_uranus_bigtts' } },
     }
   }
 
