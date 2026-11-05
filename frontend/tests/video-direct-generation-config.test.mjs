@@ -9,7 +9,9 @@ const volcengineAdapter = readFileSync(new URL('../../backend/src/services/adapt
 test('video presets default to direct Seedance 2.0 generation', () => {
   const combined = `${settingsPage}\n${aiConfigRoute}\n${volcengineAdapter}`
   assert.doesNotMatch(combined, /doubao-seedance-1-5-pro-251215/)
-  assert.match(settingsPage, /Seedance 2\.0/)
+  // The first model stays the default; 2.5 is an additional explicit choice.
+  assert.match(settingsPage, /volcengine:\s*\{[^\n]*models:\s*\['doubao-seedance-2-0-mini-260615'/)
+  assert.match(settingsPage, /doubao-seedance-2-5-260628/)
   assert.match(settingsPage, /doubao-seedance-2-0-260128/)
   assert.match(settingsPage, /doubao-seedance-2-0-fast-260128/)
   assert.match(settingsPage, /doubao-seedance-2-0-mini-260615/)
