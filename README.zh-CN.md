@@ -285,7 +285,7 @@ cd backend && npx tsx scripts/import-mysql-to-sqlite.ts
 
 ### 🖥️ 桌面应用（推荐）
 
-**⬇️ 预编译安装包下载：[国内镜像（腾讯云，推荐）](https://installer.chatfire.site/huobao-drama/v4.0.5/) · [GitHub Releases（海外）](https://github.com/chatfire-AI/huobao-drama/releases/latest)**
+**⬇️ 预编译安装包下载：[国内镜像（腾讯云，推荐）](https://installer.firemux.site/huobao-drama/v4.0.11/) · [GitHub Releases（海外）](https://github.com/chatfire-AI/huobao-drama/releases/latest)**
 
 | 平台 | 下载文件 |
 |---|---|
@@ -298,7 +298,7 @@ cd backend && npx tsx scripts/import-mysql-to-sqlite.ts
 **命令行安装（推荐，免修复）**：用 curl 下载不会触发 macOS 隔离属性，安装后双击即开，不会遇到「已损坏」提示（Apple Silicon 把 `arm64` 文件名换成对应版本，Intel 用无后缀 dmg）：
 
 ```bash
-curl -L -o /tmp/HuobaoDrama.dmg https://installer.chatfire.site/huobao-drama/v4.0.5/HuobaoDrama-4.0.5-arm64.dmg \
+curl -L -o /tmp/HuobaoDrama.dmg https://installer.firemux.site/huobao-drama/v4.0.11/HuobaoDrama-4.0.11-arm64.dmg \
   && hdiutil attach -nobrowse /tmp/HuobaoDrama.dmg \
   && cp -R /Volumes/HuobaoDrama*/HuobaoDrama.app /Applications/ \
   && hdiutil detach /Volumes/HuobaoDrama*

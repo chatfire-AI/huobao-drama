@@ -20,7 +20,7 @@ import { spawn, execFile } from 'child_process'
 const FEED_URLS = process.env.HUOBAO_UPDATE_FEED
   ? [process.env.HUOBAO_UPDATE_FEED]
   : [
-    'https://installer.chatfire.site/huobao-drama/latest.json',
+    'https://installer.firemux.site/huobao-drama/latest.json',
     'https://github.com/chatfire-AI/huobao-drama/releases/latest/download/latest.json',
   ]
 

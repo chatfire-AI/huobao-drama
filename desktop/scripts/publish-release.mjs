@@ -25,8 +25,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DESKTOP = path.resolve(__dirname, '..')
 const RELEASE = path.join(DESKTOP, 'release')
 
-/** 国内下载基址:默认桶默认域名,可被 COS_BASE_URL 覆盖(如 https://dl.chatfire.site/huobao-drama) */
-const COS_BASE_URL = process.env.COS_BASE_URL || 'https://installer.chatfire.site/huobao-drama'
+/** 国内下载基址：默认使用安装包 CDN，可被 COS_BASE_URL 覆盖。 */
+const COS_BASE_URL = process.env.COS_BASE_URL || 'https://installer.firemux.site/huobao-drama'
 const COS_KEY_PREFIX = 'huobao-drama'
 
 const pkg = JSON.parse(fs.readFileSync(path.join(DESKTOP, 'package.json'), 'utf8'))
