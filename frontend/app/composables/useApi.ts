@@ -56,6 +56,10 @@ export const episodeAPI = {
   extractStatus: (id: number) => api.get(`/episodes/${id}/extract-status`),
   generateVideoPrompts: (id: number, model?: string, configId?: number, storyboardIds?: number[]) => api.post(`/episodes/${id}/generate-video-prompts`, { model: model || undefined, config_id: configId || undefined, storyboard_ids: storyboardIds?.length ? storyboardIds : undefined }),
   videoPromptsStatus: (id: number) => api.get(`/episodes/${id}/video-prompts-status`),
+  // 资产复用：本剧素材库 / 加入本集 / 移出本集
+  assetLibrary: (id: number, type: string) => api.get(`/episodes/${id}/asset-library?type=${type}`),
+  linkAssets: (id: number, type: string, ids: number[]) => api.post(`/episodes/${id}/asset-links`, { type, ids }),
+  unlinkAsset: (id: number, type: string, assetId: number) => api.del(`/episodes/${id}/asset-links/${type}/${assetId}`),
 }
 
 export const storyboardAPI = {
