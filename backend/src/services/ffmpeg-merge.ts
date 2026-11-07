@@ -86,33 +86,38 @@ export async function mergeEpisodeVideos(episodeId: number, dramaId: number, sto
 }
 
 async function doMerge(mergeId: number, episodeId: number, videos: string[]) {
-  // 生成 concat 列表文件
-  const listDir = path.join(STORAGE_ROOT, 'temp')
-  fs.mkdirSync(listDir, { recursive: true })
-  const listPath = path.join(listDir, `${uuid()}.txt`)
-
-  const listContent = videos
-    .map(v => `file '${toAbsPath(v)}'`)
-    .join('\n')
-  fs.writeFileSync(listPath, listContent, 'utf-8')
-
   // 输出文件
   const outputDir = path.join(STORAGE_ROOT, 'merged')
   fs.mkdirSync(outputDir, { recursive: true })
   const outputFilename = `${uuid()}.mp4`
   const outputPath = path.join(outputDir, outputFilename)
 
+  // 用 concat filter（不是 demuxer）拼接，每段音频独立归一化（#121）：
+  //  - aformat 强制 48 kHz 双声道，避免不同镜头采样率/声道被错误解释
+  //  - asetpts=PTS-STARTPTS 重置每段时间戳，避免段间 PTS 不连续 → 拼接
+  //    后音画逐渐漂移（原 concat demuxer 不归一化段间差异）
+  // 视频流不归一化（每段内部已是关键帧，开销不值得）
+  const N = videos.length
+  const filterChain = [
+    ...videos.map((_, i) =>
+      `[${i}:a]aformat=sample_rates=48000:channel_layouts=stereo,asetpts=PTS-STARTPTS[a${i}]`,
+    ),
+    videos.map((_, i) => `[${i}:v][a${i}]`).join('') +
+      `concat=n=${N}:v=1:a=1[outv][outa]`,
+  ].join(';')
+
   await new Promise<void>((resolve, reject) => {
-    ffmpeg()
-      .input(listPath)
-      .inputOptions(['-f', 'concat', '-safe', '0'])
+    const cmd = ffmpeg()
+    videos.forEach((v) => cmd.input(toAbsPath(v)))
+    cmd
+      .complexFilter(filterChain)
       .outputOptions([
-        '-fflags', '+genpts',
+        '-map', '[outv]',
+        '-map', '[outa]',
         '-c:v', 'libx264',
         '-preset', 'medium',
         '-crf', '23',
         '-c:a', 'aac',
-        '-ar', '48000',
         '-b:a', '192k',
         '-movflags', '+faststart',
       ])
@@ -120,11 +125,7 @@ async function doMerge(mergeId: number, episodeId: number, videos: string[]) {
       .on('end', () => resolve())
       .on('error', (err) => reject(err))
       .run()
-
   })
-
-  // 清理临时文件
-  fs.unlinkSync(listPath)
 
   // 获取时长
   const duration = await getVideoDuration(outputPath)
