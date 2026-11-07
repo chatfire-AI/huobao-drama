@@ -203,6 +203,7 @@ function startBackend(): void {
     ...process.env,
     PORT: String(backendPort),
     HUOBAO_DESKTOP: '1',
+    HUOBAO_VERSION: app.getVersion(),
     // 数据目录单一来源：重启/迁移后只需改 currentDataDir
     HUOBAO_DATA_DIR: currentDataDir,
     SQLITE_PATH: path.join(currentDataDir, 'huobao.sqlite3'),

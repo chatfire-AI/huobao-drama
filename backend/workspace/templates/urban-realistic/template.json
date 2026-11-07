@@ -1,0 +1,187 @@
+{
+  "id": "urban-realistic",
+  "name": "都市现实",
+  "version": "1.1.0",
+  "description": "都市现实题材：生活逻辑、阶层与职场冲突、克制的情绪表达",
+  "sort": 1,
+  "schema_version": 2,
+  "skill_policy": {
+    "script": {
+      "craft": [
+        "craft/script-craft"
+      ],
+      "shared": [
+        "shared/project-facts"
+      ],
+      "mode": [
+        "templates/urban-realistic/script-rewriter"
+      ]
+    },
+    "extract": {
+      "craft": [
+        "craft/asset-craft"
+      ],
+      "shared": [
+        "shared/project-facts"
+      ],
+      "mode": [
+        "templates/urban-realistic/extractor"
+      ]
+    },
+    "storyboard": {
+      "craft": [
+        "craft/storyboard-craft"
+      ],
+      "shared": [
+        "shared/project-facts"
+      ],
+      "mode": [
+        "templates/urban-realistic/storyboard-breaker"
+      ]
+    },
+    "video_prompt": {
+      "craft": [
+        "craft/video-prompt-craft"
+      ],
+      "shared": [
+        "shared/project-facts"
+      ],
+      "mode": [
+        "templates/urban-realistic/prompt-generator"
+      ]
+    },
+    "image": {
+      "craft": [
+        "craft/image-prompt-craft"
+      ],
+      "shared": [
+        "shared/project-facts"
+      ],
+      "mode": [
+        "templates/urban-realistic/prompt-generator"
+      ]
+    }
+  },
+  "agent_prompts": {
+    "script_rewriter": "本模板为都市现实题材，你是该模式的剧本改写负责人。\n\n一、题材原则\n- 所有冲突必须有现实依据：阶层、收入、职场、房租、家庭责任、婚恋压力。\n- 不写悬浮设定，不靠巧合推动；转折必须有前置铺垫。\n- 情绪克制：人物不轻易崩溃，用沉默、回避、强撑和细节动作表达。\n\n二、人物与关系\n- 每个主要人物有明确目标、现实困境和不能说的秘密。\n- 关系变化用具体事件推进，不用旁白解释。\n- 配角服务主线，不新增无功能人物。\n\n三、冲突与节奏\n- 前 3 秒：一个现实压力或异常事件（催租、裁员、体检报告、旧人重逢）。\n- 每场 30–60 秒，至少一次信息或关系变化。\n- 每 30–45 秒一个小转折；集末留下一个现实抉择或未解决的问题。\n\n四、对白\n- 口语化，允许停顿、打断、答非所问；避免解释性台词。\n- 潜台词优先：说出口的和真实意图要有落差。\n- 每 3 句至少推进一次信息或关系。\n\n五、场景与可拍性\n- 动作只写演员能完成的：走、停、转身、低头、攥手、呼吸变化。\n- 不写景别、角度、运镜（留给分镜阶段）。\n- 每集 3–5 个场景，场景头格式与全局规范一致。\n\n六、集末钩子\n- 用新信息、新威胁或艰难选择收尾，不使用“欲知后事”式旁白。\n\n七、完成标准\n- 必须实际调用 save_script 保存完整剧本，不要只返回说明。\n- 保存前自检：前 3 秒有压力、每场有变化、对白无解释、集末有钩子。",
+    "extractor": "本模板为都市现实题材。角色外观贴合真实职业与生活状态；服装为日常通勤/家居装；道具只提取真实可拍、有生活痕迹的关键物品；避免品牌标识。",
+    "storyboard_breaker": "本模板为都市现实题材。写实镜头语言，中景/近景承载表演；先交代空间再进入对话；自然光源（窗光、路灯、办公室灯）；每个段落至少一个生活化表演节拍。",
+    "prompt_generator": "本模板为都市现实题材。图片提示词强调真实摄影、皮肤纹理、生活化布光与场景痕迹；视频提示词写可见的微表情与生活动作，禁止夸张表演与塑料感。",
+    "image": "【图片提示词阶段】本模板为都市现实题材。图片提示词强调真实摄影、皮肤纹理、生活化布光与场景痕迹；视频提示词写可见的微表情与生活动作，禁止夸张表演与塑料感。 只输出角色/场景/道具的最终图片提示词，不要写视频时间轴。",
+    "video_prompt": "【视频提示词阶段】本模板为都市现实题材。图片提示词强调真实摄影、皮肤纹理、生活化布光与场景痕迹；视频提示词写可见的微表情与生活动作，禁止夸张表演与塑料感。 只输出分镜 video_prompt：首行信息头，按 3 秒分段，不要生成图片提示词。"
+  },
+  "agent_skills": {
+    "script_rewriter": [
+      {
+        "id": "templates/urban-realistic/script-rewriter",
+        "enabled": true
+      }
+    ],
+    "extractor": [
+      {
+        "id": "templates/urban-realistic/extractor",
+        "enabled": true
+      }
+    ],
+    "storyboard_breaker": [
+      {
+        "id": "templates/urban-realistic/storyboard-breaker",
+        "enabled": true
+      }
+    ],
+    "prompt_generator": [
+      {
+        "id": "templates/urban-realistic/prompt-generator",
+        "enabled": true
+      }
+    ],
+    "image": [
+      {
+        "id": "templates/urban-realistic/prompt-generator",
+        "enabled": true
+      }
+    ],
+    "video_prompt": [
+      {
+        "id": "templates/urban-realistic/prompt-generator",
+        "enabled": true
+      }
+    ]
+  },
+  "workflow": {
+    "version": 1,
+    "stages": [
+      {
+        "id": "script",
+        "label": "剧本",
+        "agent": "script_rewriter",
+        "required": true,
+        "confirm": true
+      },
+      {
+        "id": "extract",
+        "label": "资产制作",
+        "agent": "extractor",
+        "required": true,
+        "tasks": [
+          "characters",
+          "scenes",
+          "props"
+        ]
+      },
+      {
+        "id": "storyboard",
+        "label": "分镜拆解",
+        "agent": "storyboard_breaker",
+        "required": true,
+        "confirm": true
+      },
+      {
+        "id": "video_prompt",
+        "label": "视频提示词",
+        "agent": "prompt_generator",
+        "required": true
+      },
+      {
+        "id": "image",
+        "label": "图片生成",
+        "service": "image_generation",
+        "required": true
+      },
+      {
+        "id": "video",
+        "label": "视频生成",
+        "service": "video_generation",
+        "required": true
+      },
+      {
+        "id": "merge",
+        "label": "拼接导出",
+        "service": "merge",
+        "required": true
+      }
+    ]
+  },
+  "stage_runtime": {
+    "script": {
+      "temperature": 0.75,
+      "maxSteps": 20
+    },
+    "extract": {
+      "temperature": 0.6,
+      "maxSteps": 20
+    },
+    "storyboard": {
+      "temperature": 0.55,
+      "maxSteps": 20
+    },
+    "video_prompt": {
+      "temperature": 0.6,
+      "maxSteps": 8
+    },
+    "image": {
+      "temperature": 0.6,
+      "maxSteps": 12
+    }
+  }
+}

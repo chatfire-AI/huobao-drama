@@ -5,6 +5,7 @@
  */
 import { mastra } from '../mastra/index.js'
 import { buildAgentRequestContext } from '../agents/context.js'
+import { resolveModeContext } from './mode-context.js'
 import { logTaskError, logTaskProgress, logTaskStart, logTaskSuccess } from '../utils/task-logger.js'
 
 export type ExtractTarget = 'characters' | 'scenes' | 'props'
@@ -37,16 +38,28 @@ export function startExtraction(episodeId: number, dramaId: number, target: Extr
 
   logTaskStart('Extract', target, { episodeId, dramaId, model: opts.model || undefined, configId: opts.configId || undefined })
   ;(async () => {
-    const agent = mastra.getAgent('extractor')
+    const ctx = await resolveModeContext(dramaId, { stage: 'extract', agentType: 'extractor' })
+    const agentId = ctx.agent || 'extractor'
+    const agent = mastra.getAgent(agentId)
     if (!agent) throw new Error('提取 Agent 不可用')
+    logTaskProgress('Extract', 'agent-routed', {
+      episodeId,
+      stage: 'extract',
+      agent: agentId,
+      mode: ctx.modeId || 'default',
+      source: ctx.source,
+      manifestHash: ctx.manifestHash?.slice(0, 12) || undefined,
+    })
     const requestContext = buildAgentRequestContext({
       episodeId,
       dramaId,
       modelOverride: opts.model || undefined,
       textConfigId: opts.configId || undefined,
+      stage: 'extract',
     })
+    const runtime = ctx.runtime
     return agent.generate([{ role: 'user', content: EXTRACT_MESSAGES[target] }], {
-      maxSteps: 20,
+      maxSteps: runtime?.maxSteps ?? 20,
       requestContext,
       // 逐步打印 Agent 进展：调用了哪些工具、输出了什么
       onStepFinish: (step: any) => {

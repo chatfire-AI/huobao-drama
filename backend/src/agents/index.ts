@@ -9,16 +9,18 @@ import type { RequestContext } from '@mastra/core/request-context'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createOpenAI } from '@ai-sdk/openai'
 import { getTextConfig, getTextProviderBaseUrl, getConfigById } from '../services/ai.js'
-import { logTaskProgress } from '../utils/task-logger.js'
+import { logTaskProgress, logTaskWarn } from '../utils/task-logger.js'
 import { scriptTools } from './tools/script-tools.js'
 import { extractTools } from './tools/extract-tools.js'
 import { storyboardTools } from './tools/storyboard-tools.js'
 import { imagePromptTools } from './tools/image-prompt-tools.js'
-import { loadAgentSkills, skillWorkspaces } from './skills.js'
+import { loadAgentSkills, loadSkillIds, skillWorkspaces } from './skills.js'
 import { loadAgentPromptFile, loadBasePromptFile } from './prompts.js'
 import { buildLanguageDirective } from './language.js'
-import { getContentLanguageFromRC } from './context.js'
+import { getContentLanguageFromRC, getDramaId, getStageFromRC } from './context.js'
 import { getVoiceReferenceInstructions } from './voice-reference-instructions.js'
+import { getTemplate, resolveSkillSelection, type SkillSelectionMode } from '../services/templates.js'
+import { resolveModeContext } from '../services/mode-context.js'
 
 // Default prompts (used when workspace/prompts/<type>.md 文件缺失时兜底)
 export const DEFAULT_PROMPTS: Record<string, { name: string; instructions: string }> = {
@@ -172,15 +174,21 @@ let lastLoggedTextEndpointKey = ''
 const thinkingOffEnabled = (process.env.AI_DISABLE_THINKING ?? 'true').toLowerCase() !== 'false'
 
 function isOfficialTextHost(baseURL: string) {
-  return /api\.openai\.com|generativelanguage\.googleapis\.com/.test(baseURL)
+  return /api\.openai\.com|generativelanguage\.googleapis\.com|api\.deepseek\.com/.test(baseURL)
 }
 
-function openaiThinkingOffPatch(): Record<string, any> {
-  const fallback = {
-    thinking: { type: 'disabled' },   // new-api 通用 / DeepSeek
-    enable_thinking: false,           // Qwen / 阿里系
-    reasoning_effort: 'none',         // OpenAI 风格枚举(Gemini 渠道映射为 budget 0)
-  }
+function openaiThinkingOffPatch(baseURL: string): Record<string, any> {
+  // 百炼 MaaS 的推理模型只接受 low/medium/high/xhigh/max，传 'none' 会 400
+  const fallback = /maas\.aliyuncs\.com/.test(baseURL)
+    ? {
+        thinking: { type: 'disabled' },
+        enable_thinking: false,
+      }
+    : {
+        thinking: { type: 'disabled' },   // new-api 通用 / DeepSeek
+        enable_thinking: false,           // Qwen / 阿里系
+        reasoning_effort: 'none',         // OpenAI 风格枚举(Gemini 渠道映射为 budget 0)
+      }
   const raw = process.env.AI_THINKING_OFF_PATCH
   if (!raw) return fallback
   try {
@@ -193,7 +201,7 @@ function openaiThinkingOffPatch(): Record<string, any> {
 
 function createThinkingOffFetch(providerName: string, baseURL: string): typeof fetch | undefined {
   if (!thinkingOffEnabled || isOfficialTextHost(baseURL)) return undefined
-  const openaiPatch = openaiThinkingOffPatch()
+  const openaiPatch = openaiThinkingOffPatch(baseURL)
 
   return async (input: any, init?: any) => {
     try {
@@ -292,13 +300,16 @@ function createMaxTokensFetch(providerName: string, inner?: typeof fetch): typeo
   }
 }
 
-async function getModel(fileModel: string | undefined, modelOverride?: string, textConfigId?: number) {
+async function getModel(fileModel: string | undefined, modelOverride?: string, textConfigId?: number, temperatureOverride?: number | null) {
   // 请求可指定文本配置（含其 provider/baseUrl/apiKey），否则回退到当前启用配置
   const textConfig = (textConfigId ? await getConfigById(textConfigId) : null) || await getTextConfig()
   const modelName = modelOverride || fileModel || textConfig.model
   const providerName = textConfig.provider.toLowerCase()
   const resolvedBaseURL = getTextProviderBaseUrl(textConfig)
-  const temperature = textConfig.temperature ?? null
+  // 阶段参数（模板 stage_runtime）优先，未配置时用配置温度
+  const temperature = (temperatureOverride !== null && temperatureOverride !== undefined)
+    ? temperatureOverride
+    : (textConfig.temperature ?? null)
   const endpointKey = `${providerName}|${resolvedBaseURL}|${modelName}|t=${temperature ?? 'default'}`
   if (endpointKey !== lastLoggedTextEndpointKey) {
     lastLoggedTextEndpointKey = endpointKey
@@ -347,20 +358,202 @@ const AGENT_TOOLS: Record<string, Record<string, any>> = {
   },
 }
 
-/** instructions 按请求解析：prompt 文件（或默认）+ 技能全文拼接 + 目标语言指令块
- *  prompt/skill 文本随内容语言切换语言变体（<type>.<lang>.md / SKILL.<lang>.md），缺失回退中文版 */
+/** instructions 按请求解析：prompt 文件（或默认）+ 模板规范 + 技能全文 + 目标语言指令块
+ *  制作模板（workspace/templates/<id>/template.json）按项目注入；
+ *  模板只影响 Agent 的规范与技能，视觉风格仍由项目 style 决定 */
+export interface AssembledInstructions {
+  templateId: string | null
+  templateSkills: string[]
+  skillSource: 'policy' | 'legacy' | 'legacy-fallback'
+  missingSkills: string[]
+  instructions: string
+  sizes: {
+    base: number
+    template: number
+    skills: number
+    voice: number
+    language: number
+    total: number
+  }
+}
+
+async function assembleFromTemplate(
+  type: string,
+  template: ReturnType<typeof getTemplate>,
+  stage?: string | null,
+  lang?: string | null,
+  selectionMode: SkillSelectionMode = 'auto',
+): Promise<AssembledInstructions> {
+  const defaults = DEFAULT_PROMPTS[type]
+  const promptFile = await loadAgentPromptFile(type, lang)
+  const baseInstructions = promptFile?.instructions || defaults.instructions
+  // 阶段级配置优先，缺失回退 Agent 级（兼容仅配置了 Agent 的模板）
+  const promptKey = stage && template?.agent_prompts?.[stage] ? stage : type
+  const selection = resolveSkillSelection(template, stage, type, [], selectionMode)
+  let skillSource: 'policy' | 'legacy' | 'legacy-fallback' = selection.source
+  let templateSkills = selection.skills.map(skill => skill.id)
+  let missingSkills: string[] = []
+  let skillInstructions = ''
+
+  if (selection.source === 'policy') {
+    const loaded = await loadSkillIds(templateSkills, lang)
+    missingSkills = loaded.missing
+    const requiredIds = selection.skills
+      .filter(skill => skill.layer === 'craft' || skill.layer === 'mode')
+      .map(skill => skill.id)
+    const requiredMissing = requiredIds.some(id => !loaded.loaded.includes(id))
+    if (loaded.loaded.length && !requiredMissing) {
+      templateSkills = loaded.loaded
+      skillInstructions = loaded.text
+    } else if (selection.legacySkillIds.length) {
+      // craft/mode 任一必装技能读不到时回退旧格式，避免静默丢规范
+      skillSource = 'legacy-fallback'
+      templateSkills = selection.legacySkillIds
+      skillInstructions = await loadAgentSkills(type, lang, templateSkills)
+    } else {
+      templateSkills = loaded.loaded
+      skillInstructions = loaded.text
+    }
+  } else {
+    skillInstructions = await loadAgentSkills(type, lang, templateSkills)
+  }
+
+  const templatePrompt = template?.agent_prompts?.[promptKey] || ''
+  const languageDirective = buildLanguageDirective(lang)
+  const voiceInstructions = getVoiceReferenceInstructions(type, lang)
+  const instructions = [
+    baseInstructions,
+    templatePrompt ? `## 制作模式规范（${template?.name}）\n\n${templatePrompt}` : '',
+    skillInstructions,
+    voiceInstructions,
+    languageDirective,
+  ].filter(Boolean).join('\n\n')
+  const sizes = {
+    base: baseInstructions.length,
+    template: templatePrompt.length,
+    skills: skillInstructions.length,
+    voice: voiceInstructions.length,
+    language: languageDirective.length,
+    total: instructions.length,
+  }
+  return {
+    templateId: template?.id || null,
+    templateSkills,
+    skillSource,
+    missingSkills,
+    instructions,
+    sizes,
+  }
+}
+
+/** 预览用：按模板 id 直接装配（不依赖项目/快照） */
+export async function assembleInstructions(
+  type: string,
+  templateId?: string | null,
+  stage?: string | null,
+  lang?: string | null,
+  selectionMode: SkillSelectionMode = 'auto',
+): Promise<AssembledInstructions> {
+  return assembleFromTemplate(type, getTemplate(templateId), stage, lang, selectionMode)
+}
+
+export interface ShadowAssemblySide {
+  skillSource: AssembledInstructions['skillSource']
+  skills: string[]
+  missing: string[]
+  skillChars: number
+  totalChars: number
+}
+
+export interface ShadowAssemblyResult {
+  templateId: string | null
+  agentType: string
+  stage: string | null
+  legacy: ShadowAssemblySide
+  policy: ShadowAssemblySide
+  identical: boolean
+}
+
+function summarizeAssembly(assembled: AssembledInstructions): ShadowAssemblySide {
+  return {
+    skillSource: assembled.skillSource,
+    skills: assembled.templateSkills,
+    missing: assembled.missingSkills,
+    skillChars: assembled.sizes.skills,
+    totalChars: assembled.sizes.total,
+  }
+}
+
+/** 影子装配：同一模板/阶段分别按 legacy 与 policy 装配，只返回对比结果，不写库、不切换运行行为 */
+export async function assembleShadow(
+  type: string,
+  templateId?: string | null,
+  stage?: string | null,
+  lang?: string | null,
+): Promise<ShadowAssemblyResult> {
+  const [legacy, policy] = await Promise.all([
+    assembleInstructions(type, templateId, stage, lang, 'legacy'),
+    assembleInstructions(type, templateId, stage, lang, 'policy'),
+  ])
+  return {
+    templateId: templateId || null,
+    agentType: type,
+    stage: stage || null,
+    legacy: summarizeAssembly(legacy),
+    policy: summarizeAssembly(policy),
+    identical: legacy.instructions === policy.instructions,
+  }
+}
+
+const lastLoggedTemplateKey = new Map<string, string>()
+/** 单 Agent instructions 预算（字符）；超限只告警不截断，避免静默丢规则 */
+const INSTRUCTIONS_BUDGET_CHARS = 24000
+const estimateTokens = (chars: number) => Math.ceil(chars / 1.8)
+
 function buildInstructions(type: string) {
   return async ({ requestContext }: { requestContext?: RequestContext }) => {
-    const defaults = DEFAULT_PROMPTS[type]
     const lang = getContentLanguageFromRC(requestContext)
-    const promptFile = await loadAgentPromptFile(type, lang)
-    const baseInstructions = promptFile?.instructions || defaults.instructions
-    const skillInstructions = await loadAgentSkills(type, lang)
-    const languageDirective = buildLanguageDirective(lang)
-    const voiceInstructions = getVoiceReferenceInstructions(type, lang)
-    return [baseInstructions, skillInstructions, voiceInstructions, languageDirective]
-      .filter(Boolean)
-      .join('\n\n')
+    const dramaId = getDramaId(requestContext)
+    const stage = getStageFromRC(requestContext)
+    const ctx = await resolveModeContext(dramaId, { stage, agentType: type })
+    const assembled = await assembleFromTemplate(type, ctx.template, stage, lang)
+    const key = `${ctx.modeId || 'default'}|${stage || 'agent'}|${lang || 'zh'}|${ctx.manifestHash?.slice(0, 8) || ''}|${assembled.skillSource}`
+    if (lastLoggedTemplateKey.get(type) !== key) {
+      lastLoggedTemplateKey.set(type, key)
+      logTaskProgress('Agent', 'mode-context', {
+        agentType: type,
+        mode: ctx.modeId || 'default',
+        modeVersion: ctx.modeVersion || undefined,
+        manifestHash: ctx.manifestHash?.slice(0, 12) || undefined,
+        source: ctx.source,
+        stage: stage || undefined,
+        agent: ctx.agent || type,
+        skillSource: assembled.skillSource,
+        templateSkills: assembled.templateSkills.join(',') || undefined,
+        missingSkills: assembled.missingSkills.join(',') || undefined,
+        sizes: assembled.sizes,
+        estimatedTokens: estimateTokens(assembled.sizes.total),
+      })
+      if (assembled.missingSkills.length) {
+        logTaskWarn('Agent', 'skill-missing', {
+          agentType: type,
+          mode: ctx.modeId || 'default',
+          stage: stage || undefined,
+          missingSkills: assembled.missingSkills.join(','),
+        })
+      }
+      if (assembled.sizes.total > INSTRUCTIONS_BUDGET_CHARS) {
+        logTaskWarn('Agent', 'instructions-over-budget', {
+          agentType: type,
+          mode: ctx.modeId || 'default',
+          stage: stage || undefined,
+          total: assembled.sizes.total,
+          budget: INSTRUCTIONS_BUDGET_CHARS,
+          sizes: assembled.sizes,
+        })
+      }
+    }
+    return assembled.instructions
   }
 }
 
@@ -371,7 +564,10 @@ function buildModel(type: string) {
     const promptFile = await loadBasePromptFile(type)
     const modelOverride = requestContext?.get('modelOverride' as never) as string | undefined
     const textConfigId = requestContext?.get('textConfigId' as never) as number | undefined
-    return getModel(promptFile?.model || undefined, modelOverride, textConfigId)
+    const stage = getStageFromRC(requestContext)
+    const dramaId = getDramaId(requestContext)
+    const ctx = await resolveModeContext(dramaId, { stage, agentType: type })
+    return getModel(promptFile?.model || undefined, modelOverride, textConfigId, ctx.runtime?.temperature ?? null)
   }
 }
 

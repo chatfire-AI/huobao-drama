@@ -95,6 +95,49 @@ function formatSkillSection(skillId: string, content: string): string {
   return [`## Skill: ${skillId}`, content].join('\n')
 }
 
+function formatSkillBundle(contents: string[]): string {
+  if (!contents.length) return ''
+  return [
+    '以下是该 Agent 专属的项目技能规范（SKILL.md）。',
+    '不同 Agent 会加载不同 skill；你只需要遵守当前注入的这些技能。',
+    '你必须在不违背当前工具边界的前提下优先遵守这些规范；若与用户明确要求冲突，以用户要求为准。',
+    '',
+    contents.join('\n\n'),
+  ].join('\n')
+}
+
+export interface LoadedSkillSet {
+  text: string
+  loaded: string[]
+  missing: string[]
+}
+
+/**
+ * 按精确技能 ID 装载（skill_policy 使用）。
+ * 不展开子目录、不自动带 Agent 前缀，避免“一个前缀把所有技能都装进来”。
+ */
+export async function loadSkillIds(ids: string[], lang?: string | null): Promise<LoadedSkillSet> {
+  const loaded: string[] = []
+  const missing: string[] = []
+  const contents: string[] = []
+  const seen = new Set<string>()
+
+  for (const raw of ids) {
+    const id = String(raw || '').trim().replace(/^skills\//, '').replace(/^\/+|\/+$/g, '')
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    const body = await readSkillFile(id, lang)
+    if (!body) {
+      missing.push(id)
+      continue
+    }
+    loaded.push(id)
+    contents.push(formatSkillSection(id, body))
+  }
+
+  return { text: formatSkillBundle(contents), loaded, missing }
+}
+
 /** 剥离 SKILL.md 风格文件的 frontmatter，返回正文（供语言变体直读使用） */
 function stripFrontmatter(raw: string): string {
   const m = raw.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/)
@@ -114,40 +157,57 @@ async function readLocalizedSkill(relPath: string, lang: string): Promise<string
   }
 }
 
+/** 直读技能文件（语言变体优先，缺失回退基础版）；模板技能不在 Workspace 的静态注册范围内，必须走直读 */
+async function readSkillFile(relPath: string, lang?: string | null): Promise<string | null> {
+  if (lang && lang !== 'zh') {
+    const localized = await readLocalizedSkill(relPath, lang)
+    if (localized) return localized
+  }
+  const fsm = skillsManagerWorkspace.filesystem!
+  const p = `skills/${relPath}/SKILL.md`
+  try {
+    if (!await fsm.exists(p)) return null
+    const body = stripFrontmatter(String(await fsm.readFile(p, { encoding: 'utf-8' })))
+    return body || null
+  } catch {
+    return null
+  }
+}
+
 /** 读取 Agent 专属技能全文（经 workspace.skills API，保持原注入格式）
  *  AGENT_SKILL_MAP 的目录按前缀匹配：目录自身及其子目录下所有 SKILL.md 都会注入，
  *  因此设置页新建的子技能（如 storyboard-breaker/xxx）无需改代码即可生效。
- *  lang 非 zh 时逐技能优先 SKILL.<lang>.md，缺失回退基础版（中文） */
-export async function loadAgentSkills(agentType: string, lang?: string | null): Promise<string> {
+ *  lang 非 zh 时逐技能优先 SKILL.<lang>.md，缺失回退基础版（中文）
+ *  extraPrefixes：制作模板附加的技能目录（直读文件，不受 Workspace 静态注册限制） */
+export async function loadAgentSkills(agentType: string, lang?: string | null, extraPrefixes: string[] = []): Promise<string> {
   const workspace = skillWorkspaces[agentType]
-  const prefixes = AGENT_SKILL_MAP[agentType] || []
+  const basePrefixes = AGENT_SKILL_MAP[agentType] || []
+  const prefixes = [...basePrefixes, ...extraPrefixes]
   if (!workspace || !prefixes.length) return ''
 
+  const matches = (p: string, list: string[]) =>
+    list.some(prefix => p === prefix || p.startsWith(prefix + '/'))
   const allPaths = scanSkillPaths().map(p => p.replace(/^skills\//, ''))
-  const relPaths = allPaths.filter(p =>
-    prefixes.some(prefix => p === prefix || p.startsWith(prefix + '/')))
+  const relPaths = allPaths.filter(p => matches(p, prefixes))
 
   const useLocalized = Boolean(lang && lang !== 'zh')
   const contents: string[] = []
   for (const relPath of relPaths) {
+    const fromTemplate = matches(relPath, extraPrefixes) && !matches(relPath, basePrefixes)
     let body: string | null | undefined
-    if (useLocalized) body = await readLocalizedSkill(relPath, lang!)
-    if (!body) {
-      const skill = await workspace.skills?.get(`skills/${relPath}`)
-      body = skill?.instructions?.trim()
+    if (fromTemplate) {
+      body = await readSkillFile(relPath, lang)
+    } else {
+      if (useLocalized) body = await readLocalizedSkill(relPath, lang!)
+      if (!body) {
+        const skill = await workspace.skills?.get(`skills/${relPath}`)
+        body = skill?.instructions?.trim()
+      }
     }
     if (body) contents.push(formatSkillSection(relPath, body))
   }
 
-  if (!contents.length) return ''
-
-  return [
-    '以下是该 Agent 专属的项目技能规范（SKILL.md）。',
-    '不同 Agent 会加载不同 skill；你只需要遵守当前注入的这些技能。',
-    '你必须在不违背当前工具边界的前提下优先遵守这些规范；若与用户明确要求冲突，以用户要求为准。',
-    '',
-    contents.join('\n\n'),
-  ].join('\n')
+  return formatSkillBundle(contents)
 }
 
 /**

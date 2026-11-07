@@ -1,0 +1,111 @@
+{
+  "id": "sports-competition",
+  "name": "体育竞技",
+  "version": "1.0.1",
+  "description": "体育竞技：目标-训练-对抗-胜负，赛场爆点与团队关系",
+  "sort": 8,
+  "agent_prompts": {
+    "script_rewriter": "本模板为体育竞技题材，你是该模式的剧本改写负责人。\n\n一、题材原则\n- 按「目标 → 训练 → 对抗 → 胜负」组织；规则与专业术语必须准确。\n- 每集一个赛场爆点；胜负要有过程，不靠突然开挂。\n- 团队与对手关系推动成长，不写独角戏。\n\n二、人物与关系\n- 主角有明确短板与成长线；对手强度可信；教练和队友有功能。\n- 队服号码、位置、职责前后一致。\n- 伤病、状态、心理压力要真实影响比赛。\n\n三、冲突与节奏\n- 前 3 秒：赛前压力、伤病或资格危机。\n- 中段对抗升级，至少一次战术调整或逆风。\n- 集末留下下一场挑战、团队矛盾或更强对手。\n\n四、对白\n- 简短、有火药味；专业术语准确；规则解释要自然，不打断比赛节奏。\n- 教练布置战术要说人话，队员回应要短。\n\n五、场景与可拍性\n- 场馆、训练场、更衣室；动线与攻防方向清晰；器材准确。\n- 不写景别、角度、运镜（留给分镜阶段）。\n- 每集 3–5 个场景，场景头格式与全局规范一致。\n\n六、集末钩子\n- 用伤病、强敌、资格危机、团队内讧或关键比赛悬念收尾。\n\n七、完成标准\n- 必须实际调用 save_script 保存完整剧本，不要只返回说明。\n- 保存前自检：规则准确、有赛场爆点、成长线清晰、集末有挑战。",
+    "extractor": "本模板为体育竞技。场地、器材、队服、护具必须准确且跨镜一致；角色体型与运动专项匹配；标注比赛位置与职责。",
+    "storyboard_breaker": "本模板为体育竞技。速度镜头与慢动作结合；特写汗水、肌肉、呼吸与器材；穿插观众与教练反应；比赛节奏有起承转合。",
+    "prompt_generator": "本模板为体育竞技。图片提示词强调真实运动光影、汗水与材质；视频提示词强调速度、冲击与动作连贯，禁止穿模与不合理物理。",
+    "image": "【图片提示词阶段】本模板为体育竞技。图片提示词强调真实运动光影、汗水与材质；视频提示词强调速度、冲击与动作连贯，禁止穿模与不合理物理。 只输出角色/场景/道具的最终图片提示词，不要写视频时间轴。",
+    "video_prompt": "【视频提示词阶段】本模板为体育竞技。图片提示词强调真实运动光影、汗水与材质；视频提示词强调速度、冲击与动作连贯，禁止穿模与不合理物理。 只输出分镜 video_prompt：首行信息头，按 3 秒分段，不要生成图片提示词。"
+  },
+  "agent_skills": {
+    "script_rewriter": [
+      "templates/sports-competition/script-rewriter"
+    ],
+    "extractor": [
+      "templates/sports-competition/extractor"
+    ],
+    "storyboard_breaker": [
+      "templates/sports-competition/storyboard-breaker"
+    ],
+    "prompt_generator": [
+      "templates/sports-competition/prompt-generator"
+    ],
+    "image": [
+      "templates/sports-competition/prompt-generator"
+    ],
+    "video_prompt": [
+      "templates/sports-competition/prompt-generator"
+    ]
+  },
+  "workflow": {
+    "version": 1,
+    "stages": [
+      {
+        "id": "script",
+        "label": "剧本",
+        "agent": "script_rewriter",
+        "required": true,
+        "confirm": true
+      },
+      {
+        "id": "extract",
+        "label": "资产制作",
+        "agent": "extractor",
+        "required": true,
+        "tasks": [
+          "characters",
+          "scenes",
+          "props"
+        ]
+      },
+      {
+        "id": "storyboard",
+        "label": "分镜拆解",
+        "agent": "storyboard_breaker",
+        "required": true,
+        "confirm": true
+      },
+      {
+        "id": "video_prompt",
+        "label": "视频提示词",
+        "agent": "prompt_generator",
+        "required": true
+      },
+      {
+        "id": "image",
+        "label": "图片生成",
+        "service": "image_generation",
+        "required": true
+      },
+      {
+        "id": "video",
+        "label": "视频生成",
+        "service": "video_generation",
+        "required": true
+      },
+      {
+        "id": "merge",
+        "label": "拼接导出",
+        "service": "merge",
+        "required": true
+      }
+    ]
+  },
+  "stage_runtime": {
+    "script": {
+      "temperature": 0.7,
+      "maxSteps": 20
+    },
+    "extract": {
+      "temperature": 0.6,
+      "maxSteps": 20
+    },
+    "storyboard": {
+      "temperature": 0.5,
+      "maxSteps": 20
+    },
+    "video_prompt": {
+      "temperature": 0.6,
+      "maxSteps": 8
+    },
+    "image": {
+      "temperature": 0.6,
+      "maxSteps": 12
+    }
+  }
+}

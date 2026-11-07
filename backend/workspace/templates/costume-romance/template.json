@@ -1,0 +1,111 @@
+{
+  "id": "costume-romance",
+  "name": "古装言情",
+  "version": "1.0.1",
+  "description": "古装言情：礼制与身份差、含蓄情感、误会与护短、集末关系悬念",
+  "sort": 2,
+  "agent_prompts": {
+    "script_rewriter": "本模板为古装言情题材，你是该模式的剧本改写负责人。\n\n一、题材原则\n- 冲突来自身份、门第、礼制与婚约，不靠现代思维解决。\n- 情感表达含蓄克制：用试探、回避、护短、误会推进，不直白告白。\n- 不写穿越梗、现代词汇和超时代道具。\n\n二、人物与关系\n- 女主必须有主动选择，不做被动工具人；男主行为逻辑前后一致。\n- 称谓、身份、嫡庶关系必须统一，首次出现交代清楚。\n- 关系推进靠具体事件：救场、误会、身份揭露、婚约变故。\n\n三、冲突与节奏\n- 前 3 秒：关系张力或身份反差（退婚、认错人、当众维护）。\n- 每场 30–60 秒，至少一次关系推进或反转。\n- 每 30 秒一个情绪点；集末留下身份或情感悬念。\n\n四、对白\n- 含蓄、留白、有潜台词；台词符合身份与礼制。\n- 避免现代口语和解释性台词；情绪用眼神、手势和停顿表达。\n\n五、场景与可拍性\n- 庭院、宫殿、长廊、书房等古装空间；礼仪动作完整（行礼、递物、落座）。\n- 不写景别、角度、运镜（留给分镜阶段）。\n- 每集 3–5 个场景，场景头格式与全局规范一致。\n\n六、集末钩子\n- 用身份揭露、婚约变故、情感抉择或新人物登场收尾。\n\n七、完成标准\n- 必须实际调用 save_script 保存完整剧本，不要只返回说明。\n- 保存前自检：称谓一致、情感含蓄、关系有推进、集末有悬念。",
+    "extractor": "本模板为古装言情。角色需明确朝代形制、发型发饰、服装层次、礼仪习惯；场景需建筑体系、陈设年代感；称谓与身份一致；避免现代元素。",
+    "storyboard_breaker": "本模板为古装言情。构图讲究对称与留白；礼仪动作完整；情绪用近景/特写承载；庭院、宫殿、长廊空间层次清晰；避免现代运镜。",
+    "prompt_generator": "本模板为古装言情。图片提示词强调年代质感、丝绸刺绣、木质与石材纹理、柔光；视频提示词强调含蓄的眼神与手部动作，禁止现代词汇与道具。",
+    "image": "【图片提示词阶段】本模板为古装言情。图片提示词强调年代质感、丝绸刺绣、木质与石材纹理、柔光；视频提示词强调含蓄的眼神与手部动作，禁止现代词汇与道具。 只输出角色/场景/道具的最终图片提示词，不要写视频时间轴。",
+    "video_prompt": "【视频提示词阶段】本模板为古装言情。图片提示词强调年代质感、丝绸刺绣、木质与石材纹理、柔光；视频提示词强调含蓄的眼神与手部动作，禁止现代词汇与道具。 只输出分镜 video_prompt：首行信息头，按 3 秒分段，不要生成图片提示词。"
+  },
+  "agent_skills": {
+    "script_rewriter": [
+      "templates/costume-romance/script-rewriter"
+    ],
+    "extractor": [
+      "templates/costume-romance/extractor"
+    ],
+    "storyboard_breaker": [
+      "templates/costume-romance/storyboard-breaker"
+    ],
+    "prompt_generator": [
+      "templates/costume-romance/prompt-generator"
+    ],
+    "image": [
+      "templates/costume-romance/prompt-generator"
+    ],
+    "video_prompt": [
+      "templates/costume-romance/prompt-generator"
+    ]
+  },
+  "workflow": {
+    "version": 1,
+    "stages": [
+      {
+        "id": "script",
+        "label": "剧本",
+        "agent": "script_rewriter",
+        "required": true,
+        "confirm": true
+      },
+      {
+        "id": "extract",
+        "label": "资产制作",
+        "agent": "extractor",
+        "required": true,
+        "tasks": [
+          "characters",
+          "scenes",
+          "props"
+        ]
+      },
+      {
+        "id": "storyboard",
+        "label": "分镜拆解",
+        "agent": "storyboard_breaker",
+        "required": true,
+        "confirm": true
+      },
+      {
+        "id": "video_prompt",
+        "label": "视频提示词",
+        "agent": "prompt_generator",
+        "required": true
+      },
+      {
+        "id": "image",
+        "label": "图片生成",
+        "service": "image_generation",
+        "required": true
+      },
+      {
+        "id": "video",
+        "label": "视频生成",
+        "service": "video_generation",
+        "required": true
+      },
+      {
+        "id": "merge",
+        "label": "拼接导出",
+        "service": "merge",
+        "required": true
+      }
+    ]
+  },
+  "stage_runtime": {
+    "script": {
+      "temperature": 0.75,
+      "maxSteps": 20
+    },
+    "extract": {
+      "temperature": 0.6,
+      "maxSteps": 20
+    },
+    "storyboard": {
+      "temperature": 0.55,
+      "maxSteps": 20
+    },
+    "video_prompt": {
+      "temperature": 0.65,
+      "maxSteps": 8
+    },
+    "image": {
+      "temperature": 0.6,
+      "maxSteps": 12
+    }
+  }
+}

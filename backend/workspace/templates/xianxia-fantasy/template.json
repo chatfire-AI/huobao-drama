@@ -1,0 +1,111 @@
+{
+  "id": "xianxia-fantasy",
+  "name": "玄幻修仙",
+  "version": "1.0.1",
+  "description": "玄幻修仙：境界体系、金手指、爽点与越级挑战",
+  "sort": 6,
+  "agent_prompts": {
+    "script_rewriter": "本模板为玄幻修仙题材，你是该模式的剧本改写负责人。\n\n一、题材原则\n- 境界、功法、法宝、宗门体系必须统一；术语首次出现给一句定义。\n- 前 10 秒亮出金手指、境界或底牌；每集至少一次打脸、越级或反转。\n- 爽点要有代价和铺垫，不做无逻辑的碾压。\n\n二、人物与关系\n- 主角目标明确、有短板；反派有压迫感和资源。\n- 配角功能清晰：引路人、对手、拖累、背叛者。\n- 人物境界与战力前后一致，不随意拔高。\n\n三、冲突与节奏\n- 前 3 秒：压制、羞辱或危机。\n- 中段一次蓄力与爆发；爆点段节奏放慢。\n- 集末出现更强敌人、更大秘密或境界突破线索。\n\n四、对白\n- 简洁、有锋芒；术语准确；不写现代梗和网络流行语。\n- 狠话与承诺要能兑现，不空喊。\n\n五、场景与可拍性\n- 宗门、洞府、战场、秘境；空间层次清晰；特效服务动作。\n- 不写景别、角度、运镜（留给分镜阶段）。\n- 每集 3–5 个场景，场景头格式与全局规范一致。\n\n六、集末钩子\n- 用新境界、新敌人、法宝现世或阴谋浮出收尾。\n\n七、完成标准\n- 必须实际调用 save_script 保存完整剧本，不要只返回说明。\n- 保存前自检：术语统一、有爽点、境界一致、集末有升级钩子。",
+    "extractor": "本模板为玄幻修仙。资产必须可建模：材质、比例、装备层级、发光元素；法宝分级明确；宗门/洞府/灵兽场景需空间层次。",
+    "storyboard_breaker": "本模板为玄幻修仙。动作段与特效段分开；明确特效层级（前/中/后景）；爆点段 12–15 秒；运镜服务冲击力。",
+    "prompt_generator": "本模板为玄幻修仙。图片提示词强调统一 3D 渲染与材质；视频提示词写清特效形态、颜色、范围、持续时间与打击反馈。",
+    "image": "【图片提示词阶段】本模板为玄幻修仙。图片提示词强调统一 3D 渲染与材质；视频提示词写清特效形态、颜色、范围、持续时间与打击反馈。 只输出角色/场景/道具的最终图片提示词，不要写视频时间轴。",
+    "video_prompt": "【视频提示词阶段】本模板为玄幻修仙。图片提示词强调统一 3D 渲染与材质；视频提示词写清特效形态、颜色、范围、持续时间与打击反馈。 只输出分镜 video_prompt：首行信息头，按 3 秒分段，不要生成图片提示词。"
+  },
+  "agent_skills": {
+    "script_rewriter": [
+      "templates/xianxia-fantasy/script-rewriter"
+    ],
+    "extractor": [
+      "templates/xianxia-fantasy/extractor"
+    ],
+    "storyboard_breaker": [
+      "templates/xianxia-fantasy/storyboard-breaker"
+    ],
+    "prompt_generator": [
+      "templates/xianxia-fantasy/prompt-generator"
+    ],
+    "image": [
+      "templates/xianxia-fantasy/prompt-generator"
+    ],
+    "video_prompt": [
+      "templates/xianxia-fantasy/prompt-generator"
+    ]
+  },
+  "workflow": {
+    "version": 1,
+    "stages": [
+      {
+        "id": "script",
+        "label": "剧本",
+        "agent": "script_rewriter",
+        "required": true,
+        "confirm": true
+      },
+      {
+        "id": "extract",
+        "label": "资产制作",
+        "agent": "extractor",
+        "required": true,
+        "tasks": [
+          "characters",
+          "scenes",
+          "props"
+        ]
+      },
+      {
+        "id": "storyboard",
+        "label": "分镜拆解",
+        "agent": "storyboard_breaker",
+        "required": true,
+        "confirm": true
+      },
+      {
+        "id": "video_prompt",
+        "label": "视频提示词",
+        "agent": "prompt_generator",
+        "required": true
+      },
+      {
+        "id": "image",
+        "label": "图片生成",
+        "service": "image_generation",
+        "required": true
+      },
+      {
+        "id": "video",
+        "label": "视频生成",
+        "service": "video_generation",
+        "required": true
+      },
+      {
+        "id": "merge",
+        "label": "拼接导出",
+        "service": "merge",
+        "required": true
+      }
+    ]
+  },
+  "stage_runtime": {
+    "script": {
+      "temperature": 0.7,
+      "maxSteps": 20
+    },
+    "extract": {
+      "temperature": 0.6,
+      "maxSteps": 20
+    },
+    "storyboard": {
+      "temperature": 0.5,
+      "maxSteps": 20
+    },
+    "video_prompt": {
+      "temperature": 0.6,
+      "maxSteps": 8
+    },
+    "image": {
+      "temperature": 0.6,
+      "maxSteps": 12
+    }
+  }
+}

@@ -8,6 +8,7 @@ import { getActiveConfig, getConfigById } from '../services/ai.js'
 import { getDramaStylePrompt } from '../services/style-preset.js'
 import { resolveStoryboardVoiceReferences } from '../services/character-voice-references.js'
 import { logTaskError, logTaskPayload, logTaskStart, logTaskSuccess } from '../utils/task-logger.js'
+import { getAppVersion } from '../version.js'
 
 const app = new Hono()
 
@@ -24,7 +25,7 @@ app.get('/:id/diagnostics', async c => {
   return success(c, { id: task.id, upstreamTaskId: task.taskId, provider: task.provider, model: task.model,
     status: task.status, stage: task.stage, errorCode: task.errorCode, error: safeTaskError(task.errorMsg),
     hasResult: !!task.resultUrl, hasLocalFile: !!task.localPath, createdAt: task.createdAt, updatedAt: task.updatedAt,
-    version: process.env.HUOBAO_VERSION || 'development' })
+    version: getAppVersion() })
 })
 
 type TaskType = 'image' | 'video'
