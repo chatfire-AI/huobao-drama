@@ -1,6 +1,6 @@
 {
   "name": "huobao-drama",
-  "version": "1.0.0",
+  "version": "4.1.0-p0",
   "private": true,
   "description": "火宝短剧 — AI 短剧制作工具（桌面版编排入口）",
   "scripts": {
@@ -8,6 +8,11 @@
     "dev:frontend": "cd frontend && npm run dev",
     "dev:desktop": "cd desktop && npm run dev",
     "build:frontend": "cd frontend && npm run generate",
-    "dist": "cd desktop && npm run dist"
+    "dist": "cd desktop && npm run dist",
+    "version:check": "node scripts/version.mjs check",
+    "version:sync": "node scripts/version.mjs sync",
+    "verify:health": "node scripts/version.mjs check --health http://localhost:5679/api/v1/health",
+    "verify:shadow": "cd backend && npx tsx scripts/shadow-assemble.ts",
+    "verify:release": "node scripts/version.mjs check && cd backend && npm run typecheck && npx tsx scripts/validate-templates.ts && npx tsx scripts/audit-skills.ts && npx tsx scripts/shadow-assemble.ts"
   }
 }

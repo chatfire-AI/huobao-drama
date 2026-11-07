@@ -23,9 +23,11 @@ import props from './routes/props.js'
 import settings from './routes/settings.js'
 import storage from './routes/storage.js'
 import serverUpdate from './routes/serverUpdate.js'
+import templates from './routes/templates.js'
 import { requestLogger, errorHandler } from './middleware/logger.js'
 import { resumeInterruptedTasks } from './services/generation.js'
 import { DATA_ROOT } from './utils/paths.js'
+import { getAppVersion } from './version.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const projectRoot = path.resolve(__dirname, '../..')
@@ -43,7 +45,7 @@ app.use('*', errorHandler)
 // Health check（version 供部署巡检/更新检查核对当前运行版本）
 app.get('/api/v1/health', (c) => c.json({
   status: 'ok',
-  version: process.env.HUOBAO_VERSION || undefined,
+  version: getAppVersion(),
   timestamp: new Date().toISOString(),
 }))
 
@@ -59,6 +61,7 @@ api.route('/upload', upload)
 api.route('/ai-configs', aiConfigs)
 api.route('/ai-providers', aiProviders)
 api.route('/style-presets', stylePresets)
+api.route('/templates', templates)
 api.route('/prompts', prompts)
 api.route('/agent', agent)
 api.route('/merge', merge)
@@ -77,6 +80,18 @@ app.use('/static/*', async (c, next) => {
   if (c.res.ok) c.header('Cache-Control', 'public, max-age=31536000, immutable')
 })
 app.use('/static/*', serveStatic({ root: DATA_ROOT }))
+
+// 前端静态资源缓存策略：HTML 每次协商（避免旧包），_nuxt 哈希资源长缓存
+app.use('*', async (c, next) => {
+  await next()
+  const pathname = new URL(c.req.url).pathname
+  if (pathname.startsWith('/api/') || pathname.startsWith('/static/')) return
+  if (pathname.startsWith('/_nuxt/')) {
+    c.header('Cache-Control', 'public, max-age=31536000, immutable')
+  } else {
+    c.header('Cache-Control', 'no-cache')
+  }
+})
 
 // Serve frontend (production build) — 桌面版由主进程注入 FRONTEND_DIST（resources/frontend）
 const distPath = process.env.FRONTEND_DIST || path.join(projectRoot, 'frontend', 'dist')

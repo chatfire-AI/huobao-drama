@@ -7,9 +7,7 @@
  *   容器内自更新是反模式，正确路径是由 Watchtower 拉新镜像并重建本容器；
  *   未配置时前端展示手动更新指引（docker compose pull && up -d）
  */
-import { readFileSync } from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import { getAppVersion } from '../version.js'
 
 // 双源：COS（国内直连）优先，GitHub（海外）兜底；HUOBAO_UPDATE_FEED 可整体覆盖
 const FEED_URLS = process.env.HUOBAO_UPDATE_FEED
@@ -36,13 +34,7 @@ export interface ServerUpdateState {
 let lastState: Omit<ServerUpdateState, 'updateMode'> | null = null
 
 function currentVersion(): string {
-  if (process.env.HUOBAO_VERSION) return process.env.HUOBAO_VERSION.replace(/^v/, '')
-  try {
-    const pkg = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../package.json')
-    return JSON.parse(readFileSync(pkg, 'utf-8')).version || '0.0.0'
-  } catch {
-    return '0.0.0'
-  }
+  return getAppVersion()
 }
 
 export function updateMode(): ServerUpdateMode {

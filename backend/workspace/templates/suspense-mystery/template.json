@@ -1,0 +1,111 @@
+{
+  "id": "suspense-mystery",
+  "name": "悬疑推理",
+  "version": "1.0.1",
+  "description": "悬疑推理：谜面-线索-误导-揭示，信息差与集末新线索",
+  "sort": 3,
+  "agent_prompts": {
+    "script_rewriter": "本模板为悬疑推理题材，你是该模式的剧本改写负责人。\n\n一、题材原则\n- 每集一个明确谜面，按「谜面 → 线索 → 误导 → 揭示」组织。\n- 所有推理必须建立在已给出的信息上，禁止凭空结论。\n- 信息差是主要张力来源：观众知道的和角色知道的不同步。\n\n二、人物与关系\n- 每个关键人物有明确动机、秘密和不在场证明。\n- 人物关系图清晰：谁在隐瞒、谁在试探、谁在利用。\n- 新增人物必须带可疑点或功能，不做纯背景板。\n\n三、冲突与节奏\n- 前 3 秒：一个异常细节或反常行为。\n- 每场至少抛出一个信息点；中段一次反转或推翻。\n- 集末揭示新线索，或推翻此前认知，但不要一次性解释全部谜底。\n\n四、对白\n- 克制、试探、双关；关键信息通过动作和道具传递。\n- 避免角色直接说出推理结论；让观众和主角同步发现。\n\n五、场景与可拍性\n- 保留空间关系与出入口，线索位置可追溯（谁在何时何地看到什么）。\n- 不写景别、角度、运镜（留给分镜阶段）。\n- 每集 3–5 个场景，场景头格式与全局规范一致。\n\n六、集末钩子\n- 用新线索、旧认知被推翻、嫌疑人反转或第二个谜面收尾。\n\n七、完成标准\n- 必须实际调用 save_script 保存完整剧本，不要只返回说明。\n- 保存前自检：谜面清晰、线索可追溯、无凭空结论、集末有新信息。",
+    "extractor": "本模板为悬疑推理。重点提取线索物件、现场细节、人物关系线索；道具必须可追溯来源与位置；角色外观服务于身份可疑度；场景保留关键空间关系。",
+    "storyboard_breaker": "本模板为悬疑推理。用构图隐藏信息：遮挡、画外空间、主观视线；线索特写必须清晰但不刻意；避免提前暴露谜底；节奏上先给异常再给解释。",
+    "prompt_generator": "本模板为悬疑推理。图片提示词强调冷色调、低饱和、阴影与证据细节；视频提示词强调视线落点、信息揭示时机与不安氛围，禁止无关装饰。",
+    "image": "【图片提示词阶段】本模板为悬疑推理。图片提示词强调冷色调、低饱和、阴影与证据细节；视频提示词强调视线落点、信息揭示时机与不安氛围，禁止无关装饰。 只输出角色/场景/道具的最终图片提示词，不要写视频时间轴。",
+    "video_prompt": "【视频提示词阶段】本模板为悬疑推理。图片提示词强调冷色调、低饱和、阴影与证据细节；视频提示词强调视线落点、信息揭示时机与不安氛围，禁止无关装饰。 只输出分镜 video_prompt：首行信息头，按 3 秒分段，不要生成图片提示词。"
+  },
+  "agent_skills": {
+    "script_rewriter": [
+      "templates/suspense-mystery/script-rewriter"
+    ],
+    "extractor": [
+      "templates/suspense-mystery/extractor"
+    ],
+    "storyboard_breaker": [
+      "templates/suspense-mystery/storyboard-breaker"
+    ],
+    "prompt_generator": [
+      "templates/suspense-mystery/prompt-generator"
+    ],
+    "image": [
+      "templates/suspense-mystery/prompt-generator"
+    ],
+    "video_prompt": [
+      "templates/suspense-mystery/prompt-generator"
+    ]
+  },
+  "workflow": {
+    "version": 1,
+    "stages": [
+      {
+        "id": "script",
+        "label": "剧本",
+        "agent": "script_rewriter",
+        "required": true,
+        "confirm": true
+      },
+      {
+        "id": "extract",
+        "label": "资产制作",
+        "agent": "extractor",
+        "required": true,
+        "tasks": [
+          "characters",
+          "scenes",
+          "props"
+        ]
+      },
+      {
+        "id": "storyboard",
+        "label": "分镜拆解",
+        "agent": "storyboard_breaker",
+        "required": true,
+        "confirm": true
+      },
+      {
+        "id": "video_prompt",
+        "label": "视频提示词",
+        "agent": "prompt_generator",
+        "required": true
+      },
+      {
+        "id": "image",
+        "label": "图片生成",
+        "service": "image_generation",
+        "required": true
+      },
+      {
+        "id": "video",
+        "label": "视频生成",
+        "service": "video_generation",
+        "required": true
+      },
+      {
+        "id": "merge",
+        "label": "拼接导出",
+        "service": "merge",
+        "required": true
+      }
+    ]
+  },
+  "stage_runtime": {
+    "script": {
+      "temperature": 0.6,
+      "maxSteps": 20
+    },
+    "extract": {
+      "temperature": 0.6,
+      "maxSteps": 20
+    },
+    "storyboard": {
+      "temperature": 0.4,
+      "maxSteps": 20
+    },
+    "video_prompt": {
+      "temperature": 0.5,
+      "maxSteps": 8
+    },
+    "image": {
+      "temperature": 0.6,
+      "maxSteps": 12
+    }
+  }
+}

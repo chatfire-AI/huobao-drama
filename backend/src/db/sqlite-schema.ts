@@ -13,6 +13,9 @@ export const sqliteSchemaStatements = [
     description TEXT,
     genre TEXT,
     style TEXT DEFAULT '3d',
+    template_id TEXT,
+    template_version TEXT,
+    template_snapshot TEXT,
     aspect_ratio TEXT DEFAULT '16:9',
     total_episodes INTEGER DEFAULT 1,
     total_duration INTEGER DEFAULT 0,
@@ -389,6 +392,11 @@ export function initSqliteSchema(sqlite: Database.Database) {
   const characterColumns = new Set((sqlite.prepare('PRAGMA table_info(characters)').all() as { name: string }[]).map(c => c.name))
   for (const name of ['voice_audio_url', 'voice_audio_name']) {
     if (!characterColumns.has(name)) sqlite.exec(`ALTER TABLE characters ADD COLUMN ${name} TEXT`)
+  }
+  // 制作模板：旧库补充可空字段；未选模板的项目继续走原有默认行为
+  const dramaColumns = new Set((sqlite.prepare('PRAGMA table_info(dramas)').all() as { name: string }[]).map(c => c.name))
+  for (const name of ['template_id', 'template_version', 'template_snapshot']) {
+    if (!dramaColumns.has(name)) sqlite.exec(`ALTER TABLE dramas ADD COLUMN ${name} TEXT`)
   }
   const insertSeed = sqlite.prepare(SEED_SQL)
   const upgradeSeed = sqlite.prepare(UPGRADE_SQL)

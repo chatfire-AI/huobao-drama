@@ -6,6 +6,8 @@ import { toSnakeCaseArray, toSnakeCase } from '../utils/transform.js'
 import { getActiveConfigId } from '../services/ai.js'
 import { EXTRACT_TARGETS, getExtractionStatus, startExtraction, type ExtractTarget } from '../services/extraction.js'
 import { getVideoPromptBatchStatus, startVideoPromptBatch } from '../services/video-prompts.js'
+import { resolveModeContext } from '../services/mode-context.js'
+import { getEpisodeWorkflowStatus } from '../services/workflow-status.js'
 
 const app = new Hono()
 
@@ -141,6 +143,29 @@ app.post('/:id/extract', async (c) => {
 app.get('/:id/extract-status', async (c) => {
   const id = Number(c.req.param('id'))
   return success(c, getExtractionStatus(id))
+})
+
+// GET /episodes/:id/workflow — 项目模板解析出的固化流程 + 各阶段完成状态
+app.get('/:id/workflow', async (c) => {
+  const id = Number(c.req.param('id'))
+  const [ep] = await db.select().from(schema.episodes).where(eq(schema.episodes.id, id))
+  if (!ep) return notFound(c, '剧集不存在')
+  const ctx = await resolveModeContext(ep.dramaId)
+  const status = await getEpisodeWorkflowStatus(id)
+  return success(c, {
+    episode_id: id,
+    drama_id: ep.dramaId,
+    template_id: ctx.modeId,
+    template_name: ctx.template?.name || null,
+    source: ctx.template ? 'template' : 'default',
+    context_source: ctx.source,
+    manifest_hash: ctx.manifestHash,
+    workflow: ctx.workflow,
+    resolved_agents: Object.fromEntries(
+      ctx.workflow.stages.map(stage => [stage.id, stage.agent || stage.service || null]),
+    ),
+    status,
+  })
 })
 
 // POST /episodes/:id/generate-video-prompts — 异步批量为缺少视频提示词的分镜生成（立即返回，前端轮询状态）

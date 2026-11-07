@@ -1,0 +1,111 @@
+{
+  "id": "crime-espionage",
+  "name": "犯罪谍战",
+  "version": "1.0.1",
+  "description": "犯罪谍战：目标与阻碍、情报链、双面身份与反转",
+  "sort": 5,
+  "agent_prompts": {
+    "script_rewriter": "本模板为犯罪谍战题材，你是该模式的剧本改写负责人。\n\n一、题材原则\n- 每集明确目标、阻碍与代价；情报链必须完整可追溯。\n- 每集至少一次博弈或反转；双面身份要提前埋线。\n- 不写无代价的胜利，不靠巧合脱身。\n\n二、人物与关系\n- 每个关键人物有立场、动机和把柄；身份伪装与随身物品一致。\n- 敌我关系会变化：盟友可能出卖，敌人可能利用。\n- 新增人物必须携带情报或威胁。\n\n三、冲突与节奏\n- 前 3 秒：一次危机或暴露风险。\n- 中段一次情报交换、试探或反制。\n- 集末留下新威胁、身份疑点或任务失败的代价。\n\n四、对白\n- 克制、暗号、双关；不解释行动，只给结果和反应。\n- 关键信息通过道具、眼神和未说完的话传递。\n\n五、场景与可拍性\n- 安全屋、码头、办公室、监控室等；出入口与视线关系清晰。\n- 不写景别、角度、运镜（留给分镜阶段）。\n- 每集 3–5 个场景，场景头格式与全局规范一致。\n\n六、集末钩子\n- 用新威胁、身份暴露风险、任务升级或内部背叛收尾。\n\n七、完成标准\n- 必须实际调用 save_script 保存完整剧本，不要只返回说明。\n- 保存前自检：情报链完整、有代价、集末有新威胁。",
+    "extractor": "本模板为犯罪谍战。重点提取枪械、监听设备、证件、档案、通讯工具；年代与机构细节准确；道具与角色身份绑定且跨镜一致。",
+    "storyboard_breaker": "本模板为犯罪谍战。手持/跟拍制造紧张；窥视视角与交叉剪辑；关键动作短促有力；保持空间方位与人物位置清晰。",
+    "prompt_generator": "本模板为犯罪谍战。图片提示词强调硬光、冷色、金属与烟雾质感；视频提示词强调动作方向、视线与信息交换，禁止无关浪漫化处理。",
+    "image": "【图片提示词阶段】本模板为犯罪谍战。图片提示词强调硬光、冷色、金属与烟雾质感；视频提示词强调动作方向、视线与信息交换，禁止无关浪漫化处理。 只输出角色/场景/道具的最终图片提示词，不要写视频时间轴。",
+    "video_prompt": "【视频提示词阶段】本模板为犯罪谍战。图片提示词强调硬光、冷色、金属与烟雾质感；视频提示词强调动作方向、视线与信息交换，禁止无关浪漫化处理。 只输出分镜 video_prompt：首行信息头，按 3 秒分段，不要生成图片提示词。"
+  },
+  "agent_skills": {
+    "script_rewriter": [
+      "templates/crime-espionage/script-rewriter"
+    ],
+    "extractor": [
+      "templates/crime-espionage/extractor"
+    ],
+    "storyboard_breaker": [
+      "templates/crime-espionage/storyboard-breaker"
+    ],
+    "prompt_generator": [
+      "templates/crime-espionage/prompt-generator"
+    ],
+    "image": [
+      "templates/crime-espionage/prompt-generator"
+    ],
+    "video_prompt": [
+      "templates/crime-espionage/prompt-generator"
+    ]
+  },
+  "workflow": {
+    "version": 1,
+    "stages": [
+      {
+        "id": "script",
+        "label": "剧本",
+        "agent": "script_rewriter",
+        "required": true,
+        "confirm": true
+      },
+      {
+        "id": "extract",
+        "label": "资产制作",
+        "agent": "extractor",
+        "required": true,
+        "tasks": [
+          "characters",
+          "scenes",
+          "props"
+        ]
+      },
+      {
+        "id": "storyboard",
+        "label": "分镜拆解",
+        "agent": "storyboard_breaker",
+        "required": true,
+        "confirm": true
+      },
+      {
+        "id": "video_prompt",
+        "label": "视频提示词",
+        "agent": "prompt_generator",
+        "required": true
+      },
+      {
+        "id": "image",
+        "label": "图片生成",
+        "service": "image_generation",
+        "required": true
+      },
+      {
+        "id": "video",
+        "label": "视频生成",
+        "service": "video_generation",
+        "required": true
+      },
+      {
+        "id": "merge",
+        "label": "拼接导出",
+        "service": "merge",
+        "required": true
+      }
+    ]
+  },
+  "stage_runtime": {
+    "script": {
+      "temperature": 0.6,
+      "maxSteps": 20
+    },
+    "extract": {
+      "temperature": 0.6,
+      "maxSteps": 20
+    },
+    "storyboard": {
+      "temperature": 0.45,
+      "maxSteps": 20
+    },
+    "video_prompt": {
+      "temperature": 0.55,
+      "maxSteps": 8
+    },
+    "image": {
+      "temperature": 0.6,
+      "maxSteps": 12
+    }
+  }
+}

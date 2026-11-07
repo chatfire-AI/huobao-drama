@@ -3,6 +3,7 @@ import { and, eq, isNull, like, desc } from 'drizzle-orm'
 import { db, getInsertId, schema } from '../db/index.js'
 import { success, badRequest, notFound, created, now } from '../utils/response.js'
 import { toSnakeCase, toSnakeCaseArray } from '../utils/transform.js'
+import { getTemplate } from '../services/templates.js'
 
 const app = new Hono()
 
@@ -52,11 +53,16 @@ app.get('/', async (c) => {
 app.post('/', async (c) => {
   const body = await c.req.json()
   const ts = now()
+  const template = body.template_id ? getTemplate(String(body.template_id)) : null
+  if (body.template_id && !template) return badRequest(c, '未知的制作模板')
   const res = await db.insert(schema.dramas).values({
     title: body.title,
     description: body.description,
     genre: body.genre,
     style: body.style,
+    templateId: template?.id || null,
+    templateVersion: template?.version || null,
+    templateSnapshot: template ? JSON.stringify(template) : null,
     aspectRatio: body.aspect_ratio || '16:9',
     tags: body.tags ? JSON.stringify(body.tags) : null,
     metadata: body.metadata,
@@ -119,6 +125,13 @@ app.put('/:id', async (c) => {
   if (body.description !== undefined) updates.description = body.description
   if (body.genre !== undefined) updates.genre = body.genre
   if (body.style !== undefined) updates.style = body.style
+  if (body.template_id !== undefined) {
+    const template = body.template_id ? getTemplate(String(body.template_id)) : null
+    if (body.template_id && !template) return badRequest(c, '未知的制作模板')
+    updates.templateId = template?.id || null
+    updates.templateVersion = template?.version || null
+    updates.templateSnapshot = template ? JSON.stringify(template) : null
+  }
   if (body.aspect_ratio !== undefined) updates.aspectRatio = body.aspect_ratio
   if (body.status !== undefined) updates.status = body.status
   if (body.tags !== undefined) updates.tags = JSON.stringify(body.tags)

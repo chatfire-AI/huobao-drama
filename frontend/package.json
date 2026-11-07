@@ -1,5 +1,6 @@
 {
   "name": "huobao-drama-frontend",
+  "version": "4.1.0-p0",
   "private": true,
   "type": "module",
   "scripts": {
