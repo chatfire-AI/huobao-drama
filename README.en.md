@@ -13,14 +13,27 @@
 
 [Features](#-features) • [Quick Start](#-quick-start) • [Walkthrough](#-visual-walkthrough) • [Desktop App](#-desktop-app-recommended) • [Deployment](#-deployment)
 
-<h2>🔑 <a href="https://api.firemux.com">Get a Huobao API Key 👉 Get started</a></h2>
+<p>
+  <a href="https://firelumi.com/">
+    <img src="docs/images/firelumi-commercial-en.webp" width="760" alt="FireLumi Commercial Edition · Open web app" />
+  </a>
+</p>
 
-**Text, image, and video AI capabilities — one key unlocks everything**
+Sign in to adapt novels into short dramas, create storyboards, and generate and edit video.
 
-After deploying, paste the key in "Settings → Huobao Quick Setup" to write three recommended configs in one click
+<p><a href="https://firemux.cn/#firelumi-downloads">Download the FireLumi desktop beta (Windows / macOS)</a></p>
 
-<h3>📥 <a href="https://github.com/chatfire-AI/huobao-drama/releases/latest">Download Desktop App (macOS / Windows)</a></h3>
-<h3>🌐 <a href="https://www.firemux.cn">Official Website</a></h3>
+<p>
+  <a href="https://github.com/chatfire-AI/huobao-drama/releases/latest">
+    <img src="docs/images/desktop-download-cta-en.svg" width="380" alt="Download open-source app" />
+  </a>
+</p>
+
+<p>
+  <a href="https://www.firemux.cn">
+    <img src="docs/images/website-cta-en.svg" width="320" alt="Visit the FireMux website" />
+  </a>
+</p>
 
 </div>
 

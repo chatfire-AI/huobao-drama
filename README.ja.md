@@ -13,14 +13,27 @@
 
 [機能](#-機能) • [クイックスタート](#-クイックスタート) • [チュートリアル](#-チュートリアル画像付き) • [デスクトップ版](#-デスクトップアプリ推奨) • [デプロイ](#-デプロイ)
 
-<h2>🔑 <a href="https://api.firemux.com">Huobao API Key を取得 👉 今すぐ見る</a></h2>
+<p>
+  <a href="https://firelumi.com/">
+    <img src="docs/images/firelumi-commercial-ja.webp" width="760" alt="FireLumi 商用版 · Web版を開く" />
+  </a>
+</p>
 
-**テキスト・画像・動画のすべての AI 機能を、1 つの Key で有効化**
+ログインすると、小説のショートドラマ化、絵コンテ制作、動画生成・編集を利用できます。
 
-デプロイ後、「設定 → 火宝クイック設定」に Key を貼るだけで、3 つの推奨設定をワンクリックで書き込み
+<p><a href="https://firemux.cn/#firelumi-downloads">FireLumi デスクトップベータ版をダウンロード（Windows / macOS）</a></p>
 
-<h3>📥 <a href="https://github.com/chatfire-AI/huobao-drama/releases/latest">デスクトップ版をダウンロード（macOS / Windows）</a></h3>
-<h3>🌐 <a href="https://www.firemux.cn">公式サイト</a></h3>
+<p>
+  <a href="https://github.com/chatfire-AI/huobao-drama/releases/latest">
+    <img src="docs/images/desktop-download-cta-ja.svg" width="380" alt="オープンソース版を入手" />
+  </a>
+</p>
+
+<p>
+  <a href="https://www.firemux.cn">
+    <img src="docs/images/website-cta-ja.svg" width="320" alt="FireMux 公式サイト" />
+  </a>
+</p>
 
 </div>
 

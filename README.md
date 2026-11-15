@@ -13,16 +13,14 @@
 **中英双语 / Bilingual** | [简体中文](README.zh-CN.md) | [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md)
 
 <p>
-  <a href="https://api.firemux.cn">
-    <img src="docs/images/api-key-cta.svg" width="380" alt="立即获取 FireMux API Key / Get your API key" />
+  <a href="https://firelumi.com/">
+    <img src="docs/images/firelumi-commercial-zh-CN.png" width="760" alt="FireLumi 商业版 · 打开网页版" />
   </a>
 </p>
 
-**文本 · 图片 · 视频全部 AI 能力，一个 Key 即可开通**<br>
-**Text, image, and video AI capabilities — one key unlocks everything**
+登录即可体验小说转短剧、分镜制作、视频生成和剪辑。
 
-部署完成后，在「设置 → 火宝快捷配置」粘贴 Key，一键写入三条推荐配置。<br>
-After deploying, paste the key in "Settings → Huobao Quick Setup" to write three recommended configs in one click.
+<p><a href="https://firemux.cn/#firelumi-downloads">下载 FireLumi 桌面测试版（Windows / macOS）</a></p>
 
 <p>
   <a href="https://github.com/chatfire-AI/huobao-drama/releases/latest">
