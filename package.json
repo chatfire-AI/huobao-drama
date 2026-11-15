@@ -1,0 +1,13 @@
+{
+  "name": "huobao-drama",
+  "version": "1.0.0",
+  "private": true,
+  "description": "火宝短剧 — AI 短剧制作工具（桌面版编排入口）",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:desktop": "cd desktop && npm run dev",
+    "build:frontend": "cd frontend && npm run generate",
+    "dist": "cd desktop && npm run dist"
+  }
+}

@@ -1,15 +1,17 @@
 /**
- * Drizzle schema — 精确匹配现有 SQLite 数据库列名
- * 从 PRAGMA table_info() 逆向生成
+ * Drizzle schema - SQLite column mappings.
+ * 自 MySQL 迁移：varchar(x)→text（SQLite 不校验长度）、int→integer、
+ * boolean→integer boolean mode、时间戳仍为 text 存 ISO 字符串，表/列名不变。
  */
-import { sqliteTable, text, integer, real, primaryKey } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
 
 export const dramas = sqliteTable('dramas', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   title: text('title').notNull(),
   description: text('description'),
   genre: text('genre'),
-  style: text('style').default('realistic'),
+  style: text('style').default('3d'),
+  aspectRatio: text('aspect_ratio').default('16:9'),
   totalEpisodes: integer('total_episodes').default(1),
   totalDuration: integer('total_duration').default(0),
   status: text('status').notNull().default('draft'),
@@ -35,7 +37,7 @@ export const episodes = sqliteTable('episodes', {
   thumbnail: text('thumbnail'),
   imageConfigId: integer('image_config_id'),
   videoConfigId: integer('video_config_id'),
-  audioConfigId: integer('audio_config_id'),
+  resolution: text('resolution').default('720p'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
   deletedAt: text('deleted_at'),
@@ -48,15 +50,16 @@ export const characters = sqliteTable('characters', {
   role: text('role'),
   description: text('description'),
   appearance: text('appearance'),
+  styling: text('styling'),
+  finalPrompt: text('final_prompt'),
   personality: text('personality'),
-  voiceStyle: text('voice_style'),
   imageUrl: text('image_url'),
+  voiceAudioUrl: text('voice_audio_url'),
+  voiceAudioName: text('voice_audio_name'),
   referenceImages: text('reference_images'),
   seedValue: text('seed_value'),
   sortOrder: integer('sort_order'),
   localPath: text('local_path'),
-  voiceSampleUrl: text('voice_sample_url'),
-  voiceProvider: text('voice_provider'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
   deletedAt: text('deleted_at'),
@@ -78,6 +81,14 @@ export const episodeScenes = sqliteTable('episode_scenes', {
   createdAt: text('created_at').notNull(),
 })
 
+// Episode-Prop many-to-many
+export const episodeProps = sqliteTable('episode_props', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  episodeId: integer('episode_id').notNull(),
+  propId: integer('prop_id').notNull(),
+  createdAt: text('created_at').notNull(),
+})
+
 export const scenes = sqliteTable('scenes', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   dramaId: integer('drama_id').notNull(),
@@ -85,6 +96,8 @@ export const scenes = sqliteTable('scenes', {
   location: text('location').notNull(),
   time: text('time').notNull(),
   prompt: text('prompt').notNull(),
+  lighting: text('lighting'),
+  finalPrompt: text('final_prompt'),
   storyboardCount: integer('storyboard_count').default(1),
   imageUrl: text('image_url'),
   status: text('status').default('pending'),
@@ -105,14 +118,12 @@ export const storyboards = sqliteTable('storyboards', {
   shotType: text('shot_type'),
   angle: text('angle'),
   movement: text('movement'),
-  action: text('action'),
   result: text('result'),
   atmosphere: text('atmosphere'),
   imagePrompt: text('image_prompt'),
   videoPrompt: text('video_prompt'),
   bgmPrompt: text('bgm_prompt'),
   soundEffect: text('sound_effect'),
-  dialogue: text('dialogue'),
   description: text('description'),
   duration: integer('duration').default(0),
   composedImage: text('composed_image'),
@@ -120,7 +131,6 @@ export const storyboards = sqliteTable('storyboards', {
   lastFrameImage: text('last_frame_image'),
   referenceImages: text('reference_images'),
   videoUrl: text('video_url'),
-  ttsAudioUrl: text('tts_audio_url'),
   subtitleUrl: text('subtitle_url'),
   composedVideoUrl: text('composed_video_url'),
   status: text('status').default('pending'),
@@ -132,9 +142,16 @@ export const storyboards = sqliteTable('storyboards', {
 export const storyboardCharacters = sqliteTable('storyboard_characters', {
   storyboardId: integer('storyboard_id').notNull(),
   characterId: integer('character_id').notNull(),
-}, (table) => ({
-  pk: primaryKey({ columns: [table.storyboardId, table.characterId] }),
-}))
+}, (table) => [
+  primaryKey({ columns: [table.storyboardId, table.characterId] }),
+])
+
+export const storyboardProps = sqliteTable('storyboard_props', {
+  storyboardId: integer('storyboard_id').notNull(),
+  propId: integer('prop_id').notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.storyboardId, table.propId] }),
+])
 
 export const aiServiceConfigs = sqliteTable('ai_service_configs', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -169,98 +186,46 @@ export const aiServiceProviders = sqliteTable('ai_service_providers', {
   updatedAt: text('updated_at').notNull(),
 })
 
-export const aiVoices = sqliteTable('ai_voices', {
+export const stylePresets = sqliteTable('style_presets', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  voiceId: text('voice_id').notNull().unique(),   // MiniMax voice_id
-  voiceName: text('voice_name').notNull(),         // 中文名
-  description: text('description'),                // 描述数组 JSON
-  language: text('language'),                     // 语言标签
-  provider: text('provider').notNull(),           // minimax
-  createdAt: text('created_at').notNull(),
-})
-
-export const agentConfigs = sqliteTable('agent_configs', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  agentType: text('agent_type').notNull(),
   name: text('name').notNull(),
+  value: text('value').notNull(),
+  prompt: text('prompt').notNull(),
   description: text('description'),
-  model: text('model'),
-  systemPrompt: text('system_prompt'),
-  temperature: real('temperature'),
-  maxTokens: integer('max_tokens'),
-  maxIterations: integer('max_iterations'),
+  sortOrder: integer('sort_order').default(0),
   isActive: integer('is_active', { mode: 'boolean' }).default(true),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
-  deletedAt: text('deleted_at'),
+  // 注意: 此表无 deleted_at（硬删除），value 列有唯一索引（见 sqlite-schema.ts DDL）
 })
 
-export const imageGenerations = sqliteTable('image_generations', {
+// 统一生成任务表：图片/视频生成共用，type 区分，生成参数存 params(JSON)
+export const sysTask = sqliteTable('sys_task', {
   id: integer('id').primaryKey({ autoIncrement: true }),
+  configId: integer('config_id'),
+  configBaseUrl: text('config_base_url'),
+  stage: text('stage'),
+  errorCode: text('error_code'),
+  type: text('type').notNull(), // image | video
   storyboardId: integer('storyboard_id'),
   dramaId: integer('drama_id'),
   sceneId: integer('scene_id'),
   characterId: integer('character_id'),
   propId: integer('prop_id'),
-  imageType: text('image_type'),
-  frameType: text('frame_type'),
-  provider: text('provider'),
-  prompt: text('prompt'),
-  negativePrompt: text('negative_prompt'),
-  model: text('model'),
-  size: text('size'),
-  quality: text('quality'),
-  style: text('style'),
-  steps: integer('steps'),
-  cfgScale: real('cfg_scale'),
-  seed: integer('seed'),
-  imageUrl: text('image_url'),
-  minioUrl: text('minio_url'),
-  localPath: text('local_path'),
-  status: text('status').default('pending'),
-  taskId: text('task_id'),
-  errorMsg: text('error_msg'),
-  width: integer('width'),
-  height: integer('height'),
-  referenceImages: text('reference_images'),
-  createdAt: text('created_at').notNull(),
-  updatedAt: text('updated_at').notNull(),
-  completedAt: text('completed_at'),
-})
-
-export const videoGenerations = sqliteTable('video_generations', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  storyboardId: integer('storyboard_id'),
-  dramaId: integer('drama_id'),
   provider: text('provider'),
   prompt: text('prompt'),
   model: text('model'),
-  imageGenId: integer('image_gen_id'),
-  referenceMode: text('reference_mode'),
-  imageUrl: text('image_url'),
-  firstFrameUrl: text('first_frame_url'),
-  lastFrameUrl: text('last_frame_url'),
-  referenceImageUrls: text('reference_image_urls'),
-  duration: integer('duration'),
-  fps: integer('fps'),
-  resolution: text('resolution'),
-  aspectRatio: text('aspect_ratio'),
-  style: text('style'),
-  motionLevel: integer('motion_level'),
-  cameraMotion: text('camera_motion'),
-  seed: integer('seed'),
-  videoUrl: text('video_url'),
-  minioUrl: text('minio_url'),
-  localPath: text('local_path'),
-  status: text('status').default('pending'),
+  // image: {size, frameType, referenceImages[]}
+  // video: {referenceMode, firstFrameUrl, lastFrameUrl, referenceImageUrls[], referenceVideoUrls[], referenceAudioUrls[], referenceFileUrl, referenceLinkUrl, generateAudio, duration, aspectRatio, resolution, seed, promptExtend, watermark}
+  params: text('params'),
   taskId: text('task_id'),
+  resultUrl: text('result_url'),
+  localPath: text('local_path'),
+  status: text('status').default('processing'),
   errorMsg: text('error_msg'),
-  width: integer('width'),
-  height: integer('height'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
   completedAt: text('completed_at'),
-  deletedAt: text('deleted_at'),
 })
 
 export const videoMerges = sqliteTable('video_merges', {
@@ -288,6 +253,7 @@ export const props = sqliteTable('props', {
   type: text('type'),
   description: text('description'),
   prompt: text('prompt'),
+  finalPrompt: text('final_prompt'),
   imageUrl: text('image_url'),
   referenceImages: text('reference_images'),
   localPath: text('local_path'),
@@ -322,4 +288,10 @@ export const assets = sqliteTable('assets', {
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
   deletedAt: text('deleted_at'),
+})
+
+export const appSettings = sqliteTable('app_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: text('updated_at').notNull(),
 })

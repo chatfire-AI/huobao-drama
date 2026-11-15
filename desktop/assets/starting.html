@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+<title>火宝短剧</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f6f7fb; color: #262b36; font: 16px/1.7 system-ui, sans-serif; }
+  main { max-width: 34rem; padding: 32px; text-align: center; }
+  h1 { font-size: 24px; margin: 0 0 12px; }
+  p { color: #596274; margin: 6px 0; }
+  .spinner { width: 28px; height: 28px; margin: 0 auto 24px; border: 3px solid #e2e5ec; border-top-color: #e88329; border-radius: 50%; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+</style>
+<main role="status">
+  <div class="spinner" aria-hidden="true"></div>
+  <h1>正在启动火宝短剧</h1>
+  <p>正在准备本地服务，首次启动可能需要一些时间。</p>
+  <p>无需重复点击图标。启动失败时会提示原因和日志位置。</p>
+</main>
+</html>

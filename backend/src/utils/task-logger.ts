@@ -42,17 +42,20 @@ function formatMeta(meta?: Record<string, unknown>) {
 }
 
 export function redactUrl(rawUrl: string) {
+  if (rawUrl.startsWith('data:')) return `${rawUrl.slice(0, rawUrl.indexOf(',') + 1)}<omitted>`
   try {
     const url = new URL(rawUrl)
-    for (const key of ['key', 'api_key', 'apikey', 'token', 'access_token']) {
-      if (url.searchParams.has(key)) {
+    for (const key of [...url.searchParams.keys()]) {
+      if (/key|token|sign|credential|secret/i.test(key)) {
         url.searchParams.set(key, '***')
       }
     }
+    if (url.username) url.username = '***'
+    if (url.password) url.password = '***'
     return url.toString()
   } catch {
     return rawUrl
-      .replace(/([?&](?:key|api_key|apikey|token|access_token)=)[^&]+/gi, '$1***')
+      .replace(/([?&](?:key|api_key|apikey|token|access_token|sign|signature|sig)=)[^&]+/gi, '$1***')
   }
 }
 

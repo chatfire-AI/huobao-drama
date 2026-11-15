@@ -1,73 +1,68 @@
 <template>
-  <div class="base-select" ref="rootEl">
-    <!-- Trigger -->
-    <button type="button" class="base-select-trigger" :class="{ open: isOpen }" @click="toggle">
-      <span :class="selectedLabel ? '' : 'placeholder'" class="base-select-label">{{ selectedLabel || placeholder }}</span>
-      <ChevronDown :size="13" class="base-select-arrow" />
-    </button>
+  <div class="base-select">
+    <AppMenu v-model:open="isOpen" block match-width :min-width="132" :max-height="380">
+      <template #trigger>
+        <button type="button" class="base-select-trigger" :class="{ open: isOpen }">
+          <span :class="selectedLabel ? '' : 'placeholder'" class="base-select-label">{{ selectedLabel || effectivePlaceholder }}</span>
+          <ChevronDown :size="13" class="base-select-arrow" :class="{ open: isOpen }" />
+        </button>
+      </template>
 
-    <!-- Dropdown -->
-    <Teleport to="body">
-      <div v-if="isOpen" class="base-select-dropdown" :style="dropdownStyle" ref="dropdownEl">
-        <!-- Search -->
-        <div v-if="searchable" class="base-select-search">
-          <Search :size="12" />
-          <input
-            ref="searchInputEl"
-            v-model="searchQuery"
-            class="base-select-search-input"
-            placeholder="搜索..."
-            @keydown="onSearchKeydown"
-          />
-        </div>
-
-        <!-- Options -->
-        <div class="base-select-options" ref="optionsEl">
-          <template v-if="flatOptions.length">
-            <template v-for="(group, gi) in filteredGroups" :key="gi">
-              <div v-if="group.label" class="base-select-group-label">{{ group.label }}</div>
-              <button
-                v-for="(opt, oi) in group.options"
-                :key="opt.value"
-                type="button"
-                :class="['base-select-option', { selected: opt.value === modelValue, highlighted: highlightedIdx === getGlobalIdx(gi, oi) }]"
-                @click="pick(opt)"
-                @mousemove="highlightedIdx = getGlobalIdx(gi, oi)"
-              >{{ opt.label }}</button>
-            </template>
-          </template>
-          <div v-else class="base-select-empty">无匹配结果</div>
-        </div>
+      <!-- Search（slot 内容随父作用域，scoped 样式可达 Teleport 面板内） -->
+      <div v-if="searchable" class="base-select-search">
+        <Search :size="12" />
+        <input
+          ref="searchInputEl"
+          v-model="searchQuery"
+          class="base-select-search-input"
+          :placeholder="t('components.baseSelect.search')"
+          @keydown="onSearchKeydown"
+        />
       </div>
-    </Teleport>
 
-    <!-- Backdrop -->
-    <Teleport to="body">
-      <div v-if="isOpen" class="base-select-backdrop" @click="isOpen = false" />
-    </Teleport>
+      <!-- Options -->
+      <div class="base-select-options">
+        <template v-if="flatOptions.length">
+          <template v-for="(group, gi) in filteredGroups" :key="gi">
+            <div v-if="group.label" class="app-menu-group-label">{{ group.label }}</div>
+            <button
+              v-for="(opt, oi) in group.options"
+              :key="opt.value"
+              type="button"
+              class="app-menu-item"
+              :class="{ selected: opt.value === modelValue, highlighted: highlightedIdx === getGlobalIdx(gi, oi) }"
+              role="menuitem"
+              @click="pick(opt)"
+              @mousemove="highlightedIdx = getGlobalIdx(gi, oi)"
+            >{{ opt.label }}</button>
+          </template>
+        </template>
+        <div v-else class="base-select-empty">{{ t('components.baseSelect.noMatch') }}</div>
+      </div>
+    </AppMenu>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ChevronDown, Search } from 'lucide-vue-next'
 
 const props = defineProps({
   modelValue: { type: [String, Number], default: '' },
   options: { type: Array, default: () => [] }, // [{ label, value, group? }, ...] or [{ label, group, options: [] }]
-  placeholder: { type: String, default: '请选择...' },
+  placeholder: { type: String, default: '' },  // 缺省回退 t('components.baseSelect.placeholder')
   searchable: { type: Boolean, default: true },
 })
 const emit = defineEmits(['update:modelValue'])
 
+const { t } = useI18n()
+const effectivePlaceholder = computed(() => props.placeholder || t('components.baseSelect.placeholder'))
+
 const isOpen = ref(false)
 const searchQuery = ref('')
-const rootEl = ref()
-const dropdownEl = ref()
 const searchInputEl = ref()
-const optionsEl = ref()
 const highlightedIdx = ref(-1)
-const dropdownStyle = ref({})
 
 // Normalize options: support both flat list and grouped format
 const normalizedGroups = computed(() => {
@@ -110,15 +105,6 @@ function getGlobalIdx(gi, oi) {
   return idx + oi
 }
 
-function resolveIdx(globalIdx) {
-  for (let gi = 0; gi < filteredGroups.value.length; gi++) {
-    const cnt = filteredGroups.value[gi].options.length
-    if (globalIdx < cnt) return [gi, globalIdx]
-    globalIdx -= cnt
-  }
-  return [0, 0]
-}
-
 const selectedLabel = computed(() => {
   for (const g of normalizedGroups.value) {
     const found = g.options.find(o => o.value === props.modelValue)
@@ -127,44 +113,22 @@ const selectedLabel = computed(() => {
   return ''
 })
 
-function toggle() {
-  isOpen.value ? close() : open()
-}
-
-async function open() {
-  isOpen.value = true
-  highlightedIdx.value = flatOptions.value.findIndex(o => o.value === props.modelValue)
-  await nextTick()
-  searchQuery.value = ''
-  searchInputEl.value?.focus()
-  positionDropdown()
-}
-
-function close() {
-  isOpen.value = false
-  searchQuery.value = ''
-}
-
 function pick(opt) {
   emit('update:modelValue', opt.value)
-  close()
+  isOpen.value = false
 }
 
-function positionDropdown() {
-  const rect = rootEl.value?.getBoundingClientRect()
-  if (!rect) return
-  const top = rect.bottom + 4
-  const left = rect.left
-  // Keep within viewport
-  const maxHeight = window.innerHeight - top - 16
-  dropdownStyle.value = {
-    position: 'fixed',
-    top: `${top}px`,
-    left: `${left}px`,
-    width: `${rect.width}px`,
-    maxHeight: `${Math.min(maxHeight, 400)}px`,
+// 打开时初始化键盘高亮并聚焦搜索框（定位/关闭由 AppMenu 负责）
+watch(isOpen, async (val) => {
+  if (val) {
+    highlightedIdx.value = flatOptions.value.findIndex(o => o.value === props.modelValue)
+    searchQuery.value = ''
+    await nextTick()
+    searchInputEl.value?.focus()
+  } else {
+    searchQuery.value = ''
   }
-}
+})
 
 function onSearchKeydown(e) {
   if (e.key === 'ArrowDown') {
@@ -179,56 +143,57 @@ function onSearchKeydown(e) {
       pick(flatOptions.value[highlightedIdx.value])
     }
   } else if (e.key === 'Escape') {
-    close()
+    isOpen.value = false
   }
 }
-
-watch(isOpen, val => {
-  if (val) document.addEventListener('scroll', positionDropdown, true)
-  else document.removeEventListener('scroll', positionDropdown, true)
-})
-
-onBeforeUnmount(() => {
-  document.removeEventListener('scroll', positionDropdown, true)
-})
 </script>
 
 <style scoped>
 .base-select {
-  position: relative;
-  display: inline-flex;
+  display: flex;
   width: 100%;
   min-width: 0;
 }
 
 .base-select-trigger {
+  appearance: none;
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  padding: 7px 28px 7px 10px;
+  min-height: var(--button-height);
+  padding: 0 30px 0 12px;
   font-size: 12px;
+  font-weight: 600;
   font-family: var(--font-body);
-  color: var(--text-0);
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  color: var(--button-text);
+  background: var(--button-bg);
+  border: 1px solid var(--button-border);
+  border-radius: var(--button-radius);
   cursor: pointer;
-  transition: all 0.15s var(--ease-out);
+  transition: all 0.18s var(--ease-out);
   white-space: nowrap;
   min-width: 0;
   width: 100%;
   max-width: none;
   flex-shrink: 0;
+  box-shadow: var(--button-shadow);
 }
 .base-select-trigger:hover {
-  border-color: var(--border-strong);
-  background: var(--bg-0);
+  border-color: var(--button-border-hover);
+  background: var(--button-bg-hover);
+  color: var(--button-text-hover);
+  box-shadow: var(--button-shadow-hover);
 }
 .base-select-trigger.open {
-  border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px var(--accent-glow);
-  background: var(--bg-0);
+  border-color: var(--action-primary);
+  box-shadow: 0 0 0 3px var(--button-focus), var(--button-shadow-hover);
+  background: var(--button-bg-hover);
+}
+.base-select-trigger:focus-visible {
+  outline: none;
+  border-color: var(--action-primary);
+  box-shadow: 0 0 0 3px var(--button-focus), var(--button-shadow-hover);
 }
 .base-select-trigger .placeholder {
   color: var(--text-3);
@@ -249,27 +214,19 @@ onBeforeUnmount(() => {
   transition: transform 0.2s var(--ease-out);
   flex-shrink: 0;
 }
-.base-select-trigger.open .base-select-arrow {
+.base-select-arrow.open {
   transform: rotate(180deg);
 }
 
-/* Dropdown */
-.base-select-dropdown {
-  background: var(--bg-0);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  overflow: hidden;
-  z-index: 9999;
-  animation: baseSelectIn 0.15s var(--ease-out);
-}
-
+/* Search（Teleport 面板内的 slot 内容，随父作用域） */
 .base-select-search {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin: -5px -5px 0;   /* 抵消面板 padding，搜索框通栏 */
   padding: 8px 12px;
   border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   color: var(--text-2);
 }
 .base-select-search-input {
@@ -288,46 +245,6 @@ onBeforeUnmount(() => {
 .base-select-options {
   overflow-y: auto;
   max-height: 260px;
-  padding: 4px;
-}
-
-.base-select-group-label {
-  padding: 6px 10px 3px;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-3);
-  margin-top: 4px;
-}
-.base-select-group-label:first-child {
-  margin-top: 0;
-}
-
-.base-select-option {
-  display: block;
-  width: 100%;
-  padding: 7px 10px;
-  font-size: 13px;
-  font-family: var(--font-body);
-  color: var(--text-1);
-  background: none;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.1s;
-  word-break: break-all;
-}
-.base-select-option:hover,
-.base-select-option.highlighted {
-  background: var(--bg-hover);
-  color: var(--text-0);
-}
-.base-select-option.selected {
-  background: var(--accent-bg);
-  color: var(--accent-dark);
-  font-weight: 600;
 }
 
 .base-select-empty {
@@ -335,16 +252,5 @@ onBeforeUnmount(() => {
   font-size: 13px;
   color: var(--text-3);
   text-align: center;
-}
-
-.base-select-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-}
-
-@keyframes baseSelectIn {
-  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 </style>

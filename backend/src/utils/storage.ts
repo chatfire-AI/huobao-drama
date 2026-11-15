@@ -3,12 +3,9 @@
  */
 import fs from 'fs'
 import path from 'path'
-import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 import { v4 as uuid } from 'uuid'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const STORAGE_ROOT = process.env.STORAGE_PATH || path.resolve(__dirname, '../../../data/static')
+import { STORAGE_ROOT } from './paths.js'
 
 /**
  * 下载远程文件到本地存储
@@ -84,6 +81,30 @@ export async function saveBase64Image(base64Data: string, mimeType: string, subD
   return `static/${subDir}/${filename}`
 }
 
+/** 由图片相对路径推导缩略图路径：static/images/x.png → static/images/x_thumb.webp */
+export function thumbPathFor(relativePath: string): string {
+  return relativePath.replace(/\.[^./]+$/, '_thumb.webp')
+}
+
+/**
+ * 为已落盘图片生成列表页缩略图（宽 400 WebP，与原图同目录）。
+ * 失败（文件损坏/格式异常等）返回 null，不阻断主流程。
+ */
+export async function generateImageThumb(relativePath: string): Promise<string | null> {
+  try {
+    const thumbRel = thumbPathFor(relativePath)
+    await sharp(getAbsolutePath(relativePath))
+      .rotate()
+      .resize({ width: 400, withoutEnlargement: true })
+      .webp({ quality: 78 })
+      .toFile(getAbsolutePath(thumbRel))
+    return thumbRel
+  } catch (err) {
+    console.warn(`[storage] 缩略图生成失败 ${relativePath}:`, (err as Error).message)
+    return null
+  }
+}
+
 export function readImageAsDataUrl(relativePath: string): string {
   const filePath = getAbsolutePath(relativePath)
   const buffer = fs.readFileSync(filePath)
@@ -100,12 +121,39 @@ export async function readImageAsCompressedDataUrl(
     quality?: number
   } = {},
 ): Promise<string> {
-  const filePath = getAbsolutePath(relativePath)
+  return compressImageAsDataUrl(getAbsolutePath(relativePath), options)
+}
+
+/**
+ * 下载远程图片并压缩为 data URL（远程参考图归一化，供 multipart/base64 上传类厂商使用）
+ */
+export async function fetchImageAsCompressedDataUrl(
+  url: string,
+  options: {
+    maxWidth?: number
+    maxHeight?: number
+    quality?: number
+  } = {},
+): Promise<string> {
+  const resp = await fetch(url, { signal: AbortSignal.timeout(30_000) })
+  if (!resp.ok) throw new Error(`下载参考图失败: HTTP ${resp.status}`)
+  return compressImageAsDataUrl(Buffer.from(await resp.arrayBuffer()), options)
+}
+
+/** sharp 输入 → 压缩 JPEG data URL（本地路径与远程下载共享同一压缩管线） */
+async function compressImageAsDataUrl(
+  input: string | Buffer,
+  options: {
+    maxWidth?: number
+    maxHeight?: number
+    quality?: number
+  } = {},
+): Promise<string> {
   const maxWidth = options.maxWidth ?? 768
   const maxHeight = options.maxHeight ?? 768
   const quality = options.quality ?? 68
 
-  const resized = sharp(filePath).rotate().resize({
+  const resized = sharp(input).rotate().resize({
     width: maxWidth,
     height: maxHeight,
     fit: 'inside',

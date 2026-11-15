@@ -1,29 +1,30 @@
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
-import { db, schema } from '../db/index.js'
+import { db, getInsertId, schema } from '../db/index.js'
 import { success, notFound, created, badRequest, now } from '../utils/response.js'
 import { toSnakeCase } from '../utils/transform.js'
 import { joinProviderUrl } from '../services/adapters/url.js'
+import { isOfficialProvider, parseConfigTemperature } from '../services/ai.js'
 import { redactUrl, logTaskError, logTaskProgress, logTaskSuccess } from '../utils/task-logger.js'
 
 const app = new Hono()
 
-const HUOBAO_PRESET_SERVICES = [
-  { serviceType: 'text', label: '文本', provider: 'chatfire', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-preview', priority: 100 },
-  { serviceType: 'image', label: '图片', provider: 'gemini', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-image-preview', priority: 99 },
-  { serviceType: 'video', label: '视频', provider: 'volcengine', baseUrl: 'https://api.chatfire.site/volcengine', model: 'doubao-seedance-1-5-pro-251215', priority: 98 },
-  { serviceType: 'audio', label: '音频', provider: 'minimax', baseUrl: 'https://api.chatfire.site/minimax', model: 'speech-2.8-hd', priority: 97 },
-] as const
+/** 归一化 temperature 入参：null=未设置；合法值 0~2；非法抛错 */
+function normalizeTemperature(v: any): number | null {
+  if (v === null || v === undefined || v === '') return null
+  const n = Number(v)
+  if (!Number.isFinite(n) || n < 0 || n > 2) throw new Error('invalid temperature')
+  return n
+}
 
-const HUOBAO_AGENT_DEFAULTS = [
-  { agentType: 'script_rewriter', name: '剧本改写' },
-  { agentType: 'extractor', name: '角色场景提取' },
-  { agentType: 'storyboard_breaker', name: '分镜拆解' },
-  { agentType: 'voice_assigner', name: '音色分配' },
-  { agentType: 'grid_prompt_generator', name: '图片提示词生成' },
-] as const
-
-const HUOBAO_AGENT_MODEL = 'gemini-3-pro-preview'
+/** 把 settings JSON 中的 temperature 透出为顶层字段，便于前端直接读写 */
+function withParsedFields(r: any) {
+  return {
+    ...toSnakeCase(r),
+    model: r.model ? JSON.parse(r.model) : [],
+    temperature: parseConfigTemperature(r.settings),
+  }
+}
 
 function bearerHeaders(apiKey?: string, withJson = false) {
   const headers: Record<string, string> = {}
@@ -35,16 +36,8 @@ function bearerHeaders(apiKey?: string, withJson = false) {
 function geminiHeaders(apiKey?: string, withJson = false) {
   const headers: Record<string, string> = {}
   if (apiKey) {
-    headers.Authorization = `Bearer ${apiKey}`
     headers['x-goog-api-key'] = apiKey
   }
-  if (withJson) headers['Content-Type'] = 'application/json'
-  return headers
-}
-
-function viduHeaders(apiKey?: string, withJson = false) {
-  const headers: Record<string, string> = {}
-  if (apiKey) headers.Authorization = `Token ${apiKey}`
   if (withJson) headers['Content-Type'] = 'application/json'
   return headers
 }
@@ -54,12 +47,21 @@ function buildProbe(serviceType: string, provider: string, baseUrl: string, mode
   const m = model || ''
 
   if (p === 'gemini') {
-    const url = new URL(joinProviderUrl(baseUrl, '/v1beta', `/models/${m || 'gemini-2.5-flash'}:generateContent`))
+    // 探针统一走 generateContent:文本运行时(AI SDK)走的就是它,官方与中转站都支持;
+    // interactions 端点很多中转站未配置,探它会误报 500。
+    // 用最小合法请求体而非空体——空体在部分中转站会触发上游认证失败的误报
+    const modelName = m || 'gemini-3.1-pro-preview'
+    const url = new URL(joinProviderUrl(baseUrl, '/v1beta', `/models/${modelName}:generateContent`))
     if (apiKey) url.searchParams.set('key', apiKey)
-    return { method: 'POST', url: url.toString(), headers: geminiHeaders(apiKey, true), body: {} }
+    return {
+      method: 'POST',
+      url: url.toString(),
+      headers: geminiHeaders(apiKey, true),
+      body: { contents: [{ parts: [{ text: 'hi' }] }] },
+    }
   }
 
-  if (p === 'openai' || p === 'openrouter' || p === 'chatfire') {
+  if (p === 'openai') {
     return {
       method: 'GET',
       url: joinProviderUrl(baseUrl, '/v1', '/models'),
@@ -68,21 +70,12 @@ function buildProbe(serviceType: string, provider: string, baseUrl: string, mode
     }
   }
 
-  if (p === 'ali') {
-    return {
-      method: 'POST',
-      url: joinProviderUrl(baseUrl, '/api/v1', serviceType === 'video'
-        ? '/services/aigc/video-generation/video-synthesis'
-        : '/services/aigc/image-generation/generation'),
-      headers: bearerHeaders(apiKey, true),
-      body: {},
-    }
-  }
-
   if (p === 'volcengine') {
     const path = serviceType === 'video'
       ? '/contents/generations/tasks'
-      : '/images/generations'
+      : serviceType === 'text'
+        ? '/chat/completions'
+        : '/images/generations'
     return {
       method: 'POST',
       url: joinProviderUrl(baseUrl, '/api/v3', path),
@@ -92,24 +85,24 @@ function buildProbe(serviceType: string, provider: string, baseUrl: string, mode
   }
 
   if (p === 'minimax') {
-    const path = serviceType === 'audio'
-      ? '/t2a_v2'
-      : serviceType === 'video'
-        ? '/video_generation'
-        : '/image_generation'
+    // MiniMax 仅提供视频服务，空请求体探测鉴权/端点连通性
     return {
       method: 'POST',
-      url: joinProviderUrl(baseUrl, '/v1', path),
+      url: joinProviderUrl(baseUrl, '/v2', '/video_generation'),
       headers: bearerHeaders(apiKey, true),
       body: {},
     }
   }
 
-  if (p === 'vidu') {
+  if (p === 'aliyun') {
+    // Wan 3.0 仅支持异步提交；空请求体不会创建计费任务，仅用于验证地域端点与鉴权是否可达。
     return {
       method: 'POST',
-      url: joinProviderUrl(baseUrl, '', '/ent/v2/img2video'),
-      headers: viduHeaders(apiKey, true),
+      url: joinProviderUrl(baseUrl, '/api/v1', '/services/aigc/video-generation/video-synthesis'),
+      headers: {
+        ...bearerHeaders(apiKey, true),
+        'X-DashScope-Async': 'enable',
+      },
       body: {},
     }
   }
@@ -125,13 +118,10 @@ function buildProbe(serviceType: string, provider: string, baseUrl: string, mode
 // GET /ai-configs?service_type=text
 app.get('/', async (c) => {
   const serviceType = c.req.query('service_type')
-  let rows = db.select().from(schema.aiServiceConfigs).all()
+  let rows = await db.select().from(schema.aiServiceConfigs)
   if (serviceType) rows = rows.filter(r => r.serviceType === serviceType)
 
-  const parsed = rows.map(r => ({
-    ...toSnakeCase(r),
-    model: r.model ? JSON.parse(r.model) : [],
-  }))
+  const parsed = rows.map(withParsedFields)
   return success(c, parsed)
 })
 
@@ -142,10 +132,22 @@ app.post('/', async (c) => {
 
   // 验证必填字段
   if (!body.service_type || !body.provider) {
-    return badRequest(c, 'service_type and provider are required')
+    return badRequest(c, '需要 service_type 与 provider')
+  }
+  if (!isOfficialProvider(body.service_type, body.provider)) {
+    return badRequest(c, '不支持的 service_type/provider')
   }
 
-  const res = db.insert(schema.aiServiceConfigs).values({
+  let temperature: number | null = null
+  if ('temperature' in body) {
+    try {
+      temperature = normalizeTemperature(body.temperature)
+    } catch {
+      return badRequest(c, 'temperature 须为 0 到 2 之间的数字')
+    }
+  }
+
+  const res = await db.insert(schema.aiServiceConfigs).values({
     serviceType: body.service_type,
     provider: body.provider,
     name: body.name || `${body.provider}-${body.service_type}`,
@@ -154,104 +156,25 @@ app.post('/', async (c) => {
     model: JSON.stringify(body.model || []),
     priority: body.priority || 0,
     isActive: true,
+    settings: temperature !== null ? JSON.stringify({ temperature }) : null,
     createdAt: ts,
     updatedAt: ts,
-  }).run()
-
-  const [row] = db.select().from(schema.aiServiceConfigs)
-    .where(eq(schema.aiServiceConfigs.id, Number(res.lastInsertRowid))).all()
-
-  return created(c, {
-    ...toSnakeCase(row),
-    model: row.model ? JSON.parse(row.model) : [],
-  })
-})
-
-// POST /ai-configs/huobao-preset
-app.post('/huobao-preset', async (c) => {
-  const body = await c.req.json()
-  const apiKey = String(body.api_key || '').trim()
-  if (!apiKey) return badRequest(c, 'api_key is required')
-
-  const ts = now()
-
-  for (const preset of HUOBAO_PRESET_SERVICES) {
-    const [existing] = db.select().from(schema.aiServiceConfigs).where(eq(schema.aiServiceConfigs.serviceType, preset.serviceType)).all()
-      .filter(row => row.provider === preset.provider)
-
-    const values = {
-      serviceType: preset.serviceType,
-      provider: preset.provider,
-      name: `火宝默认${preset.label}服务`,
-      baseUrl: preset.baseUrl,
-      apiKey,
-      model: JSON.stringify([preset.model]),
-      priority: preset.priority,
-      isActive: true,
-      updatedAt: ts,
-    }
-
-    if (existing) {
-      db.update(schema.aiServiceConfigs).set(values).where(eq(schema.aiServiceConfigs.id, existing.id)).run()
-    } else {
-      db.insert(schema.aiServiceConfigs).values({
-        ...values,
-        createdAt: ts,
-      }).run()
-    }
-  }
-
-  for (const agent of HUOBAO_AGENT_DEFAULTS) {
-    const [existing] = db.select().from(schema.agentConfigs).where(eq(schema.agentConfigs.agentType, agent.agentType)).all()
-    const values = {
-      name: agent.name,
-      model: HUOBAO_AGENT_MODEL,
-      isActive: true,
-      updatedAt: ts,
-    }
-
-    if (existing) {
-      db.update(schema.agentConfigs).set(values).where(eq(schema.agentConfigs.id, existing.id)).run()
-    } else {
-      db.insert(schema.agentConfigs).values({
-        agentType: agent.agentType,
-        description: '',
-        model: HUOBAO_AGENT_MODEL,
-        name: agent.name,
-        systemPrompt: '',
-        temperature: 0.7,
-        maxTokens: 4096,
-        maxIterations: 10,
-        isActive: true,
-        createdAt: ts,
-        updatedAt: ts,
-      }).run()
-    }
-  }
-
-  const configs = db.select().from(schema.aiServiceConfigs).all().map(row => ({
-    ...toSnakeCase(row),
-    model: row.model ? JSON.parse(row.model) : [],
-  }))
-  const agents = db.select().from(schema.agentConfigs).all().map(row => toSnakeCase(row))
-
-  logTaskSuccess('AIConfig', 'huobao-preset-applied', {
-    serviceCount: HUOBAO_PRESET_SERVICES.length,
-    agentCount: HUOBAO_AGENT_DEFAULTS.length,
   })
 
-  return success(c, {
-    configs,
-    agents,
-    agent_model: HUOBAO_AGENT_MODEL,
-  })
+  const [row] = await db.select().from(schema.aiServiceConfigs)
+    .where(eq(schema.aiServiceConfigs.id, getInsertId(res)))
+
+  return created(c, withParsedFields(row))
 })
 
 // POST /ai-configs/test
 app.post('/test', async (c) => {
   const body = await c.req.json()
   if (!body.service_type || !body.provider || !body.base_url) {
-    return badRequest(c, 'service_type, provider and base_url are required')
+    return badRequest(c, '需要 service_type、provider 与 base_url')
+  }
+  if (!isOfficialProvider(body.service_type, body.provider)) {
+    return badRequest(c, '不支持的 service_type/provider')
   }
 
   const model = Array.isArray(body.model) ? body.model[0] : body.model
@@ -319,20 +242,27 @@ app.post('/test', async (c) => {
 // GET /ai-configs/:id
 app.get('/:id', async (c) => {
   const id = Number(c.req.param('id'))
-  const [row] = db.select().from(schema.aiServiceConfigs).where(eq(schema.aiServiceConfigs.id, id)).all()
+  const [row] = await db.select().from(schema.aiServiceConfigs).where(eq(schema.aiServiceConfigs.id, id))
   if (!row) return notFound(c)
-  return success(c, {
-    ...toSnakeCase(row),
-    model: row.model ? JSON.parse(row.model) : [],
-  })
+  return success(c, withParsedFields(row))
 })
 
 // PUT /ai-configs/:id
 app.put('/:id', async (c) => {
   const id = Number(c.req.param('id'))
   const body = await c.req.json()
+  const [existing] = await db.select().from(schema.aiServiceConfigs).where(eq(schema.aiServiceConfigs.id, id))
+  if (!existing) return notFound(c)
+
+  const serviceType = 'service_type' in body ? body.service_type : existing.serviceType
+  const provider = 'provider' in body ? body.provider : existing.provider
+  if (!isOfficialProvider(serviceType, provider)) {
+    return badRequest(c, '不支持的 service_type/provider')
+  }
+
   const updates: Record<string, any> = { updatedAt: now() }
 
+  if ('service_type' in body) updates.serviceType = body.service_type
   if ('provider' in body) updates.provider = body.provider
   if ('name' in body) updates.name = body.name
   if ('base_url' in body) updates.baseUrl = body.base_url
@@ -340,22 +270,36 @@ app.put('/:id', async (c) => {
   if ('model' in body) updates.model = JSON.stringify(body.model)
   if ('priority' in body) updates.priority = body.priority
   if ('is_active' in body) updates.isActive = body.is_active
+  if ('temperature' in body) {
+    let temperature: number | null
+    try {
+      temperature = normalizeTemperature(body.temperature)
+    } catch {
+      return badRequest(c, 'temperature 须为 0 到 2 之间的数字')
+    }
+    // 与已有 settings 合并，清空的 temperature 从 JSON 中移除
+    let settings: Record<string, any> = {}
+    try { settings = existing.settings ? JSON.parse(existing.settings) : {} } catch { settings = {} }
+    if (temperature === null) delete settings.temperature
+    else settings.temperature = temperature
+    updates.settings = Object.keys(settings).length ? JSON.stringify(settings) : null
+  }
 
-  db.update(schema.aiServiceConfigs).set(updates).where(eq(schema.aiServiceConfigs.id, id)).run()
+  await db.update(schema.aiServiceConfigs).set(updates).where(eq(schema.aiServiceConfigs.id, id))
   return success(c)
 })
 
 // DELETE /ai-configs/:id
 app.delete('/:id', async (c) => {
   const id = Number(c.req.param('id'))
-  db.delete(schema.aiServiceConfigs).where(eq(schema.aiServiceConfigs.id, id)).run()
+  await db.delete(schema.aiServiceConfigs).where(eq(schema.aiServiceConfigs.id, id))
   return success(c)
 })
 
 // GET /ai-providers
 export const aiProviders = new Hono()
 aiProviders.get('/', async (c) => {
-  const rows = db.select().from(schema.aiServiceProviders).all()
+  const rows = await db.select().from(schema.aiServiceProviders)
   const parsed = rows.map(r => ({
     ...toSnakeCase(r),
     preset_models: r.presetModels ? JSON.parse(r.presetModels) : [],

@@ -1,0 +1,21 @@
+火宝短剧 Windows 启动诊断
+
+这是诊断工具，不是安装包，适用于已经安装但打不开的火宝短剧。
+
+1. 将整个压缩包解压到一个文件夹，不要直接在压缩包里运行。
+2. 双击 windows-diagnostics.cmd，等待约 15 秒。
+3. 程序会打开桌面上新建的 HuobaoDrama-diagnostics-日期时间 文件夹。
+4. 把这个文件夹压缩后发给开发者。
+
+如果提示 Application not found：
+右键火宝短剧快捷方式，选择“打开文件所在的位置”。
+把 windows-diagnostics.cmd 和 windows-diagnostics.ps1 一起放到 HuobaoDrama.exe 旁，再双击 CMD。
+也可以把实际的 HuobaoDrama.exe 拖到 windows-diagnostics.cmd 上。
+
+如果提示 Existing HuobaoDrama processes found：
+工具已经记录正在运行的进程，不会强行关闭它们。
+如果没有窗口，先在任务管理器结束 HuobaoDrama，再运行诊断工具。
+
+工具会读取安装资源是否存在、进程状态、启动输出及最近与火宝相关的应用错误事件。
+不会清空项目数据库、删除视频、重装程序或自动结束进程。
+不要双击 PS1 文件；使用 CMD 入口。

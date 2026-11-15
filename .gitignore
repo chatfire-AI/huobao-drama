@@ -29,6 +29,9 @@ data/drama_generator.db-shm
 data/huobao_drama.db
 data/huobao_drama.db-wal
 data/huobao_drama.db-shm
+data/*.sqlite3
+data/*.sqlite3-wal
+data/*.sqlite3-shm
 data/public.sql
 data/*.bak*
 data/static/
@@ -43,3 +46,15 @@ temp/
 .superpowers/
 /CLAUDE.md
 /AGENTS.md
+
+# Agent workspace (skills/prompts 为策划模板保持跟踪，其余产出忽略)
+backend/workspace/*
+!backend/workspace/skills/
+!backend/workspace/prompts/
+
+# Desktop (Electron) build artifacts
+desktop/node_modules/
+desktop/build/
+desktop/dist/
+desktop/release/
+desktop/resources/

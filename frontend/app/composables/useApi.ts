@@ -46,57 +46,96 @@ export const dramaAPI = {
 export const episodeAPI = {
   create: (data: any) => api.post('/episodes', data),
   update: (id: number, data: any) => api.put(`/episodes/${id}`, data),
+  del: (id: number) => api.del(`/episodes/${id}`),
   characters: (id: number) => api.get(`/episodes/${id}/characters`),
   scenes: (id: number) => api.get(`/episodes/${id}/scenes`),
+  props: (id: number) => api.get(`/episodes/${id}/props`),
   storyboards: (id: number) => api.get(`/episodes/${id}/storyboards`),
   pipelineStatus: (id: number) => api.get(`/episodes/${id}/pipeline-status`),
+  extract: (id: number, target: string, model?: string, configId?: number) => api.post(`/episodes/${id}/extract`, { target, model: model || undefined, config_id: configId || undefined }),
+  extractStatus: (id: number) => api.get(`/episodes/${id}/extract-status`),
+  generateVideoPrompts: (id: number, model?: string, configId?: number, storyboardIds?: number[]) => api.post(`/episodes/${id}/generate-video-prompts`, { model: model || undefined, config_id: configId || undefined, storyboard_ids: storyboardIds?.length ? storyboardIds : undefined }),
+  videoPromptsStatus: (id: number) => api.get(`/episodes/${id}/video-prompts-status`),
 }
 
 export const storyboardAPI = {
   create: (data: any) => api.post('/storyboards', data),
   update: (id: number, data: any) => api.put(`/storyboards/${id}`, data),
-  generateTTS: (id: number) => api.post(`/storyboards/${id}/generate-tts`),
   del: (id: number) => api.del(`/storyboards/${id}`),
 }
 
 export const characterAPI = {
+  uploadVoice: (id: number, file: File) => uploadReq<CharacterVoice>(`/characters/${id}/voice`, file),
+  removeVoice: (id: number) => api.del<CharacterVoice>(`/characters/${id}/voice`),
+  create: (data: any) => api.post('/characters', data),
   update: (id: number, data: any) => api.put(`/characters/${id}`, data),
-  voiceSample: (id: number, episodeId: number) => api.post(`/characters/${id}/generate-voice-sample`, { episode_id: episodeId }),
-  generateImage: (id: number, episodeId: number) => api.post(`/characters/${id}/generate-image`, { episode_id: episodeId }),
-  batchImages: (ids: number[], episodeId: number) => api.post('/characters/batch-generate-images', { character_ids: ids, episode_id: episodeId }),
+  del: (id: number) => api.del(`/characters/${id}`),
+  generatePrompt: (id: number, episodeId: number, force = false, textModel?: string, textConfigId?: number) => api.post(`/characters/${id}/generate-prompt`, { episode_id: episodeId, force, text_model: textModel || undefined, text_config_id: textConfigId || undefined }),
+  generateImage: (id: number, episodeId: number, model?: string, configId?: number, textModel?: string, textConfigId?: number) => api.post(`/characters/${id}/generate-image`, { episode_id: episodeId, model: model || undefined, config_id: configId || undefined, text_model: textModel || undefined, text_config_id: textConfigId || undefined }),
+  batchImages: (ids: number[], episodeId: number, model?: string, configId?: number, textModel?: string, textConfigId?: number) => api.post('/characters/batch-generate-images', { character_ids: ids, episode_id: episodeId, model: model || undefined, config_id: configId || undefined, text_model: textModel || undefined, text_config_id: textConfigId || undefined }),
+}
+
+export interface CharacterVoice {
+  voice_audio_url: string | null
+  voice_audio_name: string | null
 }
 
 export const sceneAPI = {
-  generateImage: (id: number, episodeId: number) => api.post(`/scenes/${id}/generate-image`, { episode_id: episodeId }),
+  create: (data: any) => api.post('/scenes', data),
+  update: (id: number, data: any) => api.put(`/scenes/${id}`, data),
+  del: (id: number) => api.del(`/scenes/${id}`),
+  generatePrompt: (id: number, episodeId: number, force = false, textModel?: string, textConfigId?: number) => api.post(`/scenes/${id}/generate-prompt`, { episode_id: episodeId, force, text_model: textModel || undefined, text_config_id: textConfigId || undefined }),
+  generateImage: (id: number, episodeId: number, model?: string, configId?: number, textModel?: string, textConfigId?: number) => api.post(`/scenes/${id}/generate-image`, { episode_id: episodeId, model: model || undefined, config_id: configId || undefined, text_model: textModel || undefined, text_config_id: textConfigId || undefined }),
 }
 
-export const imageAPI = {
-  generate: (d: any) => api.post('/images', d),
-  list: (params?: { drama_id?: number; storyboard_id?: number }) => {
+export const propAPI = {
+  create: (data: any) => api.post('/props', data),
+  update: (id: number, data: any) => api.put(`/props/${id}`, data),
+  del: (id: number) => api.del(`/props/${id}`),
+  generatePrompt: (id: number, episodeId: number, force = false, textModel?: string, textConfigId?: number) => api.post(`/props/${id}/generate-prompt`, { episode_id: episodeId, force, text_model: textModel || undefined, text_config_id: textConfigId || undefined }),
+  generateImage: (id: number, episodeId: number, model?: string, configId?: number, textModel?: string, textConfigId?: number) => api.post(`/props/${id}/generate-image`, { episode_id: episodeId, model: model || undefined, config_id: configId || undefined, text_model: textModel || undefined, text_config_id: textConfigId || undefined }),
+}
+
+// 统一生成任务（图片/视频）：POST 带 type 字段，列表按 type 过滤
+export const taskAPI = {
+  generate: (d: any) => api.post('/tasks', d),
+  recover: (id: number) => api.post(`/tasks/${id}/recover`),
+  diagnostics: (id: number) => api.get(`/tasks/${id}/diagnostics`),
+  get: (id: number) => api.get(`/tasks/${id}`),
+  del: (id: number) => api.del(`/tasks/${id}`),
+  list: (params?: { type?: 'image' | 'video'; drama_id?: number; storyboard_id?: number }) => {
     const query = new URLSearchParams()
+    if (params?.type) query.set('type', params.type)
     if (params?.drama_id) query.set('drama_id', String(params.drama_id))
     if (params?.storyboard_id) query.set('storyboard_id', String(params.storyboard_id))
-    return api.get(`/images${query.size ? `?${query.toString()}` : ''}`)
+    return api.get(`/tasks${query.size ? `?${query.toString()}` : ''}`)
   },
+  // 按集聚合生成任务（sys_task + video_merges）
+  listByEpisode: (episodeId: number) => api.get<{ tasks: any[]; merges: any[] }>(`/episodes/${episodeId}/generation-tasks`),
 }
-export const gridAPI = {
-  prompt: (d: any) => api.post('/grid/prompt', d),
-  generate: (d: any) => api.post('/grid/generate', d),
-  status: (id: number) => api.get(`/grid/status/${id}`),
-  split: (d: any) => api.post('/grid/split', d),
+
+async function uploadReq<T = any>(path: string, file: File): Promise<T> {
+  const fd = new FormData()
+  fd.append('file', file)
+  console.log(`%c[API] %cPOST %c${path} %c${file.name}`, 'color:#888', 'color:#4fc3f7;font-weight:bold', 'color:#ccc', 'color:#888')
+  const resp = await fetch(`${BASE}${path}`, { method: 'POST', body: fd })
+  const json = await resp.json()
+  if (!resp.ok || (json.code && json.code >= 400)) {
+    console.log(`%c[API] %cPOST ${path} %c${resp.status}`, 'color:#888', 'color:#ef5350', 'color:#ef5350;font-weight:bold')
+    throw new Error(json.message || `${resp.status}`)
+  }
+  return json.data ?? json
 }
-export const videoAPI = {
-  generate: (d: any) => api.post('/videos', d),
-  get: (id: number) => api.get(`/videos/${id}`),
-}
-export const composeAPI = {
-  shot: (id: number) => api.post(`/compose/storyboards/${id}/compose`),
-  all: (epId: number) => api.post(`/compose/episodes/${epId}/compose-all`),
-  status: (epId: number) => api.get(`/compose/episodes/${epId}/compose-status`),
+
+export const uploadAPI = {
+  image: (f: File) => uploadReq<{ url: string; path: string }>('/upload/image', f),
+  video: (f: File) => uploadReq<{ url: string; path: string }>('/upload/video', f),
+  audio: (f: File) => uploadReq<{ url: string; path: string }>('/upload/audio', f),
 }
 export const mergeAPI = {
-  merge: (epId: number) => api.post(`/merge/episodes/${epId}/merge`),
+  merge: (epId: number, storyboardIds?: number[]) => api.post(`/merge/episodes/${epId}/merge`, storyboardIds?.length ? { storyboard_ids: storyboardIds } : {}),
   status: (epId: number) => api.get(`/merge/episodes/${epId}/merge`),
+  list: (epId: number) => api.get<any[]>(`/merge/episodes/${epId}/merges`),
 }
 export const aiConfigAPI = {
   list: (t?: string) => api.get(`/ai-configs${t ? `?service_type=${t}` : ''}`),
@@ -104,26 +143,45 @@ export const aiConfigAPI = {
   update: (id: number, d: any) => api.put(`/ai-configs/${id}`, d),
   del: (id: number) => api.del(`/ai-configs/${id}`),
   test: (d: any) => api.post('/ai-configs/test', d),
-  huobaoPreset: (apiKey: string) => api.post('/ai-configs/huobao-preset', { api_key: apiKey }),
 }
 
-export const agentConfigAPI = {
-  list: () => api.get('/agent-configs'),
-  get: (id: number) => api.get(`/agent-configs/${id}`),
-  create: (d: any) => api.post('/agent-configs', d),
-  update: (id: number, d: any) => api.put(`/agent-configs/${id}`, d),
-  del: (id: number) => api.del(`/agent-configs/${id}`),
+// lang 缺省/为 zh 时读写基础版（不带 query，保持原请求形态）
+const langQ = (lang?: string) => (lang && lang !== 'zh' ? `?lang=${lang}` : '')
+
+export const promptAPI = {
+  list: () => api.get('/prompts'),
+  get: (type: string, lang?: string) => api.get(`/prompts/${type}${langQ(lang)}`),
+  update: (type: string, d: any, lang?: string) => api.put(`/prompts/${type}${langQ(lang)}`, d),
+  reset: (type: string, lang?: string) => api.post(`/prompts/${type}/reset${langQ(lang)}`),
 }
 
 export const skillsAPI = {
-  list: () => api.get('/skills'),
-  get: (id: string) => api.get(`/skills/${id}`),
+  list: (lang?: string) => api.get(`/skills${langQ(lang)}`),
+  get: (id: string, lang?: string) => api.get(`/skills/${id}${langQ(lang)}`),
   create: (data: { id: string; name: string; description?: string }) => api.post('/skills', data),
-  update: (id: string, content: string) => api.put(`/skills/${id}`, { content }),
+  update: (id: string, content: string, lang?: string) => api.put(`/skills/${id}${langQ(lang)}`, { content }),
   del: (id: string) => api.del(`/skills/${id}`),
 }
 
-export const voicesAPI = {
-  list: (provider?: string) => api.get(`/ai-voices${provider ? `?provider=${provider}` : ''}`),
-  sync: () => api.post('/ai-voices/sync', {}),
+export const stylePresetAPI = {
+  list: (all = false) => api.get(`/style-presets${all ? '?all=1' : ''}`),
+  create: (d: any) => api.post('/style-presets', d),
+  update: (id: number, d: any) => api.put(`/style-presets/${id}`, d),
+  del: (id: number) => api.del(`/style-presets/${id}`),
+}
+
+export const storageAPI = {
+  info: () => api.get('/storage'),
+}
+
+export const settingsAPI = {
+  contentLanguage: () => api.get<{ language: string }>('/settings/content-language'),
+  setContentLanguage: (language: string) => api.put('/settings/content-language', { language }),
+}
+
+// 服务器/Docker 部署的版本检查与更新（桌面版走 useDesktopBridge，不用此 API）
+export const serverUpdateAPI = {
+  state: () => api.get('/server-update/state'),
+  check: () => api.post('/server-update/check'),
+  apply: () => api.post('/server-update/apply'),
 }

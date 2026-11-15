@@ -18,7 +18,7 @@ export class VolcEngineImageAdapter implements ImageProviderAdapter {
 
   buildGenerateRequest(config: AIConfig, record: ImageGenerationRecord): ProviderRequest {
     // 火山引擎使用 seedream 模型
-    const model = record.model || config.model || 'doubao-seedream-5-0-lite'
+    const model = record.model || config.model || 'doubao-seedream-5-0-260128'
 
     const body: any = {
       model,
@@ -78,7 +78,11 @@ export class VolcEngineImageAdapter implements ImageProviderAdapter {
       }
     }
     if (status === 'failed') {
-      return { status: 'failed', error: result.error || 'Generation failed' }
+      // 上游 error 可能是对象 { code, message }，规范成字符串
+      const err = result.error
+      const msg = typeof err === 'string' ? err : (err?.message || JSON.stringify(err) || 'Generation failed')
+      const code = err && typeof err === 'object' && err.code ? `[${err.code}] ` : ''
+      return { status: 'failed', error: `${code}${msg}` }
     }
     return { status: status || 'processing' }
   }

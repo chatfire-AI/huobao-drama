@@ -1,0 +1,59 @@
+appId: com.huobao.drama
+productName: HuobaoDrama
+directories:
+  output: release
+  buildResources: build
+# 主进程产物 + 后端 bundle + 清单（进入 asar）。
+# backend.mjs 必须在 asar 内：其 externals（sharp/better-sqlite3）经 createRequire
+# 向上解析到 app.asar/node_modules（.node 由 Electron 自动重定向到 app.asar.unpacked）
+files:
+  - dist/**
+  - build/backend.mjs
+  - package.json
+# 原生模块不能留在 asar（.node 需真实文件路径被 dlopen）
+asarUnpack:
+  - "**/node_modules/sharp/**"
+  - "**/node_modules/@img/**"
+  - "**/node_modules/better-sqlite3/**"
+extraResources:
+  - { from: resources/frontend, to: frontend }
+  - { from: resources/workspace-template, to: workspace-template }
+  # 按系统与 CPU 架构选择 ffmpeg/ffprobe，避免 Intel Mac 包带入 ARM 二进制。
+  - { from: "resources/bin-${os}-${arch}", to: bin }
+npmRebuild: true
+# win 交叉打包修复：宿主机（mac）下载的原生预编译是 Mach-O，afterPack 换入官方 win32 .node
+afterPack: scripts/after-pack.mjs
+mac:
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+    # 应用内更新器用的 zip 产物（.app 目录归档），与 dmg 一并产出
+    - target: zip
+      arch: [arm64, x64]
+  category: public.app-category.productivity
+  # 先出未签名包：正式分发需 Apple Developer 签名 + notarize（配置位已留）
+  identity: null
+  icon: assets/icon.icns
+# dmg 窗口内置「修复已损坏」双击脚本：未签名包被浏览器打上 quarantine 后
+# Gatekeeper 误报"已损坏"，用户拖完 app 双击该脚本即自动 xattr -cr
+dmg:
+  window:
+    width: 540
+    height: 400
+  contents:
+    - { x: 130, y: 180, type: file }
+    - { x: 410, y: 180, type: link, path: /Applications }
+    - { x: 270, y: 330, type: file, path: assets/如提示已损坏请双击我.command }
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  # signExecutable:false 仅跳过签名（未签名分发 SmartScreen 会提示），
+  # 图标与版本信息仍会写入 exe；正式分发需代码签名证书
+  signExecutable: false
+  icon: assets/icon.ico
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  shortcutName: HuobaoDrama

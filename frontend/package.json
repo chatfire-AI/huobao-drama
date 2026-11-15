@@ -10,13 +10,19 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "driver.js": "^1.8.0",
+    "lucide-vue-next": "^0.511.0",
     "nuxt": "^3.17.5",
     "vue": "^3.5.13",
+    "vue-i18n": "^11.4.10",
     "vue-router": "^4.5.1",
-    "vue-sonner": "^1.2.4",
-    "lucide-vue-next": "^0.511.0"
+    "vue-sonner": "^1.2.4"
   },
   "devDependencies": {
     "typescript": "^5.8.3"
+  },
+  "allowScripts": {
+    "esbuild@0.27.4": true,
+    "@parcel/watcher@2.5.6": true
   }
 }

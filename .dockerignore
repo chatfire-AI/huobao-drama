@@ -1,20 +1,23 @@
-node_modules
-dist
+# 版本控制与产物
 .git
-.idea
-.vscode
-.DS_Store
+**/node_modules
+**/.nuxt
+**/.output
+frontend/dist
+backend/dist
+desktop/build
+desktop/dist
+desktop/release
+release
+
+# 运行时数据（绝不能进镜像：SQLite + 生成的媒体文件）
+data
+
+# 本地环境
+.env
 *.log
-data/drama_generator.db*
-data/huobao_drama.db*
-data/static
-data/storage
-data/*.bak*
-frontend/.nuxt
-frontend/.output
-frontend/node_modules
-backend/node_modules
-tmp
-temp
-.superpowers
-.claude
+.DS_Store
+
+# 桌面发布与密钥配置不参与服务端镜像构建
+desktop
+**/.env*

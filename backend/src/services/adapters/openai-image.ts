@@ -1,6 +1,7 @@
 /**
  * OpenAI DALL-E 图片生成 Adapter
- * 端点: /v1/images/generations (注意 /v1 前缀)
+ * 文生图端点: /v1/images/generations (注意 /v1 前缀)
+ * 参考生图端点: /v1/images/edits (multipart/form-data, image[] 文件上传)
  * 响应格式: { data: [{ url: "..." }] } 或 { data: [{ b64_json: "..." }] }
  */
 import type {
@@ -12,20 +13,36 @@ import type {
   ImagePollResponse,
 } from './types'
 import { joinProviderUrl } from './url'
+import { parseDataUrl } from '../../utils/storage.js'
 
 export class OpenAIImageAdapter implements ImageProviderAdapter {
   provider = 'openai'
 
   buildGenerateRequest(config: AIConfig, record: ImageGenerationRecord): ProviderRequest {
-    // OpenAI 使用 size 字段，格式为 "1024x1024"
-    const size = record.size || '1024x1024'
+    const model = record.model || config.model || 'gpt-image-2'
+    const isGptImage = model.startsWith('gpt-image-')
+    const isGptImage2 = model === 'gpt-image-2'
+    const size = isGptImage2
+      ? this.normalizeGptImage2Size(record.size)
+      : isGptImage
+      ? this.normalizeGptImageSize(record.size)
+      : record.size || '1024x1024'
+
+    // 有参考图 → 走 edits（multipart 上传图片文件）；无参考图 → 纯文生图 generations
+    const refs = this.parseReferenceImages(record.referenceImages)
+    if (refs.length) {
+      return this.buildEditsRequest(config, model, record.prompt, size, refs)
+    }
 
     const body: any = {
-      model: record.model || 'dall-e-3',
+      model,
       prompt: record.prompt,
       size,
       n: 1,
-      response_format: 'url', // 默认返回 URL，可选 'b64_json'
+    }
+
+    if (!isGptImage) {
+      body.response_format = 'url'
     }
 
     return {
@@ -37,6 +54,86 @@ export class OpenAIImageAdapter implements ImageProviderAdapter {
       },
       body,
     }
+  }
+
+  private parseReferenceImages(raw?: string | null): string[] {
+    if (!raw) return []
+    try {
+      const parsed = JSON.parse(raw)
+      return Array.isArray(parsed) ? parsed.map(String).filter(Boolean) : []
+    } catch {
+      return []
+    }
+  }
+
+  /**
+   * /v1/images/edits：参考图以 multipart/form-data 的 image[] 文件上传。
+   * 参考图在 generation.ts 已归一化为 data URL（本地压缩 / 远程下载），
+   * 这里只做 base64 → Blob 的转换；multipart 边界由 fetch 自动设置，不要手填 Content-Type。
+   */
+  private buildEditsRequest(
+    config: AIConfig,
+    model: string,
+    prompt: string | null | undefined,
+    size: string,
+    refs: string[],
+  ): ProviderRequest {
+    const form = new FormData()
+    form.append('model', model)
+    form.append('prompt', prompt || '')
+    form.append('size', size)
+    form.append('n', '1')
+
+    let appended = 0
+    for (const ref of refs) {
+      const parsed = parseDataUrl(ref)
+      if (!parsed) continue
+      const buffer = Buffer.from(parsed.data, 'base64')
+      const ext = parsed.mimeType === 'image/png' ? 'png' : parsed.mimeType === 'image/webp' ? 'webp' : 'jpg'
+      form.append('image[]', new Blob([buffer], { type: parsed.mimeType }), `reference-${++appended}.${ext}`)
+    }
+    if (!appended) {
+      throw new Error('参考图片无法解析为可上传的文件（仅支持 data URL 形式的图片）')
+    }
+
+    return {
+      url: joinProviderUrl(config.baseUrl, '/v1', '/images/edits'),
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${config.apiKey}`,
+      },
+      body: form,
+    }
+  }
+
+  private normalizeGptImageSize(size?: string | null): string {
+    const allowed = ['1024x1024', '1536x1024', '1024x1536', 'auto']
+    if (!size) return '1024x1024'
+
+    const normalized = size.toLowerCase()
+    if (allowed.includes(normalized)) return normalized
+
+    const [width, height] = normalized.split('x').map(Number)
+    if (!width || !height) return 'auto'
+    if (width === height) return '1024x1024'
+    return width > height ? '1536x1024' : '1024x1536'
+  }
+
+  private normalizeGptImage2Size(size?: string | null): string {
+    if (!size) return '1024x1024'
+    const normalized = size.toLowerCase()
+    if (normalized === 'auto') return 'auto'
+
+    const [rawWidth, rawHeight] = normalized.split('x').map(Number)
+    if (!rawWidth || !rawHeight) return 'auto'
+
+    const width = this.roundToMultiple(Math.min(4096, Math.max(256, rawWidth)), 16)
+    const height = this.roundToMultiple(Math.min(4096, Math.max(256, rawHeight)), 16)
+    return `${width}x${height}`
+  }
+
+  private roundToMultiple(value: number, multiple: number): number {
+    return Math.max(multiple, Math.round(value / multiple) * multiple)
   }
 
   parseGenerateResponse(result: any): ImageGenResponse {

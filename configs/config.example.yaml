@@ -13,8 +13,8 @@ server:
   write_timeout: 600
 
 database:
-  type: "sqlite"
-  path: "./data/huobao_drama.db"
+  type: "mysql"
+  url: "mysql://huobao:huobao@127.0.0.1:3306/huobao_drama"
   max_idle: 10
   max_open: 100
 

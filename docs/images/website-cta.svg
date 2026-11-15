@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="80" viewBox="0 0 360 80" role="img" aria-labelledby="title desc">
+  <title id="title">访问 FireMux 官网</title>
+  <desc id="desc">Visit the official website</desc>
+  <rect x="1" y="1" width="358" height="78" rx="13" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+  <g fill="none" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="38" cy="40" r="13"/>
+    <ellipse cx="38" cy="40" rx="6" ry="13"/>
+    <path d="M25 40h26M28 32h20M28 48h20"/>
+  </g>
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif">
+    <text x="67" y="36" font-size="20" font-weight="700" fill="#1e3a8a">访问 FireMux 官网</text>
+    <text x="67" y="57" font-size="10" font-weight="600" letter-spacing="0.9" fill="#1d4ed8">VISIT THE OFFICIAL WEBSITE</text>
+  </g>
+  <path d="M320 40h14m-6-6 6 6-6 6" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
