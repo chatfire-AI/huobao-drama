@@ -21,8 +21,6 @@
 
 Sign in to adapt novels into short dramas, create storyboards, and generate and edit video.
 
-<p><a href="https://firemux.cn/#firelumi-downloads">Download the FireLumi desktop beta (Windows / macOS)</a></p>
-
 <p>
   <a href="https://github.com/chatfire-AI/huobao-drama/releases/latest">
     <img src="docs/images/desktop-download-cta-en.svg" width="380" alt="Download open-source app" />

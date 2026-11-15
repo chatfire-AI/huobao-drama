@@ -20,8 +20,6 @@
 
 登录即可体验小说转短剧、分镜制作、视频生成和剪辑。
 
-<p><a href="https://firemux.cn/#firelumi-downloads">下载 FireLumi 桌面测试版（Windows / macOS）</a></p>
-
 <p>
   <a href="https://github.com/chatfire-AI/huobao-drama/releases/latest">
     <img src="docs/images/desktop-download-cta.svg" width="380" alt="立即下载桌面版 / Download Desktop App (macOS / Windows)" />

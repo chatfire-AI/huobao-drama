@@ -21,8 +21,6 @@
 
 ログインすると、小説のショートドラマ化、絵コンテ制作、動画生成・編集を利用できます。
 
-<p><a href="https://firemux.cn/#firelumi-downloads">FireLumi デスクトップベータ版をダウンロード（Windows / macOS）</a></p>
-
 <p>
   <a href="https://github.com/chatfire-AI/huobao-drama/releases/latest">
     <img src="docs/images/desktop-download-cta-ja.svg" width="380" alt="オープンソース版を入手" />

@@ -21,8 +21,6 @@
 
 로그인하면 소설의 숏드라마 각색, 스토리보드 제작, 영상 생성과 편집을 이용할 수 있습니다.
 
-<p><a href="https://firemux.cn/#firelumi-downloads">FireLumi 데스크톱 베타 다운로드 (Windows / macOS)</a></p>
-
 <p>
   <a href="https://github.com/chatfire-AI/huobao-drama/releases/latest">
     <img src="docs/images/desktop-download-cta-ko.svg" width="380" alt="오픈소스 데스크톱 앱 받기" />
