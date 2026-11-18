@@ -66,9 +66,14 @@ app.post('/:type/chat', async (c) => {
   const startTime = performance.now()
 
   try {
+    // Keep each non-streaming model response small enough for relay timeouts.
+    // More steps allow the agent to finish the episode in smaller save batches.
+    const agentMessage = agentType === 'storyboard_breaker'
+      ? `${message}\n\n执行约束：每次 save_storyboards 最多保存 3 个分镜，不要一次生成整集工具参数。第一批 replace_existing=true，后续追加，shot_number 连续递增；持续调用直到完整保存整集，不要只保存第一批。若用户指定 wan2.2-i2v-14b，则每个分镜必须为 2–5 秒、单首帧、静音，优先于通用的 8–15 秒段落规则。`
+      : message
     const result = await agent.generate(
-      [{ role: 'user', content: message }],
-      { maxSteps: 20, requestContext },
+      [{ role: 'user', content: agentMessage }],
+      { maxSteps: agentType === 'storyboard_breaker' ? 60 : 20, requestContext },
     )
 
     const elapsed = ((performance.now() - startTime) / 1000).toFixed(1)
@@ -101,9 +106,16 @@ app.post('/:type/chat', async (c) => {
     })
   } catch (err: any) {
     const elapsed = ((performance.now() - startTime) / 1000).toFixed(1)
-    logTaskError('Agent', agentType, { elapsedSeconds: elapsed, error: err.message })
+    logTaskError('Agent', agentType, {
+      elapsedSeconds: elapsed,
+      error: err.message,
+      upstreamStatus: err.statusCode ?? err.cause?.statusCode,
+      retryable: err.isRetryable,
+    })
     console.error(err.stack || err)
-    return badRequest(c, err.message || 'Agent 执行失败')
+    const upstreamStatus = err.statusCode ?? err.cause?.statusCode
+    const detail = err.message && err.message !== '<none>' ? err.message : '文本模型调用失败'
+    return badRequest(c, `${detail}${upstreamStatus ? `（上游 HTTP ${upstreamStatus}）` : ''}；请刷新检查已保存内容，避免重复提交整集任务`)
   }
 })
 

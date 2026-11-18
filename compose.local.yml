@@ -1,0 +1,28 @@
+services:
+  app:
+    build:
+      context: .
+      network: host
+      args:
+        HUOBAO_VERSION: local-comfy-76bf150
+        HTTP_PROXY: http://127.0.0.1:7890
+        HTTPS_PROXY: http://127.0.0.1:7890
+        NO_PROXY: localhost,127.0.0.1,192.168.110.201,192.168.110.202,registry.npmmirror.com,.npmmirror.com,mirrors.aliyun.com
+    image: huobao-local-comfy:76bf150
+    ports:
+      - "192.168.110.148:5679:5679"
+    volumes:
+      - ./local-data/app:/app/data
+      - ./backend/src:/app/backend/src:ro
+    restart: unless-stopped
+    depends_on:
+      - comfy-bridge
+  comfy-bridge:
+    build: ./local-comfy
+    environment:
+      BRIDGE_TOKEN: ${BRIDGE_TOKEN:?Set BRIDGE_TOKEN}
+      COMFY_IMAGE_URL: http://192.168.110.201:8188
+      COMFY_VIDEO_URL: http://192.168.110.202:8188
+    volumes:
+      - ./local-data/bridge:/data
+    restart: unless-stopped

@@ -145,7 +145,7 @@ export async function generateVideo(params: GenerateVideoParams): Promise<number
       referenceAudioUrls: params.referenceAudioUrls,
       referenceFileUrl: params.referenceFileUrl,
       referenceLinkUrl: params.referenceLinkUrl,
-      generateAudio: params.generateAudio === false ? 0 : 1,
+      generateAudio: config.provider === 'comfyui' ? (params.generateAudio === true ? 1 : 0) : (params.generateAudio === false ? 0 : 1),
       duration: params.duration,
       aspectRatio: params.aspectRatio,
       // 统一存为项目内部格式，各适配器再转换为官方大小写与枚举。
@@ -246,6 +246,33 @@ async function processTask(id: number, config: AIConfig) {
       }))
     } else {
       const adapter = getVideoAdapter(config.provider)
+      if (config.provider === 'comfyui' && !params.firstFrameUrl && !params.imageUrl) {
+        const refs = params.referenceImageUrls || []
+        if (!refs.length) throw new Error('本地视频需要参考图：请先上传角色/场景图片')
+        if (refs.length > 3) throw new Error('本地分镜合成最多使用 3 张参考图，请减少绑定素材')
+        // Local Wan is single-first-frame I2V, NOT multi-reference video. Make an
+        // explicit image-edit task first and retain its ID for traceability.
+        const imageTaskId = params.compositionTaskId || await generateImage({
+          dramaId: record.dramaId || undefined,
+          prompt: `根据参考图片制作一张完整电影分镜画面，保持参考人物的身份和服装。画面要求：${record.prompt}`,
+          referenceImages: refs,
+          size: params.aspectRatio === '9:16' ? '720x1280' : params.aspectRatio === '1:1' ? '1024x1024' : '1280x720',
+        })
+        params.compositionTaskId = imageTaskId
+        await db.update(schema.sysTask).set({ params: JSON.stringify(params), stage: 'composing' }).where(eq(schema.sysTask.id, id))
+        const deadline = Date.now() + 86_400_000
+        let firstFrame: string | null = null
+        while (Date.now() < deadline) {
+          const [imageTask] = await db.select().from(schema.sysTask).where(eq(schema.sysTask.id, imageTaskId))
+          if (!imageTask || imageTask.status === 'failed') throw new Error(`分镜首帧合成失败：${imageTask?.errorMsg || '任务不存在'}`)
+          if (imageTask.status === 'completed') { firstFrame = imageTask.localPath; break }
+          await new Promise(resolve => setTimeout(resolve, 5000))
+        }
+        if (!firstFrame) throw new Error('等待本地分镜首帧超时')
+        params.firstFrameUrl = firstFrame
+        params.referenceImageUrls = []
+        await db.update(schema.sysTask).set({ params: JSON.stringify(params) }).where(eq(schema.sysTask.id, id))
+      }
       const resolvedImageUrl = await normalizeVideoReferenceUrl(params.imageUrl)
       const resolvedFirstFrameUrl = await normalizeVideoReferenceUrl(params.firstFrameUrl)
       const resolvedLastFrameUrl = await normalizeVideoReferenceUrl(params.lastFrameUrl)
@@ -379,7 +406,11 @@ type SysTaskRecord = typeof schema.sysTask.$inferSelect
 async function pollTask(record: SysTaskRecord, config: AIConfig, taskId: string) {
   const type = record.type as TaskType
   const label = taskLabel(type)
-  const profile = POLL_PROFILES[type]
+  // Local GB10 jobs are serialized and may wait behind other shots. Keep polling
+  // the original task rather than timing out and accidentally encouraging resubmission.
+  const profile = config.provider === 'comfyui'
+    ? { attempts: 8640, intervalMs: 10_000, maxDurationMs: null }
+    : POLL_PROFILES[type]
   const adapter = type === 'image' ? getImageAdapter(config.provider) : getVideoAdapter(config.provider)
   const startedAt = Date.now()
 

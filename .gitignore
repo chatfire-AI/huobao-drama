@@ -23,6 +23,9 @@ dist/
 Thumbs.db
 
 # Data (database and uploaded files)
+local-data/
+__pycache__/
+*.pyc
 data/drama_generator.db
 data/drama_generator.db-wal
 data/drama_generator.db-shm

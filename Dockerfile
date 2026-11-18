@@ -2,28 +2,34 @@
 
 # ===== 前端构建：Nuxt generate 产出静态站点 =====
 FROM node:22-bookworm-slim AS frontend-build
+ARG NPM_REGISTRY=https://registry.npmmirror.com
 WORKDIR /build/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 # lockfile 的 resolved 可能指向带鉴权的私有 registry（开发者本机 .npmrc），镜像内会 401。
 # 构建期删除 resolved 字段（integrity 校验不受影响），让 npm 统一走公共 registry
-RUN node -e "const fs=require('fs');const l=JSON.parse(fs.readFileSync('package-lock.json'));for(const p of Object.values(l.packages||{}))delete p.resolved;fs.writeFileSync('package-lock.json',JSON.stringify(l,null,2))" \
-  && npm ci --no-audit --no-fund --registry=https://registry.npmjs.org
+RUN --mount=type=cache,target=/root/.npm node -e "const fs=require('fs');const l=JSON.parse(fs.readFileSync('package-lock.json'));for(const p of Object.values(l.packages||{}))delete p.resolved;fs.writeFileSync('package-lock.json',JSON.stringify(l,null,2))" \
+  && npm ci --no-audit --no-fund --prefer-offline --foreground-scripts --loglevel=info --fetch-retries=2 --fetch-timeout=120000 --registry=${NPM_REGISTRY}
 COPY frontend/ ./
 RUN npm run generate
 
 # ===== 后端构建：安装依赖（含原生模块编译） =====
 FROM node:22-bookworm AS backend-build
+ARG NPM_REGISTRY=https://registry.npmmirror.com
+# Runtime uses Debian FFmpeg; prevent ffmpeg-static's install script from
+# downloading an unused GitHub binary (which can hang behind a proxy).
+ENV FFMPEG_BIN=/bin/true
 WORKDIR /build/backend
 COPY backend/package.json backend/package-lock.json ./
-RUN node -e "const fs=require('fs');const l=JSON.parse(fs.readFileSync('package-lock.json'));for(const p of Object.values(l.packages||{}))delete p.resolved;fs.writeFileSync('package-lock.json',JSON.stringify(l,null,2))" \
-  && npm ci --no-audit --no-fund --registry=https://registry.npmjs.org
+RUN --mount=type=cache,target=/root/.npm node -e "const fs=require('fs');const l=JSON.parse(fs.readFileSync('package-lock.json'));for(const p of Object.values(l.packages||{}))delete p.resolved;fs.writeFileSync('package-lock.json',JSON.stringify(l,null,2))" \
+  && npm ci --no-audit --no-fund --prefer-offline --foreground-scripts --loglevel=info --fetch-retries=2 --fetch-timeout=120000 --registry=${NPM_REGISTRY}
 COPY backend/ ./
 # 运行时与既有服务器部署一致走 tsx（源码存在 bundler 风格无扩展名 import，tsc 产物 node 直跑不可行）；
 # tsx 是 devDependency，prune 后单独补装
-RUN npm prune --omit=dev && npm i tsx@^4.21.0 --no-save --no-audit --no-fund --registry=https://registry.npmjs.org
+RUN --mount=type=cache,target=/root/.npm npm prune --omit=dev --registry=${NPM_REGISTRY} && npm i tsx@^4.21.0 --no-save --no-audit --no-fund --prefer-offline --registry=${NPM_REGISTRY}
 
 # ===== 运行时 =====
 FROM node:22-bookworm-slim
+ARG DEBIAN_MIRROR=http://mirrors.aliyun.com
 ARG HUOBAO_VERSION=dev
 ENV NODE_ENV=production \
     HUOBAO_VERSION=${HUOBAO_VERSION} \
@@ -36,9 +42,13 @@ ENV NODE_ENV=production \
     FRONTEND_DIST=/app/frontend-dist
 
 # ffprobe-static 不包含 Linux ARM64 二进制；两个架构统一使用系统媒体工具。
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends ffmpeg \
-  && rm -rf /var/lib/apt/lists/*
+RUN sed -i "s|http://deb.debian.org/debian-security|${DEBIAN_MIRROR}/debian-security|g; s|http://deb.debian.org/debian|${DEBIAN_MIRROR}/debian|g" /etc/apt/sources.list.d/debian.sources
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    rm -f /etc/apt/apt.conf.d/docker-clean \
+   && apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 update \
+   && apt-get install -y --no-install-recommends ffmpeg \
+   && ffmpeg -version
 
 WORKDIR /app
 COPY --from=backend-build /build/backend/src ./backend/src

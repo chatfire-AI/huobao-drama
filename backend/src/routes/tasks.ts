@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { GrokVideoAdapter } from '../services/adapters/grok-video.js'
 import { and, desc, eq } from 'drizzle-orm'
 import { db, schema } from '../db/index.js'
 import { success, created, badRequest } from '../utils/response.js'
@@ -103,6 +104,27 @@ function validateVideoRequest(body: any, provider?: string): string | null {
   const file = Boolean(body.file_url)
   const link = Boolean(body.link_url)
 
+  if (provider === 'grok') {
+    try {
+      new GrokVideoAdapter().buildGenerateRequest({ provider, baseUrl: '', apiKey: '', model: body.model || 'grok-imagine-video-1.5' }, {
+        id: 0, model: body.model, prompt: body.prompt, duration: body.duration,
+        resolution: body.resolution, aspectRatio: body.aspect_ratio, generateAudio: body.generate_audio,
+        firstFrameUrl: body.first_frame_url, imageUrl: body.image_url, lastFrameUrl: body.last_frame_url,
+        referenceImageUrls: JSON.stringify(body.reference_image_urls), referenceVideoUrls: JSON.stringify(body.reference_video_urls),
+        referenceAudioUrls: JSON.stringify(body.reference_audio_urls), referenceFileUrl: body.file_url, referenceLinkUrl: body.link_url,
+      })
+      return null
+    } catch (error: any) { return error.message }
+  }
+
+  if (provider === 'comfyui') {
+    if (last || vids || auds || file || link) return '本地 Wan 2.2 不支持尾帧、参考音视频或文件'
+    if (body.generate_audio === true) return '本地 Wan 2.2 仅生成静音视频'
+    if (Number(body.duration || 5) < 2 || Number(body.duration || 5) > 5) return '本地视频时长仅支持 2–5 秒'
+    if (imgs > 3) return '本地分镜首帧合成最多支持 3 张参考图'
+    if (!first && !body.image_url && !imgs) return '本地视频需要首帧图片或角色/场景参考图'
+  }
+
   if ((provider || '').toLowerCase() === 'aliyun') {
     if (imgs > 10 || vids > 5 || auds > 5) return 'Wan 3.0 参考素材超限：图片≤10、视频≤5、音频≤5'
     if (last && !first) return 'Wan 3.0 尾帧必须与首帧同时传入'
@@ -165,6 +187,10 @@ app.post('/', async (c) => {
       const effectiveConfig = configId
         ? (await getConfigById(configId)) ?? await getActiveConfig('video')
         : await getActiveConfig('video')
+      if (effectiveConfig?.provider === 'grok') {
+        videoBody.model ||= effectiveConfig.model
+        videoBody.resolution ||= episodeResolution
+      }
       const validationError = validateVideoRequest(videoBody, effectiveConfig?.provider)
       if (validationError) return badRequest(c, validationError)
       const voices = await resolveStoryboardVoiceReferences(String(videoBody.prompt || ''), Number(body.storyboard_id) || undefined, videoBody.reference_audio_urls)

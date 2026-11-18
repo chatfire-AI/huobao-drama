@@ -749,8 +749,8 @@ const serviceTypes = computed(() => [
   { type: 'image', label: t('common.serviceType.image') },
   { type: 'video', label: t('common.serviceType.video') },
 ])
-const providers = ['gemini', 'openai', 'volcengine', 'minimax', 'aliyun']
-const providerSelectOptions = computed(() => providers.map(p => ({ label: p, value: p })))
+const providers = ['comfyui', 'gemini', 'openai', 'volcengine', 'minimax', 'aliyun', 'grok']
+const providerSelectOptions = computed(() => providers.map(p => ({ label: p === 'grok' ? 'Grok / xAI' : p, value: p })))
 const serviceMeta = computed(() => ({
   text: { label: t('common.serviceType.text'), desc: t('settings.ai.meta.text') },
   image: { label: t('common.serviceType.image'), desc: t('settings.ai.meta.image') },
@@ -762,10 +762,13 @@ const providerPresets = {
     openai: { label: 'OpenAI 官方', baseUrl: 'https://api.openai.com', models: ['deepseek-v4-pro', 'gpt-5.6-terra'] },
   },
   image: {
+    comfyui: { label: '本地 GB10 · ComfyUI（最多 3 张参考图）', baseUrl: 'http://comfy-bridge:8090', models: ['qwen-image-2512', 'qwen-image-edit-2509'] },
     gemini: { label: 'Gemini 官方', baseUrl: 'https://generativelanguage.googleapis.com', models: ['gemini-3-pro-image', 'gemini-3.1-flash-image'] },
     openai: { label: 'OpenAI 官方', baseUrl: 'https://api.openai.com', models: ['gpt-image-2'] },
   },
   video: {
+    comfyui: { label: '本地 GB10 · Wan 2.2（静音，单首帧，2–5 秒）', baseUrl: 'http://comfy-bridge:8090', models: ['wan2.2-i2v-14b'] },
+    grok: { label: 'Grok / xAI（原生视频接口）', baseUrl: 'https://api.x.ai/v1', models: ['grok-imagine-video-1.5', 'grok-imagine-video', 'grok-imagine-video-1.5-lite'] },
     aliyun: { label: '阿里云百炼 Wan 3.0', baseUrl: 'https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com', models: ['wan3.0-video', 'wan3.0-video-prime'] },
     volcengine: { label: 'Seedance 2.0 官方', baseUrl: 'https://ark.cn-beijing.volces.com', models: ['doubao-seedance-2-0-mini-260615', 'doubao-seedance-2-0-fast-260128', 'doubao-seedance-2-0-260128'] },
     minimax: { label: 'MiniMax H3 官方', baseUrl: 'https://api.minimaxi.com', models: ['MiniMax-H3'] },

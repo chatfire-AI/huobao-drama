@@ -288,7 +288,17 @@ function createMaxTokensFetch(providerName: string, inner?: typeof fetch): typeo
         }
       }
     } catch { /* 解析失败则原样透传 */ }
-    return base(input, init)
+    const started = Date.now()
+    const response = await base(input, init)
+    if (!response.ok) {
+      // Do not log API keys, prompts or full provider response bodies.
+      console.error('[TextModel] upstream request failed', {
+        status: response.status,
+        statusText: response.statusText,
+        elapsedMs: Date.now() - started,
+      })
+    }
+    return response
   }
 }
 

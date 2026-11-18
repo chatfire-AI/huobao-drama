@@ -46,6 +46,10 @@ function buildProbe(serviceType: string, provider: string, baseUrl: string, mode
   const p = provider.toLowerCase()
   const m = model || ''
 
+  if (p === 'comfyui') {
+    return { method: 'GET', url: `${baseUrl.replace(/\/+$/, '')}/health`, headers: bearerHeaders(apiKey), body: undefined }
+  }
+
   if (p === 'gemini') {
     // 探针统一走 generateContent:文本运行时(AI SDK)走的就是它,官方与中转站都支持;
     // interactions 端点很多中转站未配置,探它会误报 500。
@@ -61,7 +65,7 @@ function buildProbe(serviceType: string, provider: string, baseUrl: string, mode
     }
   }
 
-  if (p === 'openai') {
+  if (p === 'openai' || p === 'grok') {
     return {
       method: 'GET',
       url: joinProviderUrl(baseUrl, '/v1', '/models'),

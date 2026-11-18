@@ -2117,11 +2117,15 @@ const lockedVideoConfigId = computed(() => episode.value?.video_config_id || epi
 // 内部统一存 480p/720p/1080p 三档，界面按当前选中的视频模型显示厂商原生档位
 // （Seedance 480p/720p、MiniMax 768P/2K、Wan 3.0 480P/720P/1080P），适配器再映射为官方枚举
 const RESOLUTION_TIERS = {
+  comfyui: ['480p', '720p'],
+  grok: ['480p', '720p', '1080p'],
   volcengine: ['480p', '720p'],
   minimax: ['720p', '1080p'],
   aliyun: ['480p', '720p', '1080p'],
 }
 const RESOLUTION_DISPLAY = {
+  comfyui: { '480p': '480p', '720p': '720p' },
+  grok: { '480p': '480p', '720p': '720p', '1080p': '1080p' },
   volcengine: { '480p': '480p', '720p': '720p', '1080p': '720p' },
   minimax: { '480p': '768P', '720p': '768P', '1080p': '2K' },
   aliyun: { '480p': '480P', '720p': '720P', '1080p': '1080P' },
@@ -2205,7 +2209,8 @@ const isWan3Video = computed(() => selectedVideoConfig.value?.provider === 'aliy
   || bareModelName(videoModel.value).startsWith('wan3.0-video'))
 
 // 参考图上限（Wan 3.0 官方 10 张，其他模型 9 张），绑定素材收集与 @名字 映射统一读取
-const refImageLimit = computed(() => isWan3Video.value ? 10 : 9)
+// Grok validates the model-specific limit server-side; never silently drop assets.
+const refImageLimit = computed(() => selectedVideoConfig.value?.provider === 'grok' ? Infinity : isWan3Video.value ? 10 : 9)
 
 // 本次生成的生效配置（模型/分辨率/时长），用于右侧小结与批量确认弹窗
 const effectiveVideoModelLabel = computed(() => {
@@ -3364,6 +3369,11 @@ function uploadAssetImage(kind, id) {
 }
 
 async function genVid(sb, opts = {}) {
+  const localComfy = selectedVideoConfig.value?.provider === 'comfyui'
+  if (localComfy && (Number(sb.duration || 10) < 2 || Number(sb.duration || 10) > 5)) {
+    toast.error('本地 Wan 2.2 仅支持 2–5 秒静音镜头，请先调整分镜时长；角色/场景参考图将先合成为首帧。')
+    return
+  }
   if (!opts.forceNew && canRecoverVideo(sb.id)) return recoverVideo(sb)
   const latest = latestVideoTask(sb.id)
   const forceNew = opts.forceNew || latest?.status === 'failed'
@@ -3376,7 +3386,7 @@ async function genVid(sb, opts = {}) {
     prompt: resolveVideoPromptRefs(sb),
     duration: Number(sb.duration || 10),
     aspect_ratio: dramaAspectRatio.value,
-    generate_audio: true,
+    generate_audio: !localComfy,
     model: bareModelName(videoModel.value) || undefined,
     config_id: ownerConfigId(videoModelOptions.value, videoModel.value),
     reference_image_urls: referenceImages,
