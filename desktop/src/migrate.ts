@@ -64,7 +64,10 @@ function makeReporter(getWindow: () => BrowserWindow | null) {
 
 async function sameVolume(a: string, b: string): Promise<boolean> {
   try {
-    const [sa, sb] = await Promise.all([fsp.statfs(a), fsp.statfs(b)])
+    // 注意必须用 stat().dev（POSIX st_dev）而非 statfs()：Node 的 statfs() 返回
+    // {type,bsize,blocks,bfree,bavail,files,ffree}，不含 dev 字段，曾经的
+    // sa.dev === sb.dev 恒为 undefined === undefined → 跨盘被误判同卷（#138）
+    const [sa, sb] = await Promise.all([fsp.stat(a), fsp.stat(b)])
     return sa.dev === sb.dev
   } catch {
     return false // 判定不了按跨卷（走逐文件 copy，更稳妥）
@@ -127,6 +130,13 @@ async function validateTarget(deps: MigrationDeps, target: string, currentDir: s
 // ---- 搬移 ----
 
 async function collectFileList(dir: string, base = dir, out: FileEntry[] = []): Promise<FileEntry[]> {
+  // 入参可能是文件（copyAcross 的 EXDEV 兜底按顶层条目调用，顶层条目可以是文件，
+  // 直接 readdir 会 ENOTDIR 崩掉整次迁移，#138）
+  const st = await fsp.stat(dir)
+  if (st.isFile()) {
+    out.push({ rel: path.relative(base, dir), size: st.size })
+    return out
+  }
   const entries = await fsp.readdir(dir, { withFileTypes: true })
   for (const e of entries) {
     const full = path.join(dir, e.name)
@@ -194,20 +204,22 @@ async function moveData(
 
 /** rename 遇 EXDEV 时对个别顶层条目退化为跨卷 copy（少见路径，进度从简） */
 async function copyAcross(sources: string[], oldDir: string, newDir: string, report: (p: MigrateProgress, force?: boolean) => void): Promise<void> {
-  let total = 0
-  const files: string[] = []
+  const entries: FileEntry[] = []
   for (const src of sources) {
     const list = await collectFileList(src, oldDir)
-    files.push(...list.map(f => f.rel))
-    total += list.reduce((s, f) => s + f.size, 0)
+    entries.push(...list)
   }
-  let done = 0
-  for (const rel of files) {
-    const dst = path.join(newDir, rel)
+  const total = entries.reduce((s, f) => s + f.size, 0)
+  // 进度：copiedBytes 用累加字节数（与 moveData 跨卷分支口径一致），原代码用
+  // 文件计数 `done += 1` 当作 copiedBytes 上报 → 进度条读出来恒为「份数 / 字节」
+  // 完全错位（#138）
+  let copied = 0
+  for (const f of entries) {
+    const dst = path.join(newDir, f.rel)
     await fsp.mkdir(path.dirname(dst), { recursive: true })
-    await fsp.copyFile(path.join(oldDir, rel), dst)
-    done += 1
-    report({ phase: 'moving', copiedBytes: done, totalBytes: total })
+    await fsp.copyFile(path.join(oldDir, f.rel), dst)
+    copied += f.size
+    report({ phase: 'moving', copiedBytes: copied, totalBytes: total })
   }
 }
 
