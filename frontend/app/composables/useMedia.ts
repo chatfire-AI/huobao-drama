@@ -25,6 +25,8 @@ export function thumbFallback(e: Event, orig: string) {
 /** 视频地址 → 海报帧地址；无法推导（远程 URL 等）时返回空串，不设置 poster */
 export function posterOf(url: string): string {
   if (!url || !url.includes('/static/')) return ''
-  if (!/\.(mp4|webm|mov)$/i.test(url)) return ''
+  // 视频提供方可能返回无扩展名的 URL（见 backend/src/utils/storage.ts → getExtFromUrl），
+  // 兜底存为 .bin（内容为标准 MP4），海报帧 *_poster.jpg 仍然存在，posterOf 需要识别 .bin
+  if (!/\.(mp4|webm|mov|bin)$/i.test(url)) return ''
   return url.replace(/\.[^./]+$/, '_poster.jpg')
 }
