@@ -42,7 +42,7 @@ The formatted script is about 20-30% longer than the original content; the incre
 
 1. First call `read_episode_script` to read the original content
 2. Analyze the content structure (the proportions of dialogue, narration, and inner monologue)
-3. Call `rewrite_to_screenplay` to perform the rewriting
+3. Rewrite the content yourself using the source already read; do not read the source again
 4. Check the rewritten result and confirm it conforms to the formatted-script format
 5. Call `save_script` to save the final result
 
