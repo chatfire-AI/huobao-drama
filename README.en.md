@@ -14,22 +14,8 @@
 [Features](#-features) • [Quick Start](#-quick-start) • [Walkthrough](#-visual-walkthrough) • [Desktop App](#-desktop-app-recommended) • [Deployment](#-deployment)
 
 <p>
-  <a href="https://firelumi.com/">
-    <img src="docs/images/firelumi-commercial-en.webp" width="760" alt="FireLumi Commercial Edition · Open web app" />
-  </a>
-</p>
-
-Sign in to adapt novels into short dramas, create storyboards, and generate and edit video.
-
-<p>
-  <a href="https://github.com/chatfire-AI/huobao-drama/releases/latest">
-    <img src="docs/images/desktop-download-cta-en.svg" width="380" alt="Download open-source app" />
-  </a>
-</p>
-
-<p>
-  <a href="https://www.firemux.cn">
-    <img src="docs/images/website-cta-en.svg" width="320" alt="Visit the FireMux website" />
+  <a href="https://api.firemux.com">
+    <img src="docs/images/api-key-cta-en.svg" width="380" alt="Get a FireMux API key" />
   </a>
 </p>
 

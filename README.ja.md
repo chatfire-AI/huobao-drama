@@ -14,22 +14,8 @@
 [機能](#-機能) • [クイックスタート](#-クイックスタート) • [チュートリアル](#-チュートリアル画像付き) • [デスクトップ版](#-デスクトップアプリ推奨) • [デプロイ](#-デプロイ)
 
 <p>
-  <a href="https://firelumi.com/">
-    <img src="docs/images/firelumi-commercial-ja.webp" width="760" alt="FireLumi 商用版 · Web版を開く" />
-  </a>
-</p>
-
-ログインすると、小説のショートドラマ化、絵コンテ制作、動画生成・編集を利用できます。
-
-<p>
-  <a href="https://github.com/chatfire-AI/huobao-drama/releases/latest">
-    <img src="docs/images/desktop-download-cta-ja.svg" width="380" alt="オープンソース版を入手" />
-  </a>
-</p>
-
-<p>
-  <a href="https://www.firemux.cn">
-    <img src="docs/images/website-cta-ja.svg" width="320" alt="FireMux 公式サイト" />
+  <a href="https://api.firemux.com">
+    <img src="docs/images/api-key-cta-ja.svg" width="380" alt="FireMux API キーを取得" />
   </a>
 </p>
 
