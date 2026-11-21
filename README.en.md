@@ -19,6 +19,8 @@
   </a>
 </p>
 
+<p><a href="https://firemux.cn/">Official site and open-source downloads</a></p>
+
 </div>
 
 ---
