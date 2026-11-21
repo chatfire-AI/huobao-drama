@@ -19,7 +19,11 @@
   </a>
 </p>
 
-<p><a href="https://firemux.cn/">공식 사이트 및 오픈소스 다운로드</a></p>
+<p>
+  <a href="https://firemux.cn/#opensource">
+    <img src="docs/images/open-source-download-cta-ko.svg" width="380" alt="오픈소스 · 데스크톱 다운로드" />
+  </a>
+</p>
 
 </div>
 

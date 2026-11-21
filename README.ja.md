@@ -19,7 +19,11 @@
   </a>
 </p>
 
-<p><a href="https://firemux.cn/">公式サイト・オープンソースのダウンロード</a></p>
+<p>
+  <a href="https://firemux.cn/#opensource">
+    <img src="docs/images/open-source-download-cta-ja.svg" width="380" alt="オープンソース・ダウンロード" />
+  </a>
+</p>
 
 </div>
 

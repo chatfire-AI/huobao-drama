@@ -19,7 +19,11 @@
   </a>
 </p>
 
-<p><a href="https://firemux.cn/">官网与开源下载</a></p>
+<p>
+  <a href="https://firemux.cn/#opensource">
+    <img src="docs/images/open-source-download-cta.svg" width="380" alt="开源项目与下载" />
+  </a>
+</p>
 
 </div>
 

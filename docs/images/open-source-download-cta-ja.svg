@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="88" viewBox="0 0 440 88" role="img" aria-labelledby="title desc">
+  <title id="title">オープンソース・ダウンロード</title>
+  <desc id="desc">macOS / Windows · ソースコード</desc>
+  <rect x="1" y="1" width="438" height="86" rx="14" fill="#eff6ff" stroke="#93b4f8" stroke-width="2"/>
+  <rect x="18" y="22" width="44" height="44" rx="12" fill="#dbeafe"/>
+  <g fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M28 46v-13a3 3 0 0 1 3-3h18a3 3 0 0 1 3 3v13M27 52h26l-3 5H30z"/>
+    <path d="M40 36v12m-5-5 5 5 5-5"/>
+  </g>
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif">
+    <text x="78" y="40" font-size="19" font-weight="700" fill="#173d8d">オープンソース・ダウンロード</text>
+    <text x="78" y="62" font-size="11" font-weight="500" fill="#42618d">macOS / Windows · ソースコード</text>
+  </g>
+  <circle cx="404" cy="44" r="17" fill="#dbeafe"/>
+  <path d="M398 50l12-12m-10 0h10v10" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
