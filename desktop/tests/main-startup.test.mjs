@@ -11,7 +11,7 @@ async function boot(mode = 'pending', options = {}) {
   const windows = [], errors = [], logs = [], timers = new Map()
   let requests = 0, forks = 0, now = 0, timerId = 0, forkArgs = null
   const app = new EventEmitter()
-  Object.assign(app, { isPackaged: true, getPath: () => '/mock/user', setPath() {}, getVersion: () => 'test', requestSingleInstanceLock: () => true, whenReady: () => Promise.resolve(), quit() { app.emit('before-quit') } })
+  Object.assign(app, { isPackaged: true, getPath: () => options.userDataDir || '/mock/user', setPath() {}, getVersion: () => 'test', requestSingleInstanceLock: () => true, whenReady: () => Promise.resolve(), quit() { app.emit('before-quit') } })
   class Window extends EventEmitter {
     constructor(options) {
       super(); this.visible = options.show !== false; this.options = options; this.destroyed = false
@@ -31,9 +31,26 @@ async function boot(mode = 'pending', options = {}) {
       ? callback(null, options.shortPath, '')
       : callback(new Error('short path unavailable'), '', ''))
   } }
-  const filesystem = { existsSync: p => !/storage-config|template-version|startup.log/.test(p), mkdirSync() {}, cpSync() {}, writeFileSync() {}, appendFileSync: (_p, s) => logs.push(s) }
+  const filesystem = {
+    existsSync: p => !/storage-config|template-version|startup\.log|runtime-ready\.json/.test(p),
+    statSync: p => ({
+      size: 1024,
+      mtimeMs: 1700000000000,
+      isDirectory: () => /(?:app\.asar\.unpacked|frontend|workspace-template|bin)$/.test(p),
+      isFile: () => !/(?:app\.asar\.unpacked|frontend|workspace-template|bin)$/.test(p),
+    }),
+    readdirSync: () => [],
+    mkdirSync() {},
+    cpSync() {},
+    copyFileSync() {},
+    rmSync() {},
+    renameSync() {},
+    readFileSync: () => '{}',
+    writeFileSync() {},
+    appendFileSync: (_p, s) => logs.push(s),
+  }
   const fakeProcess = new EventEmitter()
-  Object.assign(fakeProcess, { platform: 'win32', arch: 'x64', env: {}, versions: { electron: '37.10.3' }, pid: 123, resourcesPath: options.resourcesPath || '/mock/resources', stdout: new EventEmitter(), stderr: new EventEmitter() })
+  Object.assign(fakeProcess, { platform: 'win32', arch: 'x64', env: options.env || {}, versions: { electron: '37.10.3' }, pid: 123, resourcesPath: options.resourcesPath || '/mock/resources', stdout: new EventEmitter(), stderr: new EventEmitter() })
   fakeProcess.stdout.write = fakeProcess.stderr.write = () => true
   const net = { createServer() { const s = new EventEmitter(); s.listen = (_p, _h, fn) => fn(); s.address = () => ({port: 43210}); s.close = fn => fn(); return s } }
   const http = { get(_opts, callback) {
@@ -42,7 +59,7 @@ async function boot(mode = 'pending', options = {}) {
     if (mode !== 'pending') queueMicrotask(() => callback({ statusCode: 200, resume() {} }))
     return request
   } }
-  const context = vm.createContext({ require: name => name === 'electron' ? electron : name === 'node:child_process' ? childProcess : /^(node:)?fs$/.test(name) ? filesystem : /^(node:)?net$/.test(name) ? net : name === 'node:http' ? http : require(name),
+  const context = vm.createContext({ require: name => name === 'electron' ? electron : name === 'original-fs' ? filesystem : name === 'node:child_process' ? childProcess : /^(node:)?fs$/.test(name) ? filesystem : /^(node:)?net$/.test(name) ? net : name === 'node:http' ? http : require(name),
     process: fakeProcess, __dirname: '/mock/resources/app.asar/dist', module: {exports:{}}, exports: {}, console: {log(){},warn(){},error(){}}, Buffer, URL,
     Date: class extends Date { static now() { return now } },
     setTimeout: (fn, ms) => { const t = { id: ++timerId, at: now + ms, fn, unref() {} }; timers.set(t.id,t); return t },
@@ -78,16 +95,20 @@ test('page load failure reports a visible error instead of leaving a hidden wind
   const p=await boot('page-failure'); assert.equal(p.errors.length,1)
   assert.match(p.errors[0][1],/ERR_CONNECTION_RESET/)
 })
-test('non-ASCII Windows install resources use one short path for backend and media tools', async () => {
-  const shortPath = 'C:\\HUOBAO~1\\resources'
+test('non-ASCII Windows install and user paths stage ASCII resources for window, backend, media tools and cwd', async () => {
   const p = await boot('healthy', {
-    resourcesPath: 'C:\\用户\\HuobaoDrama\\resources',
-    shortPath,
+    resourcesPath: 'D:\\软件\\HuobaoDrama\\resources',
+    userDataDir: 'C:\\Users\\张三\\AppData\\Roaming\\HuobaoDrama',
+    env: { PUBLIC: 'C:\\Users\\Public', ProgramData: 'C:\\ProgramData' },
   })
-  assert.ok(p.forkArgs()[0].startsWith(shortPath))
-  assert.ok(p.forkArgs()[2].env.FFMPEG_BIN.startsWith(shortPath))
-  assert.ok(p.forkArgs()[2].env.FFPROBE_BIN.startsWith(shortPath))
-  assert.ok(p.forkArgs()[2].env.FRONTEND_DIST.startsWith(shortPath))
+  assert.match(p.windows[0].options.webPreferences.preload, /^C:[\\/]Users[\\/]Public[\\/]HuobaoDrama-runtime-/)
+  assert.ok(!/[^\x00-\x7f]/.test(p.windows[0].options.webPreferences.preload))
+  assert.ok(!/[^\x00-\x7f]/.test(p.windows[0].loadedFile), `starting.html must be ASCII: ${p.windows[0].loadedFile}`)
+  assert.ok(!/[^\x00-\x7f]/.test(p.forkArgs()[0]), `backendBundle must be ASCII: ${p.forkArgs()[0]}`)
+  assert.ok(!/[^\x00-\x7f]/.test(p.forkArgs()[2].env.FFMPEG_BIN))
+  assert.ok(!/[^\x00-\x7f]/.test(p.forkArgs()[2].env.FFPROBE_BIN))
+  assert.ok(!/[^\x00-\x7f]/.test(p.forkArgs()[2].env.FRONTEND_DIST))
+  assert.ok(!/[^\x00-\x7f]/.test(p.forkArgs()[2].cwd), `cwd must be ASCII: ${p.forkArgs()[2].cwd}`)
   assert.equal(p.errors.length, 0)
 })
 test('closing while backend starts cancels silently', async () => {

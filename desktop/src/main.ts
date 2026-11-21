@@ -17,7 +17,7 @@ import * as path from 'path'
 import { registerMigrationIpc } from './migrate'
 import { registerUpdater, markQuitting } from './updater'
 import { createStartupLog, redactStartupLog, waitForBackend } from './startup'
-import { resolveRuntimeResources } from './runtime-resources'
+import { isAsciiPath, resolveRuntimeResources } from './runtime-resources'
 
 // 主进程打 CJS 产物，__dirname 天然可用（import.meta.url 在 CJS 下为 undefined）
 declare const __dirname: string
@@ -30,7 +30,7 @@ let backendBundle = BACKEND_BUNDLE
 let runtimeResourcesDir = ''
 
 /** workspace 模板版本：内置模板更新时递增，触发向用户目录补缺失文件 */
-const TEMPLATE_VERSION = '4'
+const TEMPLATE_VERSION = '5'
 const STORAGE_CONFIG_FILE = 'storage-config.json'
 
 let mainWindow: BrowserWindow | null = null
@@ -219,7 +219,9 @@ function startBackend(): void {
     env,
     serviceName: 'huobao-backend',
     stdio: 'pipe',
-    cwd: currentDataDir,
+    // Windows 中文系统账户下 currentDataDir 可能含中文，后端完全经环境变量寻址、不依赖 cwd，
+    // 回退到 ASCII 的 resources 目录可避免 Chromium UtilityProcess 启动编码异常
+    cwd: process.platform === 'win32' && !isAsciiPath(currentDataDir) ? resources : currentDataDir,
   })
   const child = backend
   startupLog.write(`backend forked from ${backendBundle}`)
@@ -248,7 +250,7 @@ function startBackend(): void {
 
 // ---- 窗口 ----
 
-function createWindow() {
+function createWindow(appDistDir = __dirname) {
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -256,7 +258,7 @@ function createWindow() {
     show: true,
     backgroundColor: '#f6f7fb',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(appDistDir, 'preload.js'),
     },
   })
   mainWindow.once('ready-to-show', showMainWindow)
@@ -279,7 +281,7 @@ function createWindow() {
     e.preventDefault()
     if (/^https?:\/\//i.test(url)) void shell.openExternal(url)
   })
-  return mainWindow.loadFile(path.join(__dirname, 'starting.html'))
+  return mainWindow.loadFile(path.join(appDistDir, 'starting.html'))
 }
 
 // ---- 启动 ----
@@ -289,26 +291,33 @@ let currentFrontendDist = ''
 
 async function bootstrap() {
   try {
-    await createWindow()
+    const userData = app.getPath('userData')
+    const resources = resolveResourceDir()
+    // 必须在创建窗口前解析 ASCII 运行资源目录：确保 preload.js、starting.html、backend.mjs 全部走 ASCII 路径
+    runtimeResourcesDir = app.isPackaged
+      ? await resolveRuntimeResources(resources, {
+        platform: process.platform,
+        version: app.getVersion(),
+        userDataDir: userData,
+        localAppDataDir: process.env.LOCALAPPDATA,
+        publicDir: process.env.PUBLIC,
+        programDataDir: process.env.ProgramData,
+        log: message => startupLog.write(message),
+      })
+      : resources
+    const appDistDir = app.isPackaged
+      ? path.join(runtimeResourcesDir, 'app.asar', 'dist')
+      : __dirname
+
+    await createWindow(appDistDir)
     if (quitting) return
     backendPort = await getFreePort()
-    const userData = app.getPath('userData')
     startupLog.write(`port=${backendPort} userData=${userData}`)
 
     // 存储配置最先读（决定数据目录）；配置损坏时回退默认且不阻断启动
     currentDataDir = loadStorageConfig()
     fs.mkdirSync(currentDataDir, { recursive: true })
 
-    const resources = resolveResourceDir()
-    runtimeResourcesDir = app.isPackaged
-      ? await resolveRuntimeResources(resources, {
-        platform: process.platform,
-        version: app.getVersion(),
-        userDataDir: userData,
-        programDataDir: process.env.ProgramData,
-        log: message => startupLog.write(message),
-      })
-      : resources
     if (app.isPackaged) backendBundle = path.join(runtimeResourcesDir, 'app.asar', 'build', 'backend.mjs')
     const templateDir = app.isPackaged
       ? path.join(runtimeResourcesDir, 'workspace-template')

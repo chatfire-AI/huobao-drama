@@ -93,11 +93,14 @@ export function thumbPathFor(relativePath: string): string {
 export async function generateImageThumb(relativePath: string): Promise<string | null> {
   try {
     const thumbRel = thumbPathFor(relativePath)
-    await sharp(getAbsolutePath(relativePath))
+    // 经 Node Buffer 读写而非把文件路径直接传给 libvips：规避 Windows 中文路径编码差异与文件句柄占用
+    const inputBuffer = fs.readFileSync(getAbsolutePath(relativePath))
+    const thumbBuffer = await sharp(inputBuffer)
       .rotate()
       .resize({ width: 400, withoutEnlargement: true })
       .webp({ quality: 78 })
-      .toFile(getAbsolutePath(thumbRel))
+      .toBuffer()
+    fs.writeFileSync(getAbsolutePath(thumbRel), thumbBuffer)
     return thumbRel
   } catch (err) {
     console.warn(`[storage] 缩略图生成失败 ${relativePath}:`, (err as Error).message)
@@ -121,7 +124,7 @@ export async function readImageAsCompressedDataUrl(
     quality?: number
   } = {},
 ): Promise<string> {
-  return compressImageAsDataUrl(getAbsolutePath(relativePath), options)
+  return compressImageAsDataUrl(fs.readFileSync(getAbsolutePath(relativePath)), options)
 }
 
 /**

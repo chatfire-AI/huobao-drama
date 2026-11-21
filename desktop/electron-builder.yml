@@ -53,6 +53,7 @@ win:
   signExecutable: false
   icon: assets/icon.ico
 nsis:
+  unicode: true
   oneClick: false
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: always

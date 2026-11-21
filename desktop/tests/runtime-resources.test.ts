@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { isAsciiPath, stageRuntimeResources } from '../src/runtime-resources.js'
+import { isAsciiPath, resolveRuntimeResources, stageRuntimeResources } from '../src/runtime-resources.js'
 
 function makeResources(root: string): string {
   const resources = path.join(root, '中文安装目录', 'resources')
@@ -24,6 +24,7 @@ test('ASCII detection only accepts paths safe for native runtime loading', () =>
   assert.equal(isAsciiPath('C:\\Program Files\\HuobaoDrama'), true)
   assert.equal(isAsciiPath('C:\\用户\\HuobaoDrama'), false)
   assert.equal(isAsciiPath('D:\\应用\\HuobaoDrama'), false)
+  assert.equal(isAsciiPath(''), false)
 })
 
 test('runtime staging copies every backend dependency, reuses cache and refreshes on package change', () => {
@@ -33,6 +34,7 @@ test('runtime staging copies every backend dependency, reuses cache and refreshe
     const options = { version: '1.0.0', userDataDir: path.join(root, 'userData') }
     const staged = stageRuntimeResources(resources, options)
     assert.equal(isAsciiPath(staged), true)
+    assert.equal(fs.statSync(path.join(staged, 'app.asar')).isFile(), true)
     for (const file of [
       'app.asar',
       'app.asar.unpacked/node_modules/native/module.node',
@@ -54,18 +56,30 @@ test('runtime staging copies every backend dependency, reuses cache and refreshe
   }
 })
 
-test('a Chinese user profile falls back to an ASCII ProgramData runtime cache', () => {
+test('a Chinese user profile falls back to PUBLIC or per-identity ProgramData ASCII runtime cache', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'huobao-runtime-fallback-'))
   try {
     const resources = makeResources(root)
+    const publicDir = path.join(root, 'Public')
     const programData = path.join(root, 'ProgramData')
-    const staged = stageRuntimeResources(resources, {
+    const staged = await resolveRuntimeResources(resources, {
+      platform: 'win32',
+      version: '1.0.0',
+      userDataDir: path.join(root, '中文用户', 'HuobaoDrama'),
+      publicDir,
+      programDataDir: programData,
+    })
+    assert.equal(isAsciiPath(staged), true)
+    assert.ok(staged.startsWith(path.join(publicDir, 'HuobaoDrama-runtime-')))
+
+    const stagedProgramData = await resolveRuntimeResources(resources, {
+      platform: 'win32',
       version: '1.0.0',
       userDataDir: path.join(root, '中文用户', 'HuobaoDrama'),
       programDataDir: programData,
     })
-    assert.equal(isAsciiPath(staged), true)
-    assert.ok(staged.startsWith(path.join(programData, 'HuobaoDrama')))
+    assert.equal(isAsciiPath(stagedProgramData), true)
+    assert.ok(stagedProgramData.startsWith(path.join(programData, 'HuobaoDrama-runtime-')))
   } finally {
     fs.rmSync(root, { recursive: true, force: true })
   }

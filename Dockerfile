@@ -36,8 +36,13 @@ ENV NODE_ENV=production \
     FRONTEND_DIST=/app/frontend-dist
 
 # ffprobe-static 不包含 Linux ARM64 二进制；两个架构统一使用系统媒体工具。
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends ffmpeg \
+# 默认使用官方源，国内构建可传 --build-arg APT_MIRROR=http://mirrors.aliyun.com
+ARG APT_MIRROR=http://deb.debian.org
+RUN sed -i "s|http://deb.debian.org|${APT_MIRROR}|g" /etc/apt/sources.list.d/debian.sources \
+  && apt-get -o Acquire::Retries=5 update \
+  && (apt-get -o Acquire::Retries=5 install -y --no-install-recommends ffmpeg ca-certificates \
+      || (sleep 2 && apt-get -o Acquire::Retries=5 install -y --fix-missing --no-install-recommends ffmpeg ca-certificates) \
+      || (sleep 3 && apt-get -o Acquire::Retries=5 install -y --fix-missing --no-install-recommends ffmpeg ca-certificates)) \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
