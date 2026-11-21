@@ -284,13 +284,13 @@ cd backend && npx tsx scripts/import-mysql-to-sqlite.ts
 
 ### 🖥️ 桌面应用（推荐）
 
-**⬇️ 预编译安装包下载：[国内镜像（腾讯云，推荐）](https://installer.firemux.site/huobao-drama/v4.0.11/) · [GitHub Releases（海外）](https://github.com/chatfire-AI/huobao-drama/releases/latest)**
+**⬇️ 预编译安装包下载：[macOS Apple Silicon](https://installer.firemux.site/huobao-drama/v4.0.11/HuobaoDrama-4.0.11-arm64.dmg) · [macOS Intel](https://installer.firemux.site/huobao-drama/v4.0.11/HuobaoDrama-4.0.11.dmg) · [Windows x64](https://installer.firemux.site/huobao-drama/v4.0.11/HuobaoDrama.Setup.4.0.11.exe) · [GitHub Releases（海外）](https://github.com/chatfire-AI/huobao-drama/releases/latest)**
 
 | 平台 | 下载文件 |
 |---|---|
-| macOS（Apple Silicon，M 系列） | `HuobaoDrama-4.0.5-arm64.dmg` |
-| macOS（Intel） | `HuobaoDrama-4.0.5.dmg` |
-| Windows | `HuobaoDrama.Setup.4.0.5.exe` |
+| macOS（Apple Silicon，M 系列） | `HuobaoDrama-4.0.11-arm64.dmg` |
+| macOS（Intel） | `HuobaoDrama-4.0.11.dmg` |
+| Windows | `HuobaoDrama.Setup.4.0.11.exe` |
 
 > 国内用户请用腾讯云镜像直链下载（GitHub 在国内访问不稳定）。应用内更新器同样国内源优先、GitHub 兜底。
 

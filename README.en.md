@@ -283,13 +283,13 @@ The episode list shows the production status of every episode — click "Enter S
 
 ### 🖥️ Desktop App (recommended)
 
-**⬇️ Prebuilt installers: [GitHub Releases](https://github.com/chatfire-AI/huobao-drama/releases/latest) · [Mirror for China (Tencent COS)](https://installer.firemux.site/huobao-drama/v4.0.11/)**
+**⬇️ Prebuilt installers: [GitHub Releases](https://github.com/chatfire-AI/huobao-drama/releases/latest) · [macOS Apple Silicon](https://installer.firemux.site/huobao-drama/v4.0.11/HuobaoDrama-4.0.11-arm64.dmg) · [macOS Intel](https://installer.firemux.site/huobao-drama/v4.0.11/HuobaoDrama-4.0.11.dmg) · [Windows x64](https://installer.firemux.site/huobao-drama/v4.0.11/HuobaoDrama.Setup.4.0.11.exe)**
 
 | Platform | File to download |
 |---|---|
-| macOS (Apple Silicon, M-series) | `HuobaoDrama-4.0.5-arm64.dmg` |
-| macOS (Intel) | `HuobaoDrama-4.0.5.dmg` |
-| Windows | `HuobaoDrama.Setup.4.0.5.exe` |
+| macOS (Apple Silicon, M-series) | `HuobaoDrama-4.0.11-arm64.dmg` |
+| macOS (Intel) | `HuobaoDrama-4.0.11.dmg` |
+| Windows | `HuobaoDrama.Setup.4.0.11.exe` |
 
 > China users: use the COS mirror above (GitHub is slow/unreachable in mainland China). The in-app updater also checks the COS mirror first, then falls back to GitHub.
 

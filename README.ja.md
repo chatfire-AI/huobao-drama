@@ -283,13 +283,13 @@ cd backend && npx tsx scripts/import-mysql-to-sqlite.ts
 
 ### 🖥️ デスクトップアプリ（推奨）
 
-**⬇️ ビルド済みインストーラー: [GitHub Releases](https://github.com/chatfire-AI/huobao-drama/releases/latest) · [中国向けミラー（Tencent COS）](https://installer.firemux.site/huobao-drama/v4.0.11/)**
+**⬇️ ビルド済みインストーラー: [GitHub Releases](https://github.com/chatfire-AI/huobao-drama/releases/latest) · [macOS Apple Silicon](https://installer.firemux.site/huobao-drama/v4.0.11/HuobaoDrama-4.0.11-arm64.dmg) · [macOS Intel](https://installer.firemux.site/huobao-drama/v4.0.11/HuobaoDrama-4.0.11.dmg) · [Windows x64](https://installer.firemux.site/huobao-drama/v4.0.11/HuobaoDrama.Setup.4.0.11.exe)**
 
 | プラットフォーム | ダウンロードファイル |
 |---|---|
-| macOS（Apple Silicon、M シリーズ） | `HuobaoDrama-4.0.5-arm64.dmg` |
-| macOS（Intel） | `HuobaoDrama-4.0.5.dmg` |
-| Windows | `HuobaoDrama.Setup.4.0.5.exe` |
+| macOS（Apple Silicon、M シリーズ） | `HuobaoDrama-4.0.11-arm64.dmg` |
+| macOS（Intel） | `HuobaoDrama-4.0.11.dmg` |
+| Windows | `HuobaoDrama.Setup.4.0.11.exe` |
 
 > 中国本土では GitHub が不安定なため、Tencent COS ミラーをご利用ください。アプリ内アップデーターも COS を優先し、GitHub にフォールバックします。
 
