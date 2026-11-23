@@ -180,8 +180,7 @@ test('new image and video models use their current API shapes', () => {
   assert.doesNotMatch(geminiImage, /Authorization': `Bearer/)
   assert.match(volcVideo, /doubao-seedance-2-0-mini-260615/)
   // Seedance 2.0 多模态能力
-  assert.match(volcVideo, /SEEDANCE2_MODEL_PREFIX/)
-  assert.match(volcVideo, /startsWith\(SEEDANCE2_MODEL_PREFIX\)/)
+  assert.match(volcVideo, /SEEDANCE_MODEL_PATTERN/)
   assert.match(volcVideo, /reference_video/)
   assert.match(volcVideo, /reference_audio/)
   assert.match(volcVideo, /generate_audio:\s*record\.generateAudio/)

@@ -522,10 +522,10 @@
           <div class="preset-picker">
             <button
               v-for="preset in presetsByType(cfgForm.service_type)"
-              :key="`${cfgForm.service_type}-${preset.provider}`"
+              :key="`${cfgForm.service_type}-${preset.key}`"
               type="button"
               class="preset-pill"
-              @click="applyProviderPreset(cfgForm.service_type, preset.provider)"
+              @click="applyProviderPreset(cfgForm.service_type, preset.key)"
             >
               {{ preset.label }}
             </button>
@@ -793,6 +793,7 @@ const providerPresets = {
   video: {
     aliyun: { label: '阿里云百炼 Wan 3.0', baseUrl: 'https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com', models: ['wan3.0-video', 'wan3.0-video-prime'] },
     volcengine: { label: 'Seedance 2.0 官方', baseUrl: 'https://ark.cn-beijing.volces.com', models: ['doubao-seedance-2-0-mini-260615', 'doubao-seedance-2-0-fast-260128', 'doubao-seedance-2-0-260128'] },
+    byteplus: { provider: 'volcengine', label: 'BytePlus Seedance', baseUrl: 'https://ark.ap-southeast.bytepluses.com', models: ['dreamina-seedance-2-5-260628', 'dreamina-seedance-2-5-flash-261115', 'dreamina-seedance-2-0-mini-260615', 'dreamina-seedance-2-0-fast-260128', 'dreamina-seedance-2-0-260128'] },
     minimax: { label: 'MiniMax H3 官方', baseUrl: 'https://api.minimaxi.com', models: ['MiniMax-H3'] },
   },
 }
@@ -814,12 +815,12 @@ function countActive(t) { return byType(t).filter(c => c.is_active).length }
 function fmtModel(m) { return Array.isArray(m) ? m.join(', ') : m || '—' }
 function presetsByType(type) {
   const group = providerPresets[type] || {}
-  return Object.entries(group).map(([provider, preset]) => ({ provider, ...preset }))
+  return Object.entries(group).map(([key, preset]) => ({ key, provider: key, ...preset }))
 }
 function applyProviderPreset(type, provider) {
   const preset = providerPresets[type]?.[provider]
   if (!preset) return
-  cfgForm.provider = provider
+  cfgForm.provider = preset.provider || provider
   cfgForm.base_url = preset.baseUrl
   cfgForm.models = [...preset.models]
   // 配置名持久化进 DB：用 provider 英文 + 服务类型英文标识拼，不随界面语言漂移
@@ -887,7 +888,7 @@ function startAddCfg(t) {
   cfgTestResult.value = null
   Object.assign(cfgForm, { name: '', provider: '', api_key: '', base_url: '', models: [], service_type: t, priority: 0, temperature: '' })
   const firstPreset = presetsByType(t)[0]
-  if (firstPreset) applyProviderPreset(t, firstPreset.provider)
+  if (firstPreset) applyProviderPreset(t, firstPreset.key)
   cfgDialog.value = true
 }
 function startEditCfg(c) {

@@ -1,0 +1,14 @@
+# Build the current checkout; keep local model settings and media in ./data.
+# Run: docker compose -f docker-compose.local.yml up -d --build
+services:
+  app:
+    image: huobao-drama:local
+    build:
+      context: .
+      args:
+        HUOBAO_VERSION: local
+    ports:
+      - "127.0.0.1:5679:5679"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

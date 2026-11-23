@@ -2127,9 +2127,12 @@ const RESOLUTION_DISPLAY = {
   aliyun: { '480p': '480P', '720p': '720P', '1080p': '1080P' },
 }
 const resolutionProvider = computed(() => RESOLUTION_TIERS[selectedVideoConfig.value?.provider] ? selectedVideoConfig.value.provider : 'volcengine')
-const resolutionOptions = computed(() => RESOLUTION_TIERS[resolutionProvider.value].map(key => ({
+const seedance25Pro = computed(() => /^dreamina-seedance-2-5-\d/.test(effectiveVideoModelLabel.value || ''))
+const resolutionOptions = computed(() => (seedance25Pro.value
+  ? ['480p', '720p', '1080p']
+  : RESOLUTION_TIERS[resolutionProvider.value]).map(key => ({
   key,
-  model: `${RESOLUTION_DISPLAY[resolutionProvider.value][key]} · ${t(`episode.resolution.${key === '480p' ? 'smooth' : key === '720p' ? 'hd' : 'uhd'}`)}`,
+  model: `${seedance25Pro.value ? key : RESOLUTION_DISPLAY[resolutionProvider.value][key]} · ${t(`episode.resolution.${key === '480p' ? 'smooth' : key === '720p' ? 'hd' : 'uhd'}`)}`,
 })))
 const episodeResolution = computed({
   get: () => {
@@ -2216,7 +2219,7 @@ const effectiveVideoModelLabel = computed(() => {
 const episodeResolutionLabel = computed(() =>
   resolutionOptions.value.find(o => o.key === episodeResolution.value)?.model || episodeResolution.value)
 // 短档位标签（480p / 768P / 2K 等厂商原生档位），用于底部生效配置小结
-const episodeResolutionShort = computed(() =>
+const episodeResolutionShort = computed(() => seedance25Pro.value ? episodeResolution.value :
   RESOLUTION_DISPLAY[resolutionProvider.value][episodeResolution.value] || episodeResolution.value)
 const effectiveVideoDuration = computed(() => Number(selectedSb.value?.duration || 10))
 const batchVideoTotalDuration = computed(() =>

@@ -1,9 +1,9 @@
 /**
- * 火山引擎 Seedance 2.0 视频生成 Adapter
+ * 火山引擎 / BytePlus Seedance 视频生成 Adapter
  * 端点: /api/v3/contents/generations/tasks (注意 /api/v3 前缀)
  * 响应: { id: "task-xxx" } -> 轮询获取状态
  *
- * 仅支持 Doubao Seedance 2.0+ 系列模型，生成模式只保留多模态参考:
+ * 支持 Doubao Seedance 2.0 与 BytePlus Dreamina Seedance 2.0 / 2.5，生成模式只保留多模态参考:
  * - reference   多模态参考（≤9 reference_image + ≤3 reference_video + ≤3 reference_audio + 可选文本）
  *   有参考音频时至少包含 1 个参考图片或视频
  */
@@ -17,8 +17,8 @@ import type {
 } from './types'
 import { joinProviderUrl } from './url'
 
-/** 仅支持 Seedance 2.0+ 系列（前缀匹配，兼容未来 2.0.x 变体） */
-const SEEDANCE2_MODEL_PREFIX = 'doubao-seedance-2-0'
+// Keep model families explicit so unrelated models are rejected before submission.
+const SEEDANCE_MODEL_PATTERN = /^(?:doubao-seedance-2-0|dreamina-seedance-2-(?:0|5))(?:-|$)/
 const DEFAULT_MODEL = 'doubao-seedance-2-0-mini-260615'
 
 /** 多模态参考素材上限：图片 9、视频 3、音频 3 */
@@ -39,8 +39,8 @@ export class VolcEngineVideoAdapter implements VideoProviderAdapter {
 
   buildGenerateRequest(config: AIConfig, record: VideoGenerationRecord): ProviderRequest {
     const model = record.model || config.model || DEFAULT_MODEL
-    if (!model.startsWith(SEEDANCE2_MODEL_PREFIX)) {
-      throw new Error(`仅支持 Seedance 2.0 系列模型（${SEEDANCE2_MODEL_PREFIX}-*），当前: ${model}`)
+    if (!SEEDANCE_MODEL_PATTERN.test(model)) {
+      throw new Error(`仅支持 Doubao Seedance 2.0 或 BytePlus Dreamina Seedance 2.0 / 2.5，当前: ${model}`)
     }
 
     const prompt = (record.prompt || '').trim()
@@ -75,9 +75,10 @@ export class VolcEngineVideoAdapter implements VideoProviderAdapter {
       content,
       generate_audio: record.generateAudio !== 0 && record.generateAudio !== false,
       ratio: record.aspectRatio || 'adaptive',
-      duration: this.normalizeDuration(record.duration),
-      // Seedance 2.0 仅 480p/720p 两档，1080p 收敛到 720p
-      resolution: record.resolution === '480p' ? '480p' : '720p',
+      duration: this.normalizeDuration(record.duration, model),
+      resolution: record.resolution === '1080p' && /^dreamina-seedance-2-5-\d/.test(model)
+        ? '1080p'
+        : record.resolution === '480p' ? '480p' : '720p',
       watermark: false,
     }
 
@@ -138,10 +139,11 @@ export class VolcEngineVideoAdapter implements VideoProviderAdapter {
     return result.video_url || result.content?.video_url || result.data?.video_url || null
   }
 
-  private normalizeDuration(duration?: number | null): number {
+  private normalizeDuration(duration: number | null | undefined, model: string): number {
     const parsed = Math.round(Number(duration || 5))
     if (!Number.isFinite(parsed)) return 5
-    // Seedance 2.0 支持 4-15 秒
-    return Math.min(15, Math.max(4, parsed))
+    // BytePlus 2.5 supports up to 30s; preserve the existing 2.0 range.
+    const max = model.startsWith('dreamina-seedance-2-5-') ? 30 : 15
+    return Math.min(max, Math.max(4, parsed))
   }
 }

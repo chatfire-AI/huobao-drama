@@ -558,6 +558,38 @@ HUOBAO_VERSION=4.0.5 docker compose up -d --build
 
 ---
 
+## BytePlus Seedance (ModelArk)
+
+In Settings → AI Services → Video, select **BytePlus Seedance**. This uses
+the existing `volcengine` adapter with `https://ark.ap-southeast.bytepluses.com`
+and your BytePlus API key (not a mainland Volcano Engine key). The adapter
+also accepts a base URL ending in `/api/v3` without duplicating that prefix.
+
+Supported BytePlus model families are `dreamina-seedance-2-0-*` and
+`dreamina-seedance-2-5-*`; use the exact model ID enabled for your account.
+Seedance 2.5 supports 4–30-second shots; the standard 2.5 model also exposes
+1080p in the workbench. Flash and the existing 2.0 workflow retain 480p/720p.
+Existing mainland `doubao-seedance-2-0-*` configurations are unchanged.
+
+The configuration connection test does not generate a video or establish that
+a particular model is enabled. Verify generation, polling and download with a
+single short shot before starting a batch; successful submissions may be billed.
+
+To run a local checkout in Docker without automatic image replacement:
+
+```sh
+docker compose -f docker-compose.local.yml up -d --build
+```
+
+Open `http://localhost:5679`. The local Compose file builds your checkout,
+binds only to loopback, and persists settings/media in the ignored `data/`
+directory. To reuse desktop data, back up the desktop SQLite database using
+SQLite's backup API into `data/huobao.sqlite3` and copy its `static/` directory
+before starting the container. Do not copy a live WAL database with a plain
+file copy. Keep this data out of images and version control.
+
+---
+
 ## 🎨 技术栈 / Tech Stack
 
 ### 后端 / Backend

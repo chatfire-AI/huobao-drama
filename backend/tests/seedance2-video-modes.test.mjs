@@ -5,12 +5,10 @@ import assert from 'node:assert/strict'
 const root = new URL('..', import.meta.url)
 const read = (path) => readFileSync(new URL(path, root), 'utf8')
 
-test('volcengine video adapter only supports Seedance 2.0 models and reference mode only', () => {
+test('volcengine video adapter supports Seedance families in reference mode only', () => {
   const adapter = read('src/services/adapters/volcengine-video.ts')
 
-  // 模型白名单：仅 doubao-seedance-2-0-* 前缀
-  assert.match(adapter, /SEEDANCE2_MODEL_PREFIX = 'doubao-seedance-2-0'/)
-  assert.match(adapter, /startsWith\(SEEDANCE2_MODEL_PREFIX\)/)
+  // 模型校验与请求行为由 byteplus-seedance-video.test.ts 覆盖
 
   // 只保留多模态参考：其他模式分支与历史映射已清理
   assert.doesNotMatch(adapter, /mode === 'text'/)
@@ -32,8 +30,8 @@ test('volcengine video adapter only supports Seedance 2.0 models and reference m
 
   // generate_audio 可配置（默认开），时长支持 4-15 秒；分辨率随集固定（480p/720p，默认 720p）
   assert.match(adapter, /generate_audio:\s*record\.generateAudio/)
-  assert.match(adapter, /Math\.min\(15, Math\.max\(4, parsed\)\)/)
-  assert.match(adapter, /resolution: record\.resolution === '480p' \? '480p' : '720p'/)
+  assert.match(adapter, /Math\.min\(max, Math\.max\(4, parsed\)\)/)
+  assert.match(adapter, /record\.resolution === '480p' \? '480p' : '720p'/)
 })
 
 test('video generation service resolves reference media and persists new fields', () => {
