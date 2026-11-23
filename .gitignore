@@ -36,6 +36,7 @@ data/public.sql
 data/*.bak*
 data/static/
 data/storage/
+data/workspace/
 
 # Config
 configs/config.yaml
