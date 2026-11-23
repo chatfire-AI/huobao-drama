@@ -3,7 +3,7 @@
  * 端点: /api/v3/contents/generations/tasks (注意 /api/v3 前缀)
  * 响应: { id: "task-xxx" } -> 轮询获取状态
  *
- * 仅支持 Doubao Seedance 2.0+ 系列模型，生成模式只保留多模态参考:
+ * 支持 Doubao Seedance 2.0 与海外 BytePlus Seedance 2.0 / 2.5，生成模式只保留多模态参考:
  * - reference   多模态参考（≤9 reference_image + ≤3 reference_video + ≤3 reference_audio + 可选文本）
  *   有参考音频时至少包含 1 个参考图片或视频
  */
@@ -39,8 +39,8 @@ export class VolcEngineVideoAdapter implements VideoProviderAdapter {
 
   buildGenerateRequest(config: AIConfig, record: VideoGenerationRecord): ProviderRequest {
     const model = record.model || config.model || DEFAULT_MODEL
-    if (!model.startsWith(SEEDANCE2_MODEL_PREFIX)) {
-      throw new Error(`仅支持 Seedance 2.0 系列模型（${SEEDANCE2_MODEL_PREFIX}-*），当前: ${model}`)
+    if (!model.startsWith(SEEDANCE2_MODEL_PREFIX) && !/^dreamina-seedance-2-(?:0|5)-/.test(model)) {
+      throw new Error(`仅支持 Doubao Seedance 2.0 或 BytePlus Seedance 2.0 / 2.5，当前: ${model}`)
     }
 
     const prompt = (record.prompt || '').trim()
