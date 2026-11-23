@@ -65,3 +65,31 @@ test('diagnostics remove signed URLs and credentials', () => {
   assert.doesNotMatch(error, /signature=hidden|Bearer secret|api_key=secret|sk-hidden/)
   assert.match(error, /fetch failed/)
 })
+
+test('download timeout is configurable, invalid values fall back, and explicit options take precedence', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'video-env-timeout-'))
+  const previous = process.env.VIDEO_DOWNLOAD_TIMEOUT_MS
+  const server = await serve((_req, res) => {
+    res.writeHead(200)
+    res.write(video)
+    setTimeout(() => res.end(), 80)
+  })
+  try {
+    process.env.VIDEO_DOWNLOAD_TIMEOUT_MS = '20'
+    await assert.rejects(downloadVideo(server.url, 90, { root, attempts: 1 }))
+    assert.deepEqual(await fs.readdir(path.join(root, 'videos')), [])
+    let id = 91
+    for (const value of ['invalid', '0', '-1', 'Infinity', '999999999999']) {
+      process.env.VIDEO_DOWNLOAD_TIMEOUT_MS = value
+      assert.equal(await downloadVideo(server.url, id, { root, attempts: 1 }), `static/videos/task-${id}.mp4`)
+      id++
+    }
+    process.env.VIDEO_DOWNLOAD_TIMEOUT_MS = '20'
+    assert.equal(await downloadVideo(server.url, 99, { root, attempts: 1, timeoutMs: 1000 }), 'static/videos/task-99.mp4')
+  } finally {
+    if (previous === undefined) delete process.env.VIDEO_DOWNLOAD_TIMEOUT_MS
+    else process.env.VIDEO_DOWNLOAD_TIMEOUT_MS = previous
+    await server.close()
+    await fs.rm(root, { recursive: true, force: true })
+  }
+})

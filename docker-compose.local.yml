@@ -9,6 +9,8 @@ services:
         HUOBAO_VERSION: local
     ports:
       - "127.0.0.1:5679:5679"
+    environment:
+      VIDEO_DOWNLOAD_TIMEOUT_MS: ${VIDEO_DOWNLOAD_TIMEOUT_MS:-600000}
     volumes:
       - ./data:/app/data
     restart: unless-stopped

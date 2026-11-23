@@ -583,7 +583,9 @@ docker compose -f docker-compose.local.yml up -d --build
 
 Open `http://localhost:5679`. The local Compose file builds your checkout,
 binds only to loopback, and persists settings/media in the ignored `data/`
-directory. To reuse desktop data, back up the desktop SQLite database using
+directory. This local configuration allows ten minutes per download attempt
+(`VIDEO_DOWNLOAD_TIMEOUT_MS=600000`); the default elsewhere remains two minutes.
+To reuse desktop data, back up the desktop SQLite database using
 SQLite's backup API into `data/huobao.sqlite3` and copy its `static/` directory
 before starting the container. Do not copy a live WAL database with a plain
 file copy. Keep this data out of images and version control.

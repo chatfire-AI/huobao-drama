@@ -30,9 +30,12 @@ export async function downloadVideo(url: string, taskId: number, options: {
   const partial = path.join(dir, `task-${taskId}.part`)
   const attempts = options.attempts ?? 3
   const maxBytes = options.maxBytes ?? 512 * 1024 * 1024
+  const configuredTimeout = Number(process.env.VIDEO_DOWNLOAD_TIMEOUT_MS)
+  const timeoutMs = options.timeoutMs ?? (Number.isSafeInteger(configuredTimeout)
+    && configuredTimeout > 0 && configuredTimeout <= 2_147_483_647 ? configuredTimeout : 120_000)
   for (let attempt = 0; attempt < attempts; attempt++) {
     try {
-      const signal = AbortSignal.timeout(options.timeoutMs ?? 120_000)
+      const signal = AbortSignal.timeout(timeoutMs)
       const resp = await fetch(url, { signal })
       if (!resp.ok) {
         await resp.body?.cancel()
