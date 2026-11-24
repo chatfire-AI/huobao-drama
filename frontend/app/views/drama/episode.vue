@@ -283,6 +283,10 @@
                 </button>
               </div>
             </div>
+            <AssetPromptBatch :episode-id="Number(epId)" :missing="missingAssetPromptCount"
+              :model="chatModelOverride()" :config-id="chatConfigId()"
+              :disabled="!!extractingTargets.length || !!generatingPromptKeys.length || rn"
+              @refresh="refresh" />
             <div v-if="extractingTargets.length && !chars.length && !scenes.length && !propItems.length" class="step-loading">
               <Loader2 :size="24" class="animate-spin" style="color:var(--accent)" />
               <div class="loading-text">{{ t('episode.prod.extractingTypes', { types: extractingLabels }) }}</div>
@@ -2112,6 +2116,8 @@ function isNarratorCharacter(char) {
 }
 
 const visualChars = computed(() => chars.value.filter(c => !isNarratorCharacter(c)))
+const missingAssetPromptCount = computed(() => [...visualChars.value, ...scenes.value, ...propItems.value]
+  .filter(asset => !(asset.final_prompt || asset.finalPrompt || '').trim()).length)
 const lockedVideoConfigId = computed(() => episode.value?.video_config_id || episode.value?.videoConfigId || null)
 // 集视频分辨率：顶栏直接修改（持久化 episodes.resolution，生成任务按此值锁定）。
 // 内部统一存 480p/720p/1080p 三档，界面按当前选中的视频模型显示厂商原生档位

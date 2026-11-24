@@ -550,6 +550,13 @@
       "scriptFirst": "请先完成剧本编写",
       "goBack": "返回处理"
     },
+    "assetPromptBatch": {
+      "start": "一键补齐图片提示词（{count}）",
+      "progress": "图片提示词 {done}/{total}",
+      "saved": "已保存 {count} 项图片提示词",
+      "retry": "仍有 {count} 项提示词缺失，点击重试。",
+      "unavailable": "暂时无法获取提示词生成进度。"
+    },
     "asset": {
       "fallbackType": "资产",
       "typeChar": "角色资产",

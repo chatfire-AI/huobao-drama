@@ -9,12 +9,36 @@
  * 工具负责读取资产信息与保存 Agent 产出的最终提示词（保存时注入项目视觉风格）
  */
 import { createTool } from '@mastra/core/tools'
+import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import { db, schema } from '../../db/index.js'
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { now } from '../../utils/response.js'
 import { getDramaStylePrompt } from '../../services/style-preset.js'
-import { getDramaId } from '../context.js'
+import { getAssetPromptTarget, getDramaId, getEpisodeId, type AssetPromptTarget } from '../context.js'
+
+const assets = {
+  character: { table: schema.characters, relations: schema.episodeCharacters, assetId: schema.episodeCharacters.characterId },
+  scene: { table: schema.scenes, relations: schema.episodeScenes, assetId: schema.episodeScenes.sceneId },
+  prop: { table: schema.props, relations: schema.episodeProps, assetId: schema.episodeProps.propId },
+}
+
+function writeBatchPrompt(kind: AssetPromptTarget['kind'], id: number, dramaId: number, prompt: string, context?: RequestContext) {
+  const target = getAssetPromptTarget(context)
+  if (!target) return null
+  if (target.kind !== kind || target.id !== id) return { error: '此批处理只允许保存当前资产' }
+  const { table, relations, assetId } = assets[kind]
+  const episodeId = getEpisodeId(context)
+  const link = episodeId && db.select({ id: assetId }).from(relations)
+    .innerJoin(schema.episodes, eq(schema.episodes.id, relations.episodeId))
+    .where(and(eq(relations.episodeId, episodeId), eq(assetId, id), isNull(schema.episodes.deletedAt))).get()
+  if (!link) return { error: '资产已从本集移除' }
+  const result = db.update(table).set({ finalPrompt: prompt, updatedAt: now() })
+    .where(and(eq(table.id, id), eq(table.dramaId, dramaId), isNull(table.deletedAt), eq(table.updatedAt, target.updatedAt),
+      target.previousPrompt === null ? isNull(table.finalPrompt) : eq(table.finalPrompt, target.previousPrompt)))
+    .run()
+  return result.changes ? { saved: true, final_prompt: prompt } : { error: '资产或提示词已被编辑，未覆盖' }
+}
 
 // ─── 角色提示词 ───────────────────────────────────────
 
@@ -55,9 +79,12 @@ const saveCharacterFinalPrompt = createTool({
     const [c] = await db.select().from(schema.characters)
       .where(eq(schema.characters.id, character_id))
     if (!c) return { error: 'Character not found' }
+    if (getAssetPromptTarget(context?.requestContext) && !prompt.trim()) return { error: '最终提示词为空' }
 
     const stylePrompt = await getDramaStylePrompt(dramaId)
     const finalPrompt = stylePrompt ? `${stylePrompt}, ${prompt}` : prompt
+    const batch = writeBatchPrompt('character', character_id, dramaId, finalPrompt, context?.requestContext)
+    if (batch) return batch
     await db.update(schema.characters)
       .set({ finalPrompt, updatedAt: now() })
       .where(eq(schema.characters.id, character_id))
@@ -109,9 +136,12 @@ const saveSceneFinalPrompt = createTool({
     const [s] = await db.select().from(schema.scenes)
       .where(eq(schema.scenes.id, scene_id))
     if (!s) return { error: 'Scene not found' }
+    if (getAssetPromptTarget(context?.requestContext) && !prompt.trim()) return { error: '最终提示词为空' }
 
     const stylePrompt = await getDramaStylePrompt(dramaId)
     const finalPrompt = stylePrompt ? `${stylePrompt}, ${prompt}` : prompt
+    const batch = writeBatchPrompt('scene', scene_id, dramaId, finalPrompt, context?.requestContext)
+    if (batch) return batch
     await db.update(schema.scenes)
       .set({ finalPrompt, updatedAt: now() })
       .where(eq(schema.scenes.id, scene_id))
@@ -162,9 +192,12 @@ const savePropFinalPrompt = createTool({
     const [p] = await db.select().from(schema.props)
       .where(eq(schema.props.id, prop_id))
     if (!p) return { error: 'Prop not found' }
+    if (getAssetPromptTarget(context?.requestContext) && !prompt.trim()) return { error: '最终提示词为空' }
 
     const stylePrompt = await getDramaStylePrompt(dramaId)
     const finalPrompt = stylePrompt ? `${stylePrompt}, ${prompt}` : prompt
+    const batch = writeBatchPrompt('prop', prop_id, dramaId, finalPrompt, context?.requestContext)
+    if (batch) return batch
     await db.update(schema.props)
       .set({ finalPrompt, updatedAt: now() })
       .where(eq(schema.props.id, prop_id))
