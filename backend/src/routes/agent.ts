@@ -3,7 +3,8 @@
  */
 import { Hono } from 'hono'
 import { validAgentTypes } from '../agents/index.js'
-import { buildAgentRequestContext } from '../agents/context.js'
+import { buildAgentRequestContext, type ScriptRewriteState } from '../agents/context.js'
+import { commitScriptRewrite } from '../agents/tools/script-tools.js'
 import { mastra } from '../mastra/index.js'
 import { success, badRequest } from '../utils/response.js'
 import { logTaskError, logTaskPayload, logTaskProgress, logTaskStart, logTaskSuccess } from '../utils/task-logger.js'
@@ -56,11 +57,13 @@ app.post('/:type/chat', async (c) => {
     return badRequest(c, 'Agent 不存在')
   }
 
+  const scriptRewrite: ScriptRewriteState | undefined = agentType === 'script_rewriter' ? {} : undefined
   const requestContext = buildAgentRequestContext({
     episodeId: episode_id,
     dramaId: drama_id,
     modelOverride: body.model || undefined,
     textConfigId: body.config_id || undefined,
+    scriptRewrite,
   })
 
   const startTime = performance.now()
@@ -70,6 +73,7 @@ app.post('/:type/chat', async (c) => {
       [{ role: 'user', content: message }],
       { maxSteps: 20, requestContext },
     )
+    const saved = scriptRewrite ? commitScriptRewrite(scriptRewrite, result.finishReason) : undefined
 
     const elapsed = ((performance.now() - startTime) / 1000).toFixed(1)
     logTaskSuccess('Agent', agentType, { elapsedSeconds: elapsed })
@@ -98,6 +102,7 @@ app.post('/:type/chat', async (c) => {
       text: result.text || '',
       toolCalls: normalizedToolCalls,
       toolResults: normalizedToolResults,
+      ...saved,
     })
   } catch (err: any) {
     const elapsed = ((performance.now() - startTime) / 1000).toFixed(1)
