@@ -550,6 +550,13 @@
       "scriptFirst": "Please finish the script first",
       "goBack": "Go back"
     },
+    "assetPromptBatch": {
+      "start": "Fill missing image prompts ({count})",
+      "progress": "Image prompts {done}/{total}",
+      "saved": "Saved {count} image prompts",
+      "retry": "{count} prompts still missing. Click to retry.",
+      "unavailable": "Unable to check prompt progress right now."
+    },
     "asset": {
       "fallbackType": "Asset",
       "typeChar": "Character asset",

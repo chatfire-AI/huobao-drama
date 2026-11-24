@@ -6,8 +6,22 @@ import { toSnakeCaseArray, toSnakeCase } from '../utils/transform.js'
 import { getActiveConfigId } from '../services/ai.js'
 import { EXTRACT_TARGETS, getExtractionStatus, startExtraction, type ExtractTarget } from '../services/extraction.js'
 import { getVideoPromptBatchStatus, startVideoPromptBatch } from '../services/video-prompts.js'
+import { assetPromptBatchStatus, startAssetPromptBatch } from '../services/asset-prompt-batch.js'
 
 const app = new Hono()
+
+app.get('/:id/asset-prompts-status', c => success(c, assetPromptBatchStatus(Number(c.req.param('id')))))
+
+app.post('/:id/generate-asset-prompts', async c => {
+  try {
+    const body = await c.req.json()
+    return success(c, startAssetPromptBatch(Number(c.req.param('id')), {
+      model: body.model || undefined, configId: body.config_id || undefined,
+    }))
+  } catch (error) {
+    return badRequest(c, error instanceof Error ? error.message : String(error))
+  }
+})
 
 // POST /episodes — Create a new episode
 app.post('/', async (c) => {

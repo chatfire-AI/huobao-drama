@@ -550,6 +550,13 @@
       "scriptFirst": "先に脚本を完成させてください",
       "goBack": "処理に戻る"
     },
+    "assetPromptBatch": {
+      "start": "未作成の画像プロンプトを補う（{count}）",
+      "progress": "画像プロンプト {done}/{total}",
+      "saved": "{count} 件の画像プロンプトを保存しました",
+      "retry": "未作成のプロンプトが {count} 件あります。クリックして再試行してください。",
+      "unavailable": "現在、プロンプト生成の進捗を取得できません。"
+    },
     "asset": {
       "fallbackType": "資産",
       "typeChar": "キャラクター資産",

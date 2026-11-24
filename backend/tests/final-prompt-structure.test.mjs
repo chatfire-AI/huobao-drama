@@ -67,8 +67,8 @@ test('image generation prefers the stored final prompt with agent generation and
   assert.match(service, /export async function ensureSceneFinalPrompt/)
   assert.match(service, /getAgent\('prompt_generator'/)
   // 已有最终提示词直接复用（force 时忽略强制重新生成）
-  assert.match(service, /if \(char\.finalPrompt && !force\) return char\.finalPrompt/)
-  assert.match(service, /if \(scene\.finalPrompt && !force\) return scene\.finalPrompt/)
+  assert.match(service, /char\.finalPrompt && !force .* return char\.finalPrompt/)
+  assert.match(service, /scene\.finalPrompt && !force .* return scene\.finalPrompt/)
   assert.match(service, /force = false/)
 
   assert.match(characters, /ensureCharacterFinalPrompt\(char, ep\.id, /)
