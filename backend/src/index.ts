@@ -24,6 +24,7 @@ import settings from './routes/settings.js'
 import storage from './routes/storage.js'
 import serverUpdate from './routes/serverUpdate.js'
 import { requestLogger, errorHandler } from './middleware/logger.js'
+import { mountFrontend } from './middleware/frontend.js'
 import { resumeInterruptedTasks } from './services/generation.js'
 import { DATA_ROOT } from './utils/paths.js'
 
@@ -80,8 +81,7 @@ app.use('/static/*', serveStatic({ root: DATA_ROOT }))
 
 // Serve frontend (production build) — 桌面版由主进程注入 FRONTEND_DIST（resources/frontend）
 const distPath = process.env.FRONTEND_DIST || path.join(projectRoot, 'frontend', 'dist')
-app.use('*', serveStatic({ root: distPath }))
-app.get('*', serveStatic({ root: distPath, path: 'index.html' }))
+mountFrontend(app, distPath, path.join(projectRoot, 'tmp/frontend-previous'))
 
 const port = Number(process.env.PORT || 5679)
 console.log(`🚀 Huobao Drama TS server on http://localhost:${port}`)

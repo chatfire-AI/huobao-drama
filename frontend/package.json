@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "nuxt dev --port 3013",
     "build": "nuxt build",
-    "generate": "nuxt generate",
+    "generate": "node scripts/generate.mjs",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
   },
