@@ -204,7 +204,14 @@
                 </div>
                 <button v-if="st.type === 'text'" class="btn btn-ghost btn-sm" @click="testExistingCfg(c)">{{ t('settings.ai.test') }}</button>
                 <label class="config-switch">
-                  <input type="checkbox" class="sr-only" :checked="c.is_active" @change="toggleCfg(c)">
+                  <input
+                    type="checkbox"
+                    class="sr-only"
+                    :aria-label="c.name || `${c.provider}-${c.service_type}`"
+                    :aria-disabled="togglingCfgIds.has(c.id)"
+                    :checked="c.is_active"
+                    @change="toggleCfg(c, $event)"
+                  >
                   <span class="switch" :class="{ on: c.is_active }"></span>
                 </label>
                 <button class="btn btn-ghost btn-icon btn-sm" @click="startEditCfg(c)"><Pencil :size="13" /></button>
@@ -860,7 +867,24 @@ async function setDefaultModel(type, c, m) {
     defaultSaving.value = false
   }
 }
-async function toggleCfg(c) { await aiConfigAPI.update(c.id, { is_active: !c.is_active }); loadCfgs() }
+const togglingCfgIds = reactive(new Set())
+async function toggleCfg(c, event) {
+  const input = event.currentTarget
+  const isActive = input.checked
+  input.checked = !!c.is_active
+  if (togglingCfgIds.has(c.id)) return
+
+  togglingCfgIds.add(c.id)
+  try {
+    await aiConfigAPI.update(c.id, { is_active: isActive })
+    const config = cfgs.value.find(item => item.id === c.id)
+    if (config) config.is_active = isActive
+  } catch (e) {
+    toastError(e)
+  } finally {
+    togglingCfgIds.delete(c.id)
+  }
+}
 async function delCfg(id) { await aiConfigAPI.del(id); toast.success(t('index.deleted')); loadCfgs() }
 async function applyHuobaoQuickConfig() {
   const apiKey = huobaoApiKey.value.trim()
@@ -1714,7 +1738,9 @@ onBeforeUnmount(stopUsagePoll)
 }
 .cfg-model-star { fill: currentColor; }
 .config-empty { font-size: 12px; color: var(--text-3); padding: 14px 20px; }
-.config-switch { display: inline-flex; flex-shrink: 0; cursor: pointer; }
+/* 将隐藏复选框限制在开关内，避免聚焦时滚动整个窗口。 */
+.config-switch { position: relative; display: inline-flex; flex-shrink: 0; cursor: pointer; }
+.config-switch input { top: 50%; left: 50%; }
 .config-switch input:focus-visible + .switch { box-shadow: 0 0 0 3.5px var(--button-focus); }
 .btn-icon.btn-sm { width: 30px; min-width: 30px; height: 30px; min-height: 30px; }
 
