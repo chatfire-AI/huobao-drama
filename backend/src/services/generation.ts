@@ -29,7 +29,8 @@ function runBackground(id: number, job: () => Promise<void>) {
 const taskLabel = (type: TaskType) => (type === 'image' ? 'ImageTask' : 'VideoTask')
 
 // 轮询节奏：图片 5s×120（上限 10 分钟）；视频 10s×300
-const POLL_PROFILES: Record<TaskType, { attempts: number; intervalMs: number; maxDurationMs: number | null }> = {
+// 导出仅为测试挂钩（tests/poll-error-visibility.test.ts 缩短节奏），运行时请勿改写
+export const POLL_PROFILES: Record<TaskType, { attempts: number; intervalMs: number; maxDurationMs: number | null }> = {
   image: { attempts: 120, intervalMs: 5000, maxDurationMs: 600_000 },
   video: { attempts: 300, intervalMs: 10_000, maxDurationMs: null },
 }
@@ -382,10 +383,14 @@ async function pollTask(record: SysTaskRecord, config: AIConfig, taskId: string)
   const profile = POLL_PROFILES[type]
   const adapter = type === 'image' ? getImageAdapter(config.provider) : getVideoAdapter(config.provider)
   const startedAt = Date.now()
+  // 最近一次上游轮询错误：轮询耗尽/超时收尾时随任务 errorMsg 带回真实原因（不能只报笼统 Timeout）
+  let lastPollError: string | null = null
 
   for (let i = 0; i < profile.attempts; i++) {
     if (profile.maxDurationMs && Date.now() - startedAt >= profile.maxDurationMs) {
-      await failTask(record.id, 'Timeout: Polling exceeded 10 minutes')
+      await failTask(record.id, lastPollError
+        ? `Timeout: Polling exceeded 10 minutes; last upstream error: ${lastPollError}`
+        : 'Timeout: Polling exceeded 10 minutes')
       return
     }
     await new Promise(r => setTimeout(r, profile.intervalMs))
@@ -407,7 +412,19 @@ async function pollTask(record: SysTaskRecord, config: AIConfig, taskId: string)
         headers,
         signal: AbortSignal.timeout(remainingMs),
       })
-      if (!resp.ok) continue
+      if (!resp.ok) {
+        // 非 2xx（如 401 鉴权失效 / 403 / 404）不再静默吞掉：逐次打日志，
+        // 并把最近一次上游错误带进任务终态消息；重试语义不变，仍等下一轮。
+        let detail = ''
+        try {
+          detail = (await resp.text()).trim().slice(0, 200)
+        } catch {
+          try { await resp.body?.cancel() } catch { /* 连接已断开 */ }
+        }
+        lastPollError = safeTaskError(`HTTP ${resp.status}${detail ? `: ${detail}` : ''}`)
+        logTaskWarn(label, 'poll-http-error', { id: record.id, taskId, attempt: i + 1, status: resp.status, error: lastPollError })
+        continue
+      }
       const result = await resp.json() as any
 
       // 图片/视频 PollResponse 结构不同，这里统一按 any 取值后按 type 分支
@@ -455,7 +472,9 @@ async function pollTask(record: SysTaskRecord, config: AIConfig, taskId: string)
       logTaskWarn(label, 'poll-retry', { id: record.id, taskId, attempt: i + 1, error: err.message })
     }
   }
-  await failTask(record.id, 'Timeout: polling attempts exhausted')
+  await failTask(record.id, lastPollError
+    ? `Timeout: polling attempts exhausted; last upstream error: ${lastPollError}`
+    : 'Timeout: polling attempts exhausted')
 }
 
 async function handleImageComplete(record: SysTaskRecord, imageUrl: string) {
